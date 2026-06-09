@@ -122,7 +122,7 @@ const touchState = { left: false, right: false, up: false, down: false, jump: fa
 let jumpEdge = false, actEdge = false, upEdge = false, mapEdge = false;
 let prevJump = false, prevAct = false, prevUp = false, prevMap = false;
 
-let pendJump = false, pendAct = false, pendUp = false;
+let pendJump = false, pendAct = false, pendUp = false, pendMap = false;
 window.addEventListener('keydown', e => {
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) e.preventDefault();
   const k = e.key.toLowerCase();
@@ -177,6 +177,7 @@ cv.addEventListener('touchstart', e => {
     if (b === 'jump') pendJump = true;
     if (b === 'act') pendAct = true;
     if (b === 'up') pendUp = true;
+    if (b === 'mute') toggleMute();
   }
   refreshTouch();
   tapAt(e.changedTouches[0]);
@@ -193,7 +194,13 @@ const touchEnd = e => {
 };
 cv.addEventListener('touchend', touchEnd, { passive: false });
 cv.addEventListener('touchcancel', touchEnd, { passive: false });
-cv.addEventListener('mousedown', e => { anyInputEdge = true; audioUnlock(); tapAt(e); });
+cv.addEventListener('mousedown', e => {
+  anyInputEdge = true; audioUnlock();
+  const b = hitBtn({ x: e.clientX * DPR, y: e.clientY * DPR });
+  if (b === 'map') pendMap = true;
+  if (b === 'mute') toggleMute();
+  tapAt(e);
+});
 window.addEventListener('contextmenu', e => e.preventDefault());
 
 function tapAt(t) {
@@ -203,9 +210,59 @@ function tapAt(t) {
 
 // ----------------------------------------------------------------- audio --
 let AC = null, muted = false;
+try { muted = localStorage.getItem('gipfelbuch_mute') === '1'; } catch (e) {}
+function toggleMute() {
+  muted = !muted;
+  try { localStorage.setItem('gipfelbuch_mute', muted ? '1' : '0'); } catch (e) {}
+}
 function audioUnlock() {
   if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
   if (AC && AC.state === 'suspended') AC.resume();
+}
+function vib(pattern) { try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) {} }
+
+// continuous ambience: one looping noise voice, morphed per zone & weather
+let amb = null;
+function ensureAmbient() {
+  if (!AC || amb) return;
+  const out = AC.createGain(); out.gain.value = 0; out.connect(AC.destination);
+  const buf = AC.createBuffer(1, AC.sampleRate * 2, AC.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  const src = AC.createBufferSource(); src.buffer = buf; src.loop = true;
+  const filt = AC.createBiquadFilter(); filt.type = 'bandpass'; filt.Q.value = 0.6;
+  filt.frequency.value = 500;
+  src.connect(filt).connect(out); src.start();
+  amb = { out, filt };
+}
+function ambientTick(pc) {
+  if (!AC) return;
+  ensureAmbient();
+  let gain = 0, freq = 500;
+  if (!muted && (G.mode === 'play' || G.mode === 'dialog' || G.mode === 'map')) {
+    const z = curZone;
+    if (z && z.dark) { gain = 0.016; freq = 130; }                       // cave rumble
+    else if (pc.rain && !(z && z.covered)) { gain = 0.05; freq = 2600; } // rain hiss
+    else if (z && (z.id === 'grat' || z.id === 'gipfel' || z.id === 'ferrata' || z.id === 'hochband'))
+      { gain = 0.045 + Math.sin(frame * 0.013) * 0.018; freq = 650 + Math.sin(frame * 0.007) * 180; } // ridge wind
+    else if (z && z.id === 'schlucht') { gain = 0.05; freq = 1500; }     // falls roar
+    else { gain = 0.018; freq = 480 + Math.sin(frame * 0.005) * 80; }    // valley breeze
+  }
+  amb.out.gain.value += (gain - amb.out.gain.value) * 0.03;
+  amb.filt.frequency.value += (freq - amb.filt.frequency.value) * 0.04;
+
+  // sprinkled one-shots: birds by day, crickets by night, drips in the dark
+  if (muted || G.mode !== 'play' || frame % 24 !== 0 || Math.random() > 0.22) return;
+  const z = curZone;
+  if (z && z.dark) { blip(900 + Math.random() * 500, 0.05, 'sine', 0.03, -700); }
+  else if (G.phase === 3 && z && z.outdoor) {
+    for (let i = 0; i < 3; i++) setTimeout(() => blip(4300, 0.04, 'sine', 0.02), i * 90); // crickets
+  } else if (G.phase !== 3 && z && (z.id === 'wald' || z.id === 'camp' || z.id === 'galerie')) {
+    const f = 2000 + Math.random() * 1200;
+    blip(f, 0.08, 'sine', 0.025, 500); setTimeout(() => blip(f * 1.2, 0.07, 'sine', 0.02, -400), 110); // bird
+  } else if (z && z.id === 'alm' && Math.random() < 0.4) {
+    blip(1320, 0.25, 'triangle', 0.018, -40); // a cowbell, somewhere
+  }
 }
 function blip(freq, dur, type, vol, slide) {
   if (!AC || muted) return;
@@ -398,6 +455,17 @@ function physTick() {
       if (p.vy > 9) p.vy = 9;
     }
 
+    // paraglider: hold jump while falling
+    p.gliding = false;
+    if (G.gear.glider && !p.grounded && !p.swim && inp.jump && p.vy > 0.4) {
+      p.gliding = true;
+      p.vy = Math.min(p.vy, 1.05);
+      p.vx += p.face * 0.06;
+      p.vx = Math.max(-2.8, Math.min(2.8, p.vx));
+      fallStartY = p.y; // a soft landing, always
+      if (Math.random() < 0.25) spawnPart({ x: p.x + (p.face > 0 ? -6 : 14), y: p.y + Math.random() * p.h, vx: -p.face * 1.5, vy: 0, t: 12, c: 'rgba(255,255,255,0.4)', s: 1.5 });
+    }
+
     // waterfall force
     if (inWaterfall(p.x + p.w / 2, p.y + p.h / 2)) {
       if (!G.gear.jacket) {
@@ -455,7 +523,7 @@ function physTick() {
       sfx.land();
       if (drop > 24 && !p.swim) {
         p.warmth -= 22; G.shake = 10;
-        toast(TX.toast_stumble);
+        toast(TX.toast_stumble); vib(60);
       }
       for (let i = 0; i < 5; i++) spawnPart({ x: p.x + Math.random() * p.w, y: p.y + p.h, vx: (Math.random() - 0.5) * 1.5, vy: -Math.random(), g: 0.06, t: 18, c: '#c9bb9d', s: 1.5 });
     }
@@ -463,7 +531,7 @@ function physTick() {
   wasGrounded = p.grounded || p.climbing;
 
   // splash on entering water
-  if (p.swim && !p.wasSwim) { sfx.splash(); G.shake = Math.max(G.shake, vyEnter > 6 ? 6 : 2);
+  if (p.swim && !p.wasSwim) { sfx.splash(); vib(25); G.shake = Math.max(G.shake, vyEnter > 6 ? 6 : 2);
     if (vyEnter > 6 && !G.flags.zinnensprung && zone && zone.id === 'wald' && fallStartY < 20 * TILE) {
       G.flags.zinnensprung = true; toast(TX.toast_sprung); sfx.fanfare();
     }
@@ -534,7 +602,13 @@ function doInteract(e) {
       } else restAt(e.id, TX.fire_rest);
       break;
     }
-    case 'sign': say(TX[e.key]); break;
+    case 'sign': {
+      if (e.key === 'sign_flug' && G.flags.finale && !G.gear.glider) {
+        sfx.pick(); vib(40);
+        say(TX.flug_unlock, () => { G.gear.glider = true; save(); });
+      } else say(TX[e.key]);
+      break;
+    }
     case 'gear': {
       takenIds.add(eid(e)); sfx.pick();
       G.gear[e.gear] = true;
@@ -575,7 +649,7 @@ function restAt(id, prompt) {
 
 function givePage(n) {
   if (G.pages[n]) return;
-  G.pages[n] = true; sfx.page();
+  G.pages[n] = true; sfx.page(); vib([20, 40, 20]);
   toast(TX.toast_page(Object.keys(G.pages).length));
   say(TX.pages[n]);
 }
@@ -1147,6 +1221,18 @@ function drawPlayer() {
   } else {
     cx.fillRect(3, 6 + breathe + (run ? -leg * 0.4 : 0), 3, 8);
   }
+  // paraglider canopy
+  if (p.gliding) {
+    cx.strokeStyle = 'rgba(230,235,240,0.9)'; cx.lineWidth = 1;
+    cx.beginPath(); cx.moveTo(-3, 6); cx.lineTo(-13, -12); cx.moveTo(3, 6); cx.lineTo(13, -12); cx.stroke();
+    cx.fillStyle = '#c0392b';
+    cx.beginPath(); cx.moveTo(-15, -11);
+    cx.quadraticCurveTo(0, -22 - Math.sin(p.idle * 2) * 1.5, 15, -11);
+    cx.quadraticCurveTo(0, -14, -15, -11); cx.closePath(); cx.fill();
+    cx.fillStyle = '#e8e4d0';
+    cx.beginPath(); cx.moveTo(-5, -16.6); cx.quadraticCurveTo(0, -21, 5, -16.6);
+    cx.quadraticCurveTo(0, -18.5, -5, -16.6); cx.closePath(); cx.fill();
+  }
   // head
   cx.fillStyle = '#e8b88a'; cx.beginPath(); cx.arc(0, 0 + breathe, 4.5, 0, 7); cx.fill();
   // beanie
@@ -1166,6 +1252,51 @@ function drawParts() {
   for (const p of parts) {
     cx.fillStyle = p.c;
     cx.fillRect(p.x - cam.x, p.y - cam.y, p.s || 2, p.s || 2);
+  }
+}
+
+// ---- critters: butterflies on the Alm, birds over the valley, larch needles
+const critters = [];
+function critterTick() {
+  if (G.mode !== 'play' || !curZone) return;
+  if (critters.length < 12 && Math.random() < 0.03) {
+    const z = curZone;
+    if ((z.id === 'alm' || z.id === 'gipfel') && G.phase !== 3 && FLOWERS.length) {
+      const f = FLOWERS[(Math.random() * FLOWERS.length) | 0];
+      if (Math.abs(f[0] * TILE - player.x) < VW)
+        critters.push({ k: 'fly', x: f[0] * TILE + 8, y: f[1] * TILE - 12, t: 600, a: Math.random() * 7, hue: Math.random() < 0.5 ? '#e8e4d0' : '#d9a13d' });
+    } else if ((z.id === 'wald' || z.id === 'camp') && G.phase !== 3 && Math.random() < 0.35) {
+      critters.push({ k: 'bird', x: cam.x - 20, y: cam.y + 20 + Math.random() * VH * 0.3, vx: 1 + Math.random(), t: 900 });
+    } else if ((z.id === 'wald' || z.id === 'galerie' || z.id === 'camp') && Math.random() < 0.6) {
+      critters.push({ k: 'needle', x: cam.x + Math.random() * VW, y: cam.y - 8, vy: 0.3 + Math.random() * 0.3, a: Math.random() * 7, t: 700 });
+    }
+  }
+  for (let i = critters.length - 1; i >= 0; i--) {
+    const c = critters[i];
+    c.t--;
+    if (c.k === 'fly') { c.a += 0.07; c.x += Math.sin(c.a) * 0.8; c.y += Math.cos(c.a * 1.7) * 0.5; }
+    else if (c.k === 'bird') { c.x += c.vx; c.y += Math.sin(frame * 0.05 + c.x * 0.01) * 0.3; }
+    else { c.y += c.vy; c.x += Math.sin(frame * 0.04 + c.a) * 0.4; }
+    if (c.t <= 0 || c.x < cam.x - 60 || c.x > cam.x + VW + 60 || c.y > cam.y + VH + 20) critters.splice(i, 1);
+  }
+}
+function drawCritters() {
+  for (const c of critters) {
+    const x = c.x - cam.x, y = c.y - cam.y;
+    if (c.k === 'fly') {
+      const flap = Math.sin(frame * 0.5 + c.a) * 2.5;
+      cx.fillStyle = c.hue;
+      cx.beginPath(); cx.ellipse(x - 1.6, y, 2, 1 + Math.abs(flap) * 0.4, -0.5, 0, 7); cx.fill();
+      cx.beginPath(); cx.ellipse(x + 1.6, y, 2, 1 + Math.abs(flap) * 0.4, 0.5, 0, 7); cx.fill();
+    } else if (c.k === 'bird') {
+      const flap = Math.sin(frame * 0.25 + c.x * 0.05) * 2.5;
+      cx.strokeStyle = G.phase === 3 ? 'rgba(180,190,210,0.5)' : 'rgba(60,65,75,0.7)'; cx.lineWidth = 1.2;
+      cx.beginPath(); cx.moveTo(x - 4, y - flap); cx.quadraticCurveTo(x, y + 1, x + 4, y - flap); cx.stroke();
+    } else {
+      cx.strokeStyle = 'rgba(196,168,90,0.8)'; cx.lineWidth = 1;
+      cx.save(); cx.translate(x, y); cx.rotate(Math.sin(frame * 0.04 + c.a) * 0.8);
+      cx.beginPath(); cx.moveTo(-2, 0); cx.lineTo(2, 0); cx.stroke(); cx.restore();
+    }
   }
 }
 
@@ -1253,7 +1384,7 @@ function drawHUD() {
   // gear icons
   let gx = 12, gy = 44;
   cx.font = '15px sans-serif';
-  for (const g of ['boots', 'jacket', 'lamp', 'kit']) {
+  for (const g of ['boots', 'jacket', 'lamp', 'kit', 'glider']) {
     if (G.gear[g]) {
       cx.fillStyle = 'rgba(20,24,38,0.55)'; roundRect(gx, gy, 26, 26, 7); cx.fill();
       cx.textAlign = 'center'; cx.fillText(GEAR_INFO[g].icon, gx + 13, gy + 14);
@@ -1267,9 +1398,10 @@ function drawHUD() {
   cx.fillStyle = '#f3ecd2'; cx.font = '12px sans-serif'; cx.textAlign = 'center';
   cx.fillText(`📖 ${Object.keys(G.pages).length}/7`, W - 49, 24);
 
-  // map button
+  // map & mute buttons
   BTNS = [];
   addBtn('map', W - 49, 60, 20, '🗺');
+  addBtn('mute', W - 49, 106, 20, muted ? '🔇' : '🔊');
 
   // touch controls
   if (isTouch && (G.mode === 'play' || G.mode === 'dialog')) {
@@ -1341,7 +1473,7 @@ function drawHUD() {
 
 function addBtn(id, x, y, r, label) { BTNS.push({ id, x: x * DPR, y: y * DPR, r: r * DPR, label, lx: x, ly: y, lr: r }); }
 function drawBtn(b) {
-  if (!isTouch && b.id !== 'map') return;
+  if (!isTouch && b.id !== 'map' && b.id !== 'mute') return;
   if (!b.lr || b.lr < 1) return;
   const on = touchState[b.id];
   cx.fillStyle = on ? 'rgba(255,213,79,0.4)' : 'rgba(20,24,38,0.4)';
@@ -1408,6 +1540,13 @@ function drawMap() {
     cx.strokeStyle = 'rgba(90,74,53,0.6)'; cx.lineWidth = 1; cx.stroke();
     cx.fillStyle = '#5a4a35'; cx.font = `${Math.max(8, Math.min(11, z.w * sc * 0.09))}px Georgia, serif`;
     cx.fillText(z.de, ox + (z.x + z.w / 2) * sc, oy + (z.y + z.h / 2) * sc);
+  }
+  // campfires in visited zones
+  cx.font = `${Math.max(9, sc * 14)}px sans-serif`; cx.textAlign = 'center';
+  for (const id in FIRES) {
+    const f = FIRES[id];
+    const fz = ZONES.find(z => f.x >= z.x && f.x < z.x + z.w && f.r - 1 >= z.y && f.r - 1 < z.y + z.h);
+    if (fz && G.visited[fz.id]) cx.fillText('🔥', ox + f.x * sc, oy + (f.r - 1) * sc);
   }
   // player dot
   cx.fillStyle = '#c0392b';
@@ -1520,7 +1659,7 @@ function tick() {
   jumpEdge = (inp.jump && !prevJump) || pendJump; prevJump = inp.jump; pendJump = false;
   actEdge = (inp.act && !prevAct) || pendAct; prevAct = inp.act; pendAct = false;
   upEdge = (inp.up && !prevUp) || pendUp; prevUp = inp.up; pendUp = false;
-  mapEdge = inp.map && !prevMap; prevMap = inp.map;
+  mapEdge = (inp.map && !prevMap) || pendMap; prevMap = inp.map; pendMap = false;
 
   if (G.mode === 'title') { render(); requestAnimationFrame(tick); return; }
   if (G.mode === 'end') { render(); drawEnd(); requestAnimationFrame(tick); anyInputEdge = false; return; }
@@ -1534,6 +1673,7 @@ function tick() {
     if (actEdge && nearInteract) doInteract(nearInteract);
     marmotTick();
     zoneTick();
+    critterTick();
   } else if (G.mode === 'dialog') {
     dialogTick();
   }
@@ -1568,6 +1708,7 @@ function render() {
   for (const f of FLOWERS) drawFlower(f[0], f[1], f[2]);
   drawTiles();
   for (const e of ENTITIES) drawEntity(e);
+  drawCritters();
   drawPlayer();
   drawWaterfall();
   rainTick(pc);
@@ -1575,6 +1716,7 @@ function render() {
   drawParts();
   drawLighting(pc);
   cx.restore();
+  ambientTick(pc);
 
   if (G.mode === 'map') drawMap();
   else drawHUD();
