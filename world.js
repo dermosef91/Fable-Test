@@ -7,7 +7,7 @@
 
 const TILE = 16;
 
-const WORLD_W = 192;
+const WORLD_W = 264;   // x 0..191 the Gamstal · x 192.. the Hinteres Tal (glider country)
 const WORLD_H = 80;
 
 function buildWorld() {
@@ -37,6 +37,12 @@ function buildWorld() {
     fill(x, top, 1, Math.max(1, 70 - top), 1);
     fill(x, top, 1, 2, 2); // loose scree skin
   }
+  // das Schartl: a stepped notch from the Lärchenschatten up through the rock,
+  // opening onto a flat saddle terrace mid-slope — the boots-free way to the
+  // east forest. The climb to the Alm continues above it: one deliberate jump
+  // onto the scree slab at x128/129, which still demands proper boots.
+  for (let i = 0; i <= 8; i++) carve(111 + 2 * i, 67 - i, 2, 3);
+  carve(129, 58, 8, 3); // the saddle terrace (floor y61, slab roof at x129)
 
   // --- gorge ledges (lower climb: valley -> Alm shelf) --------------------
   fill(3, 66, 4, 1, 1);
@@ -69,6 +75,15 @@ function buildWorld() {
   fill(106, 69, 2, 1, 6);  // nettles in the larch shade
   fill(95, 13, 1, 15, 5);  // via ferrata cable up the headwall
   fill(0, 0, 2, WORLD_H, 1);            // west wall
+
+  // --- Hinteres Tal (post-finale glider country, x192..) --------------------
+  fill(190, 0, 2, WORLD_H, 1);   // the massif's east face
+  carve(190, 5, 2, 7);           // the slip behind the Flugschule sign (y5..11)
+  fill(192, 12, 6, 1, 1);        // launch ledge / Startplatz
+  fill(193, 13, 1, 57, 5);       // fixed cable back up the face (for the way home)
+  fill(218, 68, 5, 2, 1);        // grassy knoll
+  fill(244, 66, 4, 4, 1);        // chapel knoll
+  fill(231, 70, 8, 3, 4);        // the lake (carved into valley floor)
   fill(WORLD_W - 2, 0, 2, WORLD_H, 1);  // east wall
 
   return g;
@@ -77,11 +92,23 @@ function buildWorld() {
 // The waterfall is a force-field rect, not tiles (it pours over ledges).
 const WATERFALL = { x: 24, y: 29, w: 4, h: 41 }; // tiles
 
+// Thermal columns in the Hinteres Tal — warm air that lifts a glider.
+const THERMALS = [
+  { x: 207, y: 16, w: 4, h: 52 },
+  { x: 226, y: 14, w: 4, h: 54 },
+  { x: 246, y: 18, w: 4, h: 50 },
+];
+
+// The flying course: five rings hung in the air. [tileX, tileY of center]
+const RINGS = [[210, 36], [222, 24], [233, 46], [247, 30], [256, 55]];
+
 // =========================================================================
 // Zones — names show as banners, fill in the paper map, control ambience.
 // First match wins; specific before general.
 // =========================================================================
 const ZONES = [
+  { id: 'start',    x: 188, y: 0,  w: 12, h: 14, de: 'Startplatz',            it: 'Decollo',               outdoor: true },
+  { id: 'hintertal', x: 192, y: 0, w: 72, h: 80, de: 'Hinteres Tal',          it: 'Valle nascosta',        outdoor: true },
   { id: 'gipfel',   x: 150, y: 0,  w: 24, h: 12, de: 'Gipfel',                it: 'Cima Gamsblick',        outdoor: true },
   { id: 'grat',     x: 96,  y: 0,  w: 94, h: 12, de: 'Gratweg',               it: 'Via di cresta',         outdoor: true },
   { id: 'ferrata',  x: 92,  y: 11, w: 6,  h: 18, de: 'Klettersteig „Rosa“',   it: 'Via ferrata «Rosa»',    outdoor: true },
@@ -123,6 +150,8 @@ const ENTITIES = [
 
   // -- Lärchenschatten-Galerie ----------------------------------------------
   { t: 'chestnut', x: 102, r: 70 },
+  { t: 'sign',     x: 109, r: 70, key: 'sign_schartl' },
+  { t: 'sign',     x: 134, r: 61, key: 'sign_sattel' },
 
   // -- Geröllfeld -------------------------------------------------------------
   { t: 'marmot',   x: 140, r: 63 },
@@ -180,6 +209,14 @@ const ENTITIES = [
   { t: 'photo',    x: 180, r: 12, n: 5 },
   { t: 'bench',    x: 182, r: 12 },
   { t: 'sign',     x: 186, r: 12, key: 'sign_flug' },
+
+  // -- Hinteres Tal ----------------------------------------------------------------------
+  { t: 'windsock', x: 196, r: 12 },
+  { t: 'npc',      x: 201, r: 70, who: 'vera' },
+  { t: 'fire',     x: 204, r: 70, id: 'flug', name: 'Feuerstelle der Flugschule' },
+  { t: 'windsock', x: 210, r: 70 },
+  { t: 'chapel',   x: 246, r: 66 },
+  { t: 'sign',     x: 256, r: 70, key: 'sign_talende' },
 ];
 
 // page 1 lives inside the tent; page 7 inside the Gipfelbuch.
@@ -191,12 +228,14 @@ const TREES = [
   [156, 70, 0, 1.0], [164, 70, 1, 0.9], [176, 70, 0, 0.9], [184, 70, 0, 0.8],
   [38, 48, 1, 0.7], [46, 48, 0, 0.8], [102, 48, 0, 1.1],
   [62, 48, 0, 0.6],
+  [213, 70, 1, 0.9], [224, 70, 0, 1.0], [242, 70, 1, 0.8], [245, 66, 1, 0.6], [259, 70, 0, 0.9],
 ];
 
 const FLOWERS = [ // alpenrose & friends on the Alm, edelweiss up top
   [66, 48, 'rose'], [78, 48, 'rose'], [100, 48, 'rose'], [108, 48, 'rose'],
   [110, 12, 'gent'], [134, 12, 'gent'], [152, 12, 'gent'],
   [164, 10, 'edel'], [157, 10, 'edel'],
+  [215, 70, 'gent'], [221, 68, 'rose'], [228, 70, 'gent'], [247, 66, 'gent'], [253, 70, 'rose'],
 ];
 
 // Background rock faces (drawn faded, behind the action — they sell the mountain)
@@ -283,7 +322,9 @@ const TX = {
   ],
 
   // ---- signs ----
-  sign_camp:    ['„Gamsblick-Alm 1h ↗ über Geröllweg · Wasserfall 20 min ↖“', '„Malga 1h · Cascata 20 min“ — und in Filzstift: „Knödel!!“'],
+  sign_camp:    ['„Lärchenwald & Teich → durchs Schartl · Wasserfall 20 min ←“', '„Bosco e laghetto → · Cascata ←“ — und in Filzstift: „Knödel!!“'],
+  sign_schartl: ['„Durchs Schartl → Lärchenwald, Teich, Unterstand.“', '„Attraverso la forcella → bosco e laghetto.“ Die Stufen sind ausgetreten — hier gehen alle durch.'],
+  sign_sattel:  ['„↖ Gamsblick-Alm übers Geröll — NUR mit festen Schuhen! / solo con scarponi!“', '„↙ Schartl: Campingplatz · → Wald & Teich“'],
   sign_almweg:  ['„Wasserfallsteig ↓ — nur für Gämsen und Sture.“', '„Sentiero della cascata — solo per camosci e testardi.“'],
   sign_alm:     ['„Gamsblick-Alm, 1924. Heute: Kastanienwochen!“', '„Malga Gamsblick — settimane della castagna!“'],
   sign_hochband:['„Klettersteig ‚Rosa‘ → · Biwak · Nur mit Set / solo con set!“'],
@@ -295,8 +336,39 @@ const TX = {
     'Hinter dem Schild lehnt ein Paket in Wachstuch. Ein Zettel:',
     '„Für die Enkelin von der Rosa. Der Berg hat dir das Gehen gezeigt —',
     'jetzt zeigen wir dir das Fliegen. — Die Gamstaler Bergfreunde“',
-    'GLEITSCHIRM — halte SPRINGEN in der Luft. · Parapendio: tieni SALTO in aria.',
+    'GLEITSCHIRM — halte SPRINGEN in der Luft, RUNTER zum Sturzflug.',
+    'Und: hinterm Schild ist ein schmaler Durchschlupf frei. Dahinter wartet das Hintere Tal.',
   ],
+  gate_flug: 'Hinterm Schild geht es nur noch hinunter. Ohne Gleitschirm wäre das ein Abschied.',
+  sign_talende: ['„Talende. / Fine valle.“', 'Kleiner, in Kreide: „Wer bis hierher fliegt, hat es verdient, kurz zu sitzen.“'],
+  chapel: [
+    ['', 'Eine winzige Kapelle, kaum größer als ein Heuschober.'],
+    ['', 'Drinnen brennt eine Kerze, die niemand brennen sehen muss. Du lässt sie brennen.'],
+  ],
+  toast_thermal: 'THERMIK! Die warme Luft trägt dich nach oben. · Termica!',
+  toast_ring: n => `Ring ${n}/5 · Anello ${n}/5`,
+  toast_rings_done: 'ALLE RINGE! Zurück zu Vera. · Tutti gli anelli!',
+
+  vera: {
+    first: [
+      ['Vera', 'Na sowas. Rosas Schirm! Den hab ich zuletzt überm Gamstal gesehen, da war ich zehn.'],
+      ['Vera', 'Vera. Flugschule Gamstal — bis jetzt bestand die aus mir und dem Windsack.'],
+      ['Vera', 'Hier hinten steigt die warme Luft in Säulen. Thermik. Flieg hinein und kreise — sie trägt dich nach oben.'],
+      ['Vera', 'Magst eine Übung? Fünf Ringe hängen im Tal. Alle fünf, und du bist offiziell meine erste Flugschülerin.'],
+    ],
+    partial: [
+      ['Vera', 'Noch nicht alle Ringe. Die Thermik ist deine Freundin: reinfliegen, steigen lassen, weiter.'],
+      ['Vera', 'Der hohe Ring überm See ist gemein, ich weiß. Der ist mit Absicht gemein.'],
+    ],
+    done: [
+      ['Vera', 'Alle fünf! Dann bist du hiermit Flugschülerin Nummer eins der Flugschule Gamstal.'],
+      ['Vera', 'Diplom folgt per Post. Knödel gibt es sofort — und der Schirm gehört jetzt wirklich dir.'],
+      ['Vera', 'Rosa wäre… na. Du weißt schon. Flieg noch eine Runde. Für sie.'],
+    ],
+    after: [
+      ['Vera', 'Schöner Stil da oben. Der Windsack ist beeindruckt, und der lobt nie.'],
+    ],
+  },
 
   // ---- Omas Fotos: five 1974 photographs, found where they were taken ----
   photos: [
@@ -352,7 +424,8 @@ const TX = {
       ['Greta', 'Was hast denn da — ein Tagebuch? Zeig her… Rosa Oberhofer?'],
       ['Greta', 'Kind. Rosa Oberhofer und Ida Demetz waren die Ersten, die als Frauen über die Gamswand-Nordkante sind. Wusstest du das nicht?'],
       ['Du', '…Oma hat nie davon erzählt. Sie hat gesagt, sie sei „ein bisschen gewandert“.'],
-      ['Greta', '„Ein bisschen gewandert.“ Typisch Rosa. — Im Wald drüben steht ein Unterstand, da findet sich immer was. Mit Turnschuhen kommst auf dem Geröll keine zwei Meter weit.'],
+      ['Greta', '„Ein bisschen gewandert.“ Typisch Rosa. — Geh nach OSTEN, durchs Schartl hinter dem Lärchenschatten. Im Wald steht ein Unterstand, da findet sich immer was.'],
+      ['Greta', 'Denn mit Turnschuhen kommst du auf dem Geröll keine zwei Meter weit, das sag ich dir gleich.'],
     ],
     boots: [
       ['Greta', 'Schuhe hast du schon mal. Der Geröllweg zur Alm fängt hinterm Teichwald an — immer schön im Tritt bleiben.'],
@@ -452,8 +525,8 @@ const TX = {
   cold_respawn: 'Durchgefroren bis auf die Knochen kehrst du zum letzten Feuer zurück.',
 
   objectives: {
-    start:    'Sieh dich am Campingplatz um',
-    boots:    'Ohne feste Schuhe geht hier nichts — der Unterstand im Wald soll helfen',
+    start:    'Sieh dich am Campingplatz um (Zelt, Greta, Lagerfeuer)',
+    boots:    'Nach OSTEN → durchs Schartl in den Wald: im Unterstand sollen Schuhe sein',
     alm:      'Der Geröllweg zur Gamsblick-Alm ist jetzt machbar',
     chestnut: 'Drei Kastanien für Norbert (Wald & Teich)',
     jacket:   'Der Wasserfallsteig — Gämsen und Sture',
@@ -484,5 +557,5 @@ const GEAR_INFO = {
 };
 
 if (typeof module !== 'undefined') {
-  module.exports = { TILE, WORLD_W, WORLD_H, buildWorld, WATERFALL, ZONES, PHASES, ENTITIES, TREES, FLOWERS, BG_ROCK, TX, GEAR_INFO };
+  module.exports = { TILE, WORLD_W, WORLD_H, buildWorld, WATERFALL, THERMALS, RINGS, ZONES, PHASES, ENTITIES, TREES, FLOWERS, BG_ROCK, TX, GEAR_INFO };
 }

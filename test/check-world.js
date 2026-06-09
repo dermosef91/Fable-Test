@@ -1,6 +1,6 @@
 /* Headless sanity checks for the world geometry.
    Run: node test/check-world.js */
-const { TILE, WORLD_W, WORLD_H, buildWorld, WATERFALL, ZONES, ENTITIES, TREES } = require('../world.js');
+const { TILE, WORLD_W, WORLD_H, buildWorld, WATERFALL, THERMALS, RINGS, ZONES, ENTITIES, TREES } = require('../world.js');
 
 const g = buildWorld();
 const at = (x, y) => (x < 0 || x >= WORLD_W || y < 0 || y >= WORLD_H) ? 1 : g[y * WORLD_W + x];
@@ -55,23 +55,24 @@ ok(at(172, 70) === 4, 'pond under the notch');
 // 5. gorge chimney carved through the upper band
 ok(!solid(at(6, 30)) && !solid(at(6, 35)), 'chimney open at x6');
 // 6. scree slope continuous from valley to Alm shelf
-let prevTop = null, slopeOk = true;
+let prevTop = null, slopeOk = true, breachCols = 0;
 for (let x = 111; x <= 152; x++) {
   let top = 20; // start below the ridge band overhead
   while (top < WORLD_H && !solid(at(x, top))) top++;
+  const expected = 48 + Math.round(((x - 111) * 22) / 42);
+  if (top !== expected || at(x, top) !== 2) { breachCols++; prevTop = top; continue; } // the Schartl breach
   if (prevTop !== null && Math.abs(top - prevTop) > 1) slopeOk = false;
-  if (at(x, top) !== 2) slopeOk = false; // skin is scree
   prevTop = top;
 }
-ok(slopeOk, 'scree slope is a continuous 1-step staircase of scree tiles');
+ok(slopeOk && breachCols <= 6, `scree slope continuous except the Schartl breach (${breachCols} cols)`);
 ok(prevTop >= 69, 'scree base meets the valley');
 // 7. Alm shelf walkable surface at y48 from x33..110 (minus entities)
 let shelf = true;
 for (let x = 33; x <= 110; x++) if (!solid(at(x, 48)) || solid(at(x, 47))) shelf = false;
 ok(shelf, 'Alm shelf walkable x33..110 at y48');
-// 8. valley floor continuous (solid at y70 or water) x2..189
+// 8. valley floor continuous (solid at y70 or water) x2..261, both valleys
 let valley = true;
-for (let x = 2; x <= 189; x++) { const t = at(x, 70); if (!solid(t) && t !== 4 && t !== 3) valley = false; }
+for (let x = 2; x <= 261; x++) { const t = at(x, 70); if (!solid(t) && t !== 4 && t !== 3) valley = false; }
 ok(valley, 'valley floor continuous (ground or water)');
 // 9. lower gorge ledge ladder exists
 for (const [x, y] of [[3, 66], [9, 63], [14, 59], [19, 56], [24, 52], [29, 50]]) ok(solid(at(x, y)), `gorge ledge at ${x},${y}`);
@@ -120,6 +121,42 @@ upperHops.forEach(([a, b], i) => ok(reachable(...a, ...b), `upper gorge hop ${i}
 // 14. pond crossing: bank -> log -> bank
 ok(at(169, 69) === 3 && at(170, 69) === 3, 'pond log present');
 ok(solid(at(166, 70)) && solid(at(174, 70)), 'pond banks solid');
+
+// 15. das Schartl: walkable from the Lärchenschatten (x109) onto the scree,
+//     every step at most 1 tile up / 2 down, with 2+ tiles of headroom
+{
+  // walk-sim: from the gallery floor, step east; each column must offer a
+  // floor within +1 (hop up) / -3 (drop) of the current one, with headroom
+  let walkable = true, f = 70, details = '';
+  for (let x = 110; x <= 152; x++) {
+    let next = null;
+    for (let cand = f - 1; cand <= f + 3; cand++) {
+      if (cand < 1 || cand >= WORLD_H) continue;
+      if (solid(at(x, cand)) && !solid(at(x, cand - 1)) && !solid(at(x, cand - 2))) { next = cand; break; }
+    }
+    if (next === null) { walkable = false; details += ` blocked@x${x}(f${f})`; break; }
+    f = next;
+  }
+  ok(walkable && f >= 69, `Schartl path walkable gallery->forest${details} (ends floor ${f})`);
+  // and the Alm is still boots-gated: above the breach there must be 6+ rows of scree climb
+  let breachX = 152;
+  for (let x = 111; x <= 152; x++) { if (!solid(at(x, 48 + Math.round(((x - 111) * 22) / 42)))) { breachX = x; break; } }
+  ok(breachX >= 125, `scree climb above the Schartl breach still gates the Alm (breach at x${breachX})`);
+}
+
+// 16. Hinteres Tal
+ok(!solid(at(190, 8)) && !solid(at(191, 8)), 'slip behind the Flugschule sign is open (y5..11)');
+ok(solid(at(190, 12)) && solid(at(190, 4)), 'massif face solid above and below the slip');
+ok(solid(at(192, 12)) && solid(at(197, 12)), 'launch ledge present');
+ok(at(193, 13) === 5 && at(193, 69) === 5, 'return cable spans the east face');
+ok(at(234, 70) === 4 && solid(at(230, 70)) && solid(at(239, 70)), 'lake carved with solid banks');
+for (const [rx, ry] of RINGS) ok(!solid(at(rx, ry)), `ring at ${rx},${ry} hangs in air`);
+for (const t of THERMALS) {
+  let clear = true;
+  const cxm = t.x + (t.w >> 1);
+  for (let y = t.y + 2; y < t.y + t.h - 4; y++) if (solid(at(cxm, y))) clear = false;
+  ok(clear, `thermal at x${t.x} has a clear core`);
+}
 
 console.log(fails === 0 ? '\nALL CHECKS PASSED' : `\n${fails} CHECKS FAILED`);
 process.exit(fails ? 1 : 0);

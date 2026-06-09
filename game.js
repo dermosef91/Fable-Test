@@ -36,6 +36,8 @@ function zoneAt(px, py) {
 const inWaterfall = (px, py) =>
   px >= WATERFALL.x * TILE && px < (WATERFALL.x + WATERFALL.w) * TILE &&
   py >= WATERFALL.y * TILE && py < (WATERFALL.y + WATERFALL.h) * TILE;
+const inThermal = (px, py) => THERMALS.some(t =>
+  px >= t.x * TILE && px < (t.x + t.w) * TILE && py >= t.y * TILE && py < (t.y + t.h) * TILE);
 
 // ------------------------------------------------------------------ state --
 const G = {
@@ -44,6 +46,7 @@ const G = {
   gear: {},                   // boots, jacket, lamp, kit, glider
   pages: {},                  // 1..7
   photos: {},                 // 1..5
+  rings: {},                  // 0..4 — the flying course
   gamsSeen: 0,
   marmots: {},
   chestnuts: 0,
@@ -82,7 +85,7 @@ function save() {
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify({
       phase: G.phase, gear: G.gear, pages: G.pages, marmots: G.marmots,
-      photos: G.photos, gamsSeen: G.gamsSeen,
+      photos: G.photos, rings: G.rings, gamsSeen: G.gamsSeen,
       chestnuts: G.chestnuts, chestnutsDone: G.chestnutsDone, knoedel: G.knoedel,
       flags: G.flags, objective: G.objective, lastFire: G.lastFire,
       visited: G.visited, playMin: G.playMin, maxWarmth: player.maxWarmth,
@@ -97,7 +100,7 @@ function loadSave() {
     if (!d) return false;
     Object.assign(G, {
       phase: d.phase, gear: d.gear, pages: d.pages, marmots: d.marmots,
-      photos: d.photos || {}, gamsSeen: d.gamsSeen || 0,
+      photos: d.photos || {}, rings: d.rings || {}, gamsSeen: d.gamsSeen || 0,
       chestnuts: d.chestnuts, chestnutsDone: d.chestnutsDone, knoedel: d.knoedel,
       flags: d.flags, objective: d.objective, lastFire: d.lastFire,
       visited: d.visited, playMin: d.playMin,
@@ -126,7 +129,7 @@ const touchState = { left: false, right: false, up: false, down: false, jump: fa
 let jumpEdge = false, actEdge = false, upEdge = false, mapEdge = false;
 let prevJump = false, prevAct = false, prevUp = false, prevMap = false;
 
-let pendJump = false, pendAct = false, pendUp = false, pendMap = false;
+let pendJump = false, pendAct = false, pendUp = false, pendMap = false, pendUI = null;
 window.addEventListener('keydown', e => {
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) e.preventDefault();
   const k = e.key.toLowerCase();
@@ -184,6 +187,7 @@ cv.addEventListener('touchstart', e => {
     if (b === 'up') pendUp = true;
     if (b === 'mute') toggleMute();
     if (b === 'cont' || b === 'new' || b === 'start') pendTitle = b;
+    if (b && (b === 'album' || b === 'albumBack' || b.startsWith('ph'))) pendUI = b;
   }
   refreshTouch();
   tapAt(e.changedTouches[0]);
@@ -206,6 +210,7 @@ cv.addEventListener('mousedown', e => {
   if (b === 'map') pendMap = true;
   if (b === 'mute') toggleMute();
   if (b === 'cont' || b === 'new' || b === 'start') pendTitle = b;
+  if (b && (b === 'album' || b === 'albumBack' || b.startsWith('ph'))) pendUI = b;
   tapAt(e);
 });
 window.addEventListener('contextmenu', e => e.preventDefault());
@@ -305,6 +310,68 @@ const sfx = {
   fanfare: () => [392, 523, 659, 784, 1047].forEach((f, i) => setTimeout(() => blip(f, 0.35, 'triangle', 0.06), i * 130)),
 };
 
+// ----------------------------------------------------------------- music --
+// A generative alpine tune: plucked notes wandering a phase-tinted scale
+// over a soft drone. No files, ~zero CPU, fades out in the dark.
+const MUS = { next: 0, deg: 0, drone: null, droneGain: null, lastRoot: 0 };
+const MUS_SCALES = [
+  null,
+  { root: 196.00, scale: [0, 2, 4, 7, 9, 12, 14], tempo: 0.95, rest: 0.25 },  // Sat morning: G major pent
+  { root: 174.61, scale: [0, 3, 5, 7, 10, 12], tempo: 1.15, rest: 0.35 },     // rain: F dorian-ish
+  { root: 110.00, scale: [0, 3, 7, 12, 15], tempo: 1.7, rest: 0.55 },         // night: sparse A minor
+  { root: 130.81, scale: [0, 4, 6, 7, 11, 12], tempo: 1.0, rest: 0.2 },       // dawn: C lydian
+  { root: 196.00, scale: [0, 2, 4, 7, 9, 12, 14], tempo: 0.9, rest: 0.25 },   // Sunday: home again
+];
+function pluck(freq, vol, when) {
+  const o = AC.createOscillator(), o2 = AC.createOscillator(), g = AC.createGain();
+  o.type = 'triangle'; o.frequency.value = freq;
+  o2.type = 'sine'; o2.frequency.value = freq * 2.01;
+  const g2 = AC.createGain(); g2.gain.value = 0.3;
+  g.gain.setValueAtTime(0.0001, when);
+  g.gain.exponentialRampToValueAtTime(vol, when + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, when + 1.1);
+  o.connect(g); o2.connect(g2).connect(g); g.connect(AC.destination);
+  o.start(when); o2.start(when);
+  o.stop(when + 1.2); o2.stop(when + 1.2);
+}
+function musicTick() {
+  if (!AC || muted) { if (MUS.droneGain) MUS.droneGain.gain.value *= 0.9; return; }
+  const conf = MUS_SCALES[Math.min(G.phase, 5)] || MUS_SCALES[1];
+  // drone: root + fifth, very quiet
+  if (!MUS.drone) {
+    MUS.drone = [AC.createOscillator(), AC.createOscillator()];
+    MUS.droneGain = AC.createGain(); MUS.droneGain.gain.value = 0;
+    MUS.drone[0].type = 'sine'; MUS.drone[1].type = 'sine';
+    const dg2 = AC.createGain(); dg2.gain.value = 0.5;
+    MUS.drone[0].connect(MUS.droneGain);
+    MUS.drone[1].connect(dg2).connect(MUS.droneGain);
+    MUS.droneGain.connect(AC.destination);
+    MUS.drone[0].start(); MUS.drone[1].start();
+  }
+  const inDark = curZone && curZone.dark;
+  const dTarget = (G.mode === 'play' || G.mode === 'dialog') ? (inDark ? 0.004 : 0.011) : 0.007;
+  MUS.droneGain.gain.value += (dTarget - MUS.droneGain.gain.value) * 0.01;
+  if (MUS.lastRoot !== conf.root) {
+    MUS.lastRoot = conf.root;
+    MUS.drone[0].frequency.setTargetAtTime(conf.root / 2, AC.currentTime, 1.5);
+    MUS.drone[1].frequency.setTargetAtTime(conf.root * 0.75, AC.currentTime, 1.5);
+  }
+  // melody scheduler (skip in the dark — the mountain holds its breath)
+  if (inDark || G.mode === 'title') return;
+  const now = AC.currentTime;
+  if (MUS.next < now - 1) MUS.next = now + 0.1;
+  while (MUS.next < now + 0.35) {
+    if (Math.random() > conf.rest) {
+      MUS.deg += [(-2), -1, -1, 1, 1, 1, 2, 3][(Math.random() * 8) | 0];
+      MUS.deg = Math.max(0, Math.min(conf.scale.length - 1, MUS.deg));
+      const f = conf.root * Math.pow(2, conf.scale[MUS.deg] / 12);
+      pluck(f, 0.035, MUS.next);
+      if (Math.random() < 0.18) pluck(f * 1.5, 0.018, MUS.next + 0.07); // a shy fifth
+    }
+    MUS.next += (0.55 + Math.random() * 0.9) * conf.tempo;
+  }
+}
+
 // ----------------------------------------------------------------- toast --
 function toast(msg) { G.toasts.push({ msg, t: 240 }); if (G.toasts.length > 3) G.toasts.shift(); }
 
@@ -383,7 +450,7 @@ function overlapTileWide(code, pad) {
   return false;
 }
 
-let slipToastCd = 0, darkToastCd = 0, coldToastCd = 0, fallToastCd = 0, cableToastCd = 0;
+let slipToastCd = 0, darkToastCd = 0, coldToastCd = 0, fallToastCd = 0, cableToastCd = 0, gateToastCd = 0;
 let fallStartY = 0, wasGrounded = true;
 
 function physTick() {
@@ -402,7 +469,7 @@ function physTick() {
     p.vx = 0;
     if (inp.left) p.face = -1;
     if (inp.right) p.face = 1;
-    p.vy = (inp.up ? -1.5 : 0) + (inp.down ? 1.5 : 0);
+    p.vy = (inp.up ? -1.7 : 0) + (inp.down ? 1.7 : 0);
     // cling at the cable's top anchor instead of slipping off
     if (p.vy < 0) {
       const ty = Math.floor((p.y + p.vy) / TILE), txc = Math.floor((p.x + p.w / 2) / TILE);
@@ -425,11 +492,17 @@ function physTick() {
   const onOneway = under.includes(3);
 
   if (!p.climbing) {
-    // horizontal
-    const acc = p.swim ? 0.3 : 0.55, mx = p.swim ? 1.4 : 2.3;
+    // horizontal: quick on the ground, floatier in the air, snappy turns
+    const mx = p.swim ? 1.4 : 2.6;
+    let acc = p.swim ? 0.3 : p.grounded ? 0.55 : 0.38;
+    const want = (inp.right ? 1 : 0) - (inp.left ? 1 : 0);
+    if (want !== 0 && p.grounded && Math.sign(p.vx) === -want && Math.abs(p.vx) > 1.4) {
+      acc = 0.95; // skid
+      if (frame % 3 === 0) spawnPart({ x: p.x + (want > 0 ? 0 : p.w), y: p.y + p.h, vx: -want * 1.2, vy: -0.6, g: 0.07, t: 16, c: '#c9bb9d', s: 2 });
+    }
     if (inp.left)  { p.vx = Math.max(p.vx - acc, -mx); p.face = -1; }
     if (inp.right) { p.vx = Math.min(p.vx + acc, mx); p.face = 1; }
-    if (!inp.left && !inp.right) p.vx *= p.grounded ? 0.72 : 0.92;
+    if (!inp.left && !inp.right) p.vx *= p.grounded ? 0.72 : 0.94;
 
     // scree slide (the boots gate)
     p.sliding = 0;
@@ -442,35 +515,58 @@ function physTick() {
       spawnPart({ x: p.x + Math.random() * p.w, y: p.y + p.h, vx: -p.vx * 0.2, vy: -0.4, g: 0.04, t: 18, c: '#cfc1a5', s: 1.5 });
     }
 
-    // jump
-    if (jumpEdge) p.jbuf = 7;
-    if (p.jbuf > 0 && (p.grounded || p.coyote > 0) && !(p.sliding && !G.gear.boots)) {
-      p.vy = p.swim ? -3.2 : -8.4;
+    // jump (from ground, coyote, or straight out of the water)
+    if (jumpEdge) p.jbuf = 8;
+    if (p.jbuf > 0 && (p.grounded || p.coyote > 0 || p.swim) && !(p.sliding && !G.gear.boots)) {
+      p.vy = p.swim ? -5.6 : -8.4;
       p.grounded = false; p.coyote = 0; p.jbuf = 0;
       sfx.jump();
     }
     if (p.jbuf > 0) p.jbuf--;
-    if (!inp.jump && p.vy < -3 && !p.swim) p.vy = -3; // variable height
+    if (!inp.jump && p.vy < -2.5 && !p.swim) p.vy = -2.5; // variable height
 
-    // gravity
+    // gravity: hang at the apex, fall with intent
     if (p.swim) {
       p.vy += 0.12; p.vy = Math.min(p.vy, 1.3);
       if (inp.up) p.vy -= 0.3;
       if (p.vy < -2.2) p.vy = -2.2;
     } else {
-      p.vy += 0.42;
+      const apex = Math.abs(p.vy) < 1.3 && !p.grounded && inp.jump;
+      p.vy += apex ? 0.24 : p.vy > 0 ? 0.5 : 0.42;
       if (p.vy > 9) p.vy = 9;
     }
 
-    // paraglider: hold jump while falling
-    p.gliding = false;
-    if (G.gear.glider && !p.grounded && !p.swim && inp.jump && p.vy > 0.4) {
-      p.gliding = true;
-      p.vy = Math.min(p.vy, 1.05);
-      p.vx += p.face * 0.06;
+    // paraglider: hold jump while falling; down = dive, thermals = lift
+    if (!G.gear.glider || p.grounded || p.swim || !inp.jump) p.gliding = false;
+    else if (!p.gliding && p.vy > 0.4) p.gliding = true;
+    if (p.gliding) {
+      p.vy = Math.min(p.vy, inp.down ? 2.4 : 1.05);
+      if (inThermal(p.x + p.w / 2, p.y + p.h / 2)) {
+        p.vy = Math.max(p.vy - 1.45, -1.6); // ride the warm air up
+        if (!G.flags.thermalMet) { G.flags.thermalMet = true; toast(TX.toast_thermal); }
+      }
+      if (!inp.left && !inp.right) p.vx += p.face * 0.06; // forward trim, steering overrides
       p.vx = Math.max(-2.8, Math.min(2.8, p.vx));
       fallStartY = p.y; // a soft landing, always
       if (Math.random() < 0.25) spawnPart({ x: p.x + (p.face > 0 ? -6 : 14), y: p.y + Math.random() * p.h, vx: -p.face * 1.5, vy: 0, t: 12, c: 'rgba(255,255,255,0.4)', s: 1.5 });
+      // ring course
+      for (let i = 0; i < RINGS.length; i++) {
+        if (G.rings[i]) continue;
+        const rx = RINGS[i][0] * TILE + 8, ry = RINGS[i][1] * TILE;
+        if (Math.abs(p.x + p.w / 2 - rx) < 16 && Math.abs(p.y + p.h / 2 - ry) < 18) {
+          G.rings[i] = true; sfx.pick(); vib(25);
+          const n = Object.keys(G.rings).length;
+          toast(n >= 5 ? TX.toast_rings_done : TX.toast_ring(n));
+          if (n >= 5) sfx.fanfare();
+          for (let k = 0; k < 10; k++) spawnPart({ x: rx, y: ry, vx: Math.cos(k * 0.63) * 2, vy: Math.sin(k * 0.63) * 2, t: 28, c: '#ffd54f', s: 2 });
+        }
+      }
+    }
+
+    // the slip into the Hinteres Tal is glider-only
+    if (!G.gear.glider && p.x + p.w > 189.6 * TILE && p.y < 14 * TILE) {
+      p.x = 189.6 * TILE - p.w; p.vx = 0;
+      if (gateToastCd <= 0) { toast(TX.gate_flug); gateToastCd = 240; }
     }
 
     // waterfall force
@@ -520,7 +616,7 @@ function physTick() {
       if (!landed) p.y = ny;
     } else p.y = ny;
   }
-  if (p.grounded) { p.coyote = 7; fallStartY = p.y; }
+  if (p.grounded) { p.coyote = 8; fallStartY = p.y; }
   else if (p.coyote > 0) p.coyote--;
   if (p.climbing) fallStartY = p.y;
 
@@ -581,7 +677,7 @@ function physTick() {
   if ((G.phase === 3 || G.phase === 4 || p.warmth < 40) && frame % 80 === 0 && !p.swim)
     spawnPart({ x: p.x + p.w / 2 + p.face * 6, y: p.y + 3, vx: p.face * 0.3, vy: -0.25, t: 38, c: 'rgba(235,240,250,0.45)', s: 2.5 });
 
-  slipToastCd--; darkToastCd--; coldToastCd--; fallToastCd--; cableToastCd--;
+  slipToastCd--; darkToastCd--; coldToastCd--; fallToastCd--; cableToastCd--; gateToastCd--;
 }
 
 // =============================================================== INTERACT =
@@ -593,8 +689,8 @@ function findInteract() {
   for (const e of ENTITIES) {
     if (takenIds.has(eid(e))) continue;
     if (e.hide) continue;
-    const types = ['tent', 'fire', 'sign', 'npc', 'gear', 'page', 'chestnut', 'book', 'bench', 'relic', 'plaque', 'cow', 'dog', 'bunker', 'shelter', 'photo'];
-    if (!types.includes(e.t)) continue;
+    const types = ['tent', 'fire', 'sign', 'npc', 'gear', 'page', 'chestnut', 'book', 'bench', 'relic', 'plaque', 'cow', 'dog', 'bunker', 'shelter', 'photo', 'chapel'];
+    if (!types.includes(e.t) || e.present === false) continue;
     const d = Math.hypot(e.x * TILE + 8 - px, e.r * TILE - 14 - py);
     if (d < best) { best = d; nearInteract = e; }
   }
@@ -649,6 +745,7 @@ function doInteract(e) {
     case 'bench': say(TX.bench, () => { player.warmth = Math.min(player.maxWarmth, player.warmth + 50); }); break;
     case 'relic': say(TX.relic); break;
     case 'plaque': say(TX.plaque); break;
+    case 'chapel': say(TX.chapel); break;
     case 'bunker': say(TX.bunker_look); break;
     case 'shelter': say(TX.shelter_look); break;
     case 'book': finale(); break;
@@ -704,6 +801,18 @@ function talkTo(who) {
         });
       });
     } else say(t.partial);
+  } else if (who === 'vera') {
+    const t = TX.vera;
+    const n = Object.keys(G.rings).length;
+    if (G.flags.flugschein) say(t.after);
+    else if (!G.flags.veraMet) { G.flags.veraMet = true; say(t.first); }
+    else if (n >= 5) {
+      say(t.done, () => {
+        G.flags.flugschein = true;
+        player.warmth = player.maxWarmth;
+        sfx.fanfare(); save();
+      });
+    } else say(t.partial);
   }
 }
 
@@ -722,11 +831,75 @@ function finale() {
 }
 function givePageSilent(n) { if (!G.pages[n]) { G.pages[n] = true; toast(TX.toast_page(Object.keys(G.pages).length)); } }
 
+// ---- rings & thermals (Hinteres Tal) ---------------------------------------
+function drawRings() {
+  for (let i = 0; i < RINGS.length; i++) {
+    if (G.rings[i]) continue;
+    const x = RINGS[i][0] * TILE + 8 - cam.x, y = RINGS[i][1] * TILE - cam.y;
+    if (x < -30 || x > VW + 30) continue;
+    const bob = Math.sin(frame * 0.05 + i * 1.3) * 3;
+    cx.strokeStyle = '#ffd54f'; cx.lineWidth = 3;
+    cx.globalAlpha = 0.9;
+    cx.beginPath(); cx.ellipse(x, y + bob, 11, 14, 0, 0, 7); cx.stroke();
+    cx.strokeStyle = 'rgba(255,213,79,0.35)'; cx.lineWidth = 7;
+    cx.beginPath(); cx.ellipse(x, y + bob, 11, 14, 0, 0, 7); cx.stroke();
+    cx.globalAlpha = 1;
+  }
+}
+function drawThermals() {
+  if (cam.x + VW < THERMALS[0].x * TILE) return;
+  cx.save();
+  for (const t of THERMALS) {
+    const x = t.x * TILE - cam.x, w = t.w * TILE;
+    if (x > VW || x + w < 0) continue;
+    const y0 = t.y * TILE - cam.y, y1 = (t.y + t.h) * TILE - cam.y;
+    cx.strokeStyle = 'rgba(255,255,255,0.18)'; cx.lineWidth = 1.5;
+    for (let i = 0; i < 3; i++) {
+      const px2 = x + w * (0.25 + i * 0.25);
+      cx.beginPath();
+      for (let yy = Math.max(0, y0); yy < Math.min(VH, y1); yy += 8) {
+        const sway = Math.sin(yy * 0.05 + frame * 0.06 + i * 2) * 5;
+        if (yy === Math.max(0, y0)) cx.moveTo(px2 + sway, yy); else cx.lineTo(px2 + sway, yy);
+      }
+      cx.stroke();
+    }
+    if (Math.random() < 0.25) spawnPart({ x: t.x * TILE + Math.random() * w, y: Math.min((t.y + t.h) * TILE, cam.y + VH), vx: 0, vy: -1.6 - Math.random(), t: 50, c: 'rgba(255,250,230,0.5)', s: 2 });
+  }
+  cx.restore();
+}
+
+// ---- NPC day schedules ------------------------------------------------------
+const NPCS = {};
+for (const e of ENTITIES) {
+  if (e.t === 'npc') NPCS[e.who] = e;
+  if (e.t === 'dog') NPCS.dog = e;
+  if (e.t === 'cow') NPCS.cow = e;
+}
+function npcTick() {
+  const ph = G.phase;
+  // Greta: mornings by the fire, gone at night, strolls with Strolch after the storm
+  const g = NPCS.greta;
+  if (ph >= 4) g.x = 100 + Math.sin(frame * 0.004) * 11;
+  else if (ph === 3) g.x = 73;
+  else g.x = 74;
+  // Strolch trails her
+  NPCS.dog.x = g.x + 2.5 + Math.sin(frame * 0.013) * 1.2;
+  // Norbert: in the hut at night (windows lit), chopping wood on Sunday
+  const n = NPCS.norbert;
+  n.present = ph !== 3;
+  n.x = ph >= 5 ? 79 : ph === 4 ? 93 : 90;
+  // the cow drifts, unbothered
+  NPCS.cow.x = 72 + Math.sin(frame * 0.0025) * 4;
+}
+
 // ---- the Gams: appears near your next objective, bounds away when crowded --
 const gams = { x: 0, y: 0, stage: '', fleeT: 0, hidden: false, met: false, restSaid: false };
 function gamsSpot() {
   if (G.flags.finale) return { x: 184, r: 12, stage: 'rest' };
-  if (!G.gear.boots) return { x: 157, r: 70, stage: 'boots' };
+  if (!G.gear.boots) {
+    // first it waits at the Schartl, then deeper in the forest
+    return player.x < 118 * TILE ? { x: 108, r: 70, stage: 'boots1' } : { x: 157, r: 70, stage: 'boots2' };
+  }
   if (!G.chestnutsDone) return { x: 116, r: 48, stage: 'alm' };
   if (!G.gear.jacket) return null;
   if (!G.gear.lamp) return { x: 35, r: 47, stage: 'falls' };
@@ -1213,7 +1386,39 @@ function drawEntity(e) {
       cx.beginPath(); cx.arc(x, y - 4 + bob * 0.5, 6, Math.PI * 1.2, Math.PI * 1.8); cx.stroke(); // burr hint
       break;
     }
+    case 'windsock': {
+      const wind = Math.sin(frame * 0.04 + e.x) * 0.25 + 0.75;
+      cx.strokeStyle = '#8a8576'; cx.lineWidth = 2;
+      cx.beginPath(); cx.moveTo(x, y); cx.lineTo(x, y - 26); cx.stroke();
+      cx.fillStyle = '#e07b30';
+      cx.beginPath();
+      cx.moveTo(x, y - 26); cx.lineTo(x + 14 * wind, y - 24 + Math.sin(frame * 0.1) * 1.5);
+      cx.lineTo(x + 14 * wind, y - 21); cx.lineTo(x, y - 20); cx.closePath(); cx.fill();
+      cx.fillStyle = '#fff';
+      cx.fillRect(x + 4 * wind, y - 25, 3, 4.5);
+      break;
+    }
+    case 'chapel': {
+      cx.fillStyle = '#d8d2c2'; cx.fillRect(x - 10, y - 18, 20, 18);
+      cx.fillStyle = '#7a5a39';
+      cx.beginPath(); cx.moveTo(x - 13, y - 17); cx.lineTo(x, y - 28); cx.lineTo(x + 13, y - 17); cx.closePath(); cx.fill();
+      cx.strokeStyle = '#7a5a39'; cx.lineWidth = 1.5;
+      cx.beginPath(); cx.moveTo(x, y - 28); cx.lineTo(x, y - 33); cx.moveTo(x - 2.5, y - 31); cx.lineTo(x + 2.5, y - 31); cx.stroke();
+      cx.fillStyle = '#3d3327'; cx.fillRect(x - 3, y - 11, 6, 11);
+      cx.fillStyle = 'rgba(255,216,122,0.9)'; cx.fillRect(x - 1, y - 8, 2, 3); // the candle, always lit
+      break;
+    }
     case 'npc': {
+      if (e.present === false) return;
+      if (e.who === 'vera') {
+        cx.fillStyle = '#b8483a'; cx.fillRect(x - 5, y - 16, 10, 12);  // flight suit
+        cx.fillStyle = '#e8b88a'; cx.beginPath(); cx.arc(x, y - 20, 4.5, 0, 7); cx.fill();
+        cx.fillStyle = '#fff'; cx.beginPath(); cx.arc(x, y - 23, 4.2, Math.PI, 0); cx.fill(); // helmet
+        cx.fillStyle = '#3d3327'; cx.fillRect(x - 4, y - 5, 3, 5); cx.fillRect(x + 1, y - 5, 3, 5);
+        cx.strokeStyle = '#888'; cx.lineWidth = 1; // sunglasses
+        cx.beginPath(); cx.moveTo(x - 3, y - 21); cx.lineTo(x + 3, y - 21); cx.stroke();
+        break;
+      }
       const isG = e.who === 'greta';
       const px2 = x, py2 = y;
       // body
@@ -1230,6 +1435,7 @@ function drawEntity(e) {
       break;
     }
     case 'dog': {
+      if (e.present === false) return;
       const wag = Math.sin(frame * 0.3) * 3;
       cx.fillStyle = '#8a6a44';
       cx.fillRect(x - 7, y - 7, 13, 5);
@@ -1504,6 +1710,17 @@ function drawHUD() {
   cx.fillStyle = '#f3ecd2'; cx.font = '12px sans-serif'; cx.textAlign = 'center';
   cx.fillText(`📖 ${Object.keys(G.pages).length}/7`, W - 49, 24);
 
+  // persistent objective line (so nobody is ever lost)
+  if (G.mode === 'play' && !G.caption && bannerT <= 120 && G.objective) {
+    cx.font = '11px sans-serif';
+    const ow = Math.min(cx.measureText('Ziel: ' + G.objective).width + 20, W - 200);
+    cx.fillStyle = 'rgba(20,24,38,0.42)'; roundRect(W / 2 - ow / 2, 12, ow, 20, 8); cx.fill();
+    cx.fillStyle = 'rgba(243,236,210,0.85)';
+    cx.save(); cx.beginPath(); cx.rect(W / 2 - ow / 2 + 4, 12, ow - 8, 20); cx.clip();
+    cx.fillText('Ziel: ' + G.objective, W / 2, 23);
+    cx.restore();
+  }
+
   // map & mute buttons
   BTNS = [];
   addBtn('map', W - 49, 60, 20, '🗺');
@@ -1680,7 +1897,16 @@ function drawMap() {
   BTNS = [];
   addBtn('map', W - 49, 60, 20, '✕');
   drawBtn(BTNS[0]);
+  if (Object.keys(G.photos).length) {
+    cx.textBaseline = 'middle';
+    cx.fillStyle = 'rgba(20,24,38,0.55)'; roundRect(mx + 10, my + 8, 92, 26, 8); cx.fill();
+    cx.fillStyle = '#f3ecd2'; cx.font = '12px sans-serif'; cx.textAlign = 'center';
+    cx.fillText('📷 Album', mx + 56, my + 21);
+    BTNS.push({ id: 'album', x: (mx + 56) * DPR, y: (my + 21) * DPR, w: 100 * DPR, h: 34 * DPR, lr: 0 });
+  }
   cx.restore();
+  if (pendUI === 'album') { G.mode = 'album'; }
+  pendUI = null;
 }
 
 // ------------------------------------------------------------ photo mode --
@@ -1725,12 +1951,87 @@ function drawPhoto() {
   }
   cx.restore();
 
+  // in album view, the handwriting on the back shows right away
+  if (G.fromAlbum) {
+    cx.save(); cx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    cx.fillStyle = 'rgba(238,228,198,0.9)'; cx.font = 'italic 12px Georgia, serif'; cx.textAlign = 'center';
+    wrapTextCentered(TX.photos[G.photoN].back, W / 2, H - 64, Math.min(W - 60, 460), 16);
+    cx.restore();
+  }
+
   if (G.photoT > 30 && (anyInputEdge || actEdge || jumpEdge)) {
     anyInputEdge = false;
     const n = G.photoN;
-    G.mode = 'play';
-    say([TX.photos[n].back], () => save());
+    if (G.fromAlbum) { G.fromAlbum = false; G.mode = 'album'; }
+    else { G.mode = 'play'; say([TX.photos[n].back], () => save()); }
   }
+}
+function wrapTextCentered(text, x, y, maxW, lh) {
+  const words = text.split(' ');
+  let line = '';
+  const lines = [];
+  for (const w of words) {
+    if (cx.measureText(line + w).width > maxW && line) { lines.push(line); line = w + ' '; }
+    else line += w + ' ';
+  }
+  lines.push(line);
+  for (const l of lines) { cx.fillText(l.trim(), x, y); y += lh; }
+}
+
+// ------------------------------------------------------------ album mode --
+function drawAlbum() {
+  cx.save();
+  cx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  const W = cv.width / DPR, H = cv.height / DPR;
+  cx.fillStyle = 'rgba(10,12,24,0.88)'; cx.fillRect(0, 0, W, H);
+  cx.fillStyle = '#f3ecd2'; cx.font = 'bold 18px Georgia, serif'; cx.textAlign = 'center';
+  cx.fillText('Omas Fotos · Le fotografie', W / 2, 36);
+
+  BTNS = [];
+  const tw = Math.min(96, (W - 60) / 3.4), th = tw * 1.18;
+  const cols = W > 560 ? 5 : 3;
+  const rows = Math.ceil(5 / cols);
+  const gridW = cols * (tw + 14) - 14;
+  const x0 = (W - gridW) / 2, y0 = Math.max(56, (H - rows * (th + 16)) / 2);
+  cx.textBaseline = 'middle';
+  for (let n = 1; n <= 5; n++) {
+    const c = (n - 1) % cols, r = (n - 1 - c) / cols;
+    const px2 = x0 + c * (tw + 14), py2 = y0 + r * (th + 16);
+    if (G.photos[n]) {
+      cx.save(); cx.translate(px2 + tw / 2, py2 + th / 2); cx.rotate((n % 2 ? -1 : 1) * 0.03);
+      cx.fillStyle = '#f4efe2';
+      cx.shadowColor = 'rgba(0,0,0,0.4)'; cx.shadowBlur = 8;
+      cx.fillRect(-tw / 2, -th / 2, tw, th);
+      cx.shadowBlur = 0;
+      cx.fillStyle = '#c9b28a';
+      const ix = -tw / 2 + 6, iy = -th / 2 + 6, iw = tw - 12, ih = th - 30;
+      cx.fillRect(ix, iy, iw, ih);
+      cx.save(); cx.beginPath(); cx.rect(ix, iy, iw, ih); cx.clip();
+      cx.save(); cx.scale(0.42, 0.42); drawPhotoScene(n, ix / 0.42, iy / 0.42, iw / 0.42, ih / 0.42); cx.restore();
+      cx.restore();
+      cx.fillStyle = '#5a4a35'; cx.font = '9px Georgia, serif';
+      cx.fillText('1974 · ' + n, 0, th / 2 - 12);
+      cx.restore();
+      BTNS.push({ id: 'ph' + n, x: (px2 + tw / 2) * DPR, y: (py2 + th / 2) * DPR, w: tw * DPR, h: th * DPR, lr: 0 });
+    } else {
+      cx.strokeStyle = 'rgba(243,236,210,0.3)'; cx.lineWidth = 1.5; cx.setLineDash([4, 4]);
+      cx.strokeRect(px2, py2, tw, th); cx.setLineDash([]);
+      cx.fillStyle = 'rgba(243,236,210,0.4)'; cx.font = '22px Georgia, serif';
+      cx.fillText('?', px2 + tw / 2, py2 + th / 2);
+    }
+  }
+  cx.fillStyle = 'rgba(243,236,210,0.6)'; cx.font = '12px sans-serif';
+  cx.fillText('Antippen zum Ansehen · tocca per vedere', W / 2, H - 22);
+  addBtn('albumBack', W - 49, 60, 20, '✕');
+  drawBtn(BTNS[BTNS.length - 1]);
+  cx.restore();
+
+  if (pendUI === 'albumBack' || mapEdge) { G.mode = 'play'; }
+  else if (pendUI && pendUI.startsWith('ph')) {
+    const n = +pendUI.slice(2);
+    if (G.photos[n]) { G.mode = 'photo'; G.photoN = n; G.photoT = 0; G.fromAlbum = true; }
+  }
+  pendUI = null;
 }
 function drawPhotoScene(n, ix, iy, iw, ih) {
   // tiny sepia dioramas, drawn like memories
@@ -1862,11 +2163,11 @@ function drawEnd() {
   const mins = Math.round(G.playMin);
   const lines = [
     `Wanderzeit: ${mins} min`,
-    `Tagebuchseiten: ${Object.keys(G.pages).length}/7`,
-    `Omas Fotos: ${Object.keys(G.photos).length}/5`,
+    `Tagebuchseiten: ${Object.keys(G.pages).length}/7 · Omas Fotos: ${Object.keys(G.photos).length}/5`,
     `Murmeltiere: ${Object.keys(G.marmots).length}/5 · Gams gesehen: ${G.gamsSeen}×`,
     `Zinnensprung: ${G.flags.zinnensprung ? 'JA!' : 'noch nicht…'}`,
     `Knödel: ${G.knoedel ? 'die besten deines Lebens' : 'verpasst?!'}`,
+    `Flugschule: ${G.flags.flugschein ? 'FLUGSCHÜLERIN NR. 1' : G.gear.glider ? `Ringe ${Object.keys(G.rings).length}/5` : 'demnächst…'}`,
   ];
   lines.forEach((l, i) => cx.fillText(l, W / 2, H * 0.42 + i * 24));
   cx.fillStyle = '#ffd54f';
@@ -1897,6 +2198,7 @@ function tick() {
   if (G.mode === 'title') { render(); requestAnimationFrame(tick); return; }
   if (G.mode === 'end') { render(); drawEnd(); requestAnimationFrame(tick); anyInputEdge = false; return; }
   if (G.mode === 'photo') { render(); drawPhoto(); requestAnimationFrame(tick); anyInputEdge = false; return; }
+  if (G.mode === 'album') { render(); drawAlbum(); requestAnimationFrame(tick); anyInputEdge = false; return; }
 
   if (mapEdge && (G.mode === 'play' || G.mode === 'map')) G.mode = G.mode === 'map' ? 'play' : 'map';
 
@@ -1907,6 +2209,7 @@ function tick() {
     if (actEdge && nearInteract) doInteract(nearInteract);
     marmotTick();
     gamsTick();
+    npcTick();
     zoneTick();
     critterTick();
   } else if (G.mode === 'dialog') {
@@ -1942,7 +2245,9 @@ function render() {
   for (const t of TREES) drawTree(t[0], t[1], t[2], t[3]);
   for (const f of FLOWERS) drawFlower(f[0], f[1], f[2]);
   drawTiles();
+  drawThermals();
   for (const e of ENTITIES) drawEntity(e);
+  drawRings();
   drawGams();
   drawCritters();
   drawPlayer();
@@ -1953,6 +2258,7 @@ function render() {
   drawLighting(pc);
   cx.restore();
   ambientTick(pc);
+  musicTick();
 
   if (G.mode === 'map') drawMap();
   else drawHUD();
