@@ -116,6 +116,7 @@ const ENTITIES = [
   { t: 'spawn',    x: 61,  r: 70 },
   { t: 'tent',     x: 57,  r: 70 },
   { t: 'fire',     x: 64,  r: 70, id: 'camp', name: 'Lagerfeuer' },
+  { t: 'photo',    x: 66,  r: 70, n: 1 },
   { t: 'sign',     x: 68,  r: 70, key: 'sign_camp' },
   { t: 'npc',      x: 74,  r: 70, who: 'greta' },
   { t: 'dog',      x: 76,  r: 70 },
@@ -129,6 +130,7 @@ const ENTITIES = [
 
   // -- Lärchenwald & Teich ----------------------------------------------------
   { t: 'shelter',  x: 160, r: 70 },
+  { t: 'photo',    x: 166, r: 70, n: 2 },
   { t: 'gear',     x: 162, r: 70, gear: 'boots', key: 'get_boots' },
   { t: 'chestnut', x: 178, r: 70 },
   { t: 'page',     x: 181, r: 70, n: 2 },
@@ -140,6 +142,7 @@ const ENTITIES = [
   { t: 'sign',     x: 64,  r: 48, key: 'sign_alm' },
   { t: 'cow',      x: 72,  r: 48 },
   { t: 'hut',      x: 84,  r: 48 },
+  { t: 'photo',    x: 81,  r: 48, n: 3 },
   { t: 'npc',      x: 90,  r: 48, who: 'norbert' },
   { t: 'fire',     x: 96,  r: 48, id: 'alm', name: 'Feuerstelle der Alm' },
   { t: 'page',     x: 105, r: 48, n: 3 },
@@ -152,6 +155,7 @@ const ENTITIES = [
   { t: 'bunker',   x: 14,  r: 28 },
   { t: 'page',     x: 17,  r: 28, n: 5 },
   { t: 'fire',     x: 20,  r: 28, id: 'stellung', name: 'Feuerstelle an der Stellung' },
+  { t: 'photo',    x: 22,  r: 28, n: 4 },
   { t: 'marmot',   x: 24,  r: 28 },
 
   // -- Stollen ---------------------------------------------------------------------
@@ -173,6 +177,7 @@ const ENTITIES = [
   { t: 'fence',    x: 175, r: 12 },
   { t: 'cross',    x: 161, r: 10 },
   { t: 'book',     x: 159, r: 10 },
+  { t: 'photo',    x: 180, r: 12, n: 5 },
   { t: 'bench',    x: 182, r: 12 },
   { t: 'sign',     x: 186, r: 12, key: 'sign_flug' },
 ];
@@ -292,6 +297,28 @@ const TX = {
     'jetzt zeigen wir dir das Fliegen. — Die Gamstaler Bergfreunde“',
     'GLEITSCHIRM — halte SPRINGEN in der Luft. · Parapendio: tieni SALTO in aria.',
   ],
+
+  // ---- Omas Fotos: five 1974 photographs, found where they were taken ----
+  photos: [
+    null,
+    { title: 'Zelt unter den Lärchen',
+      back: 'Auf der Rückseite, Bleistift: „Tag eins. Ida hat die Heringe vergessen. Wir haben gelacht und Steine genommen.“' },
+    { title: 'Ida am Teich, barfuß',
+      back: 'Rückseite: „Sie sagt, das Wasser ist warm. Sie lügt.“' },
+    { title: 'Toni vor der Hütte, verlegen',
+      back: 'Rückseite: „Er hat uns Knödel eingepackt. Für den Gipfel, hat er gesagt. Als wäre es ausgemacht, dass wir ankommen.“' },
+    { title: 'Eine Kerze in der Stellung',
+      back: 'Rückseite: „Für die Buben, auf beiden Seiten. Ida war ganz still. Ich auch.“' },
+    { title: 'Drei bleiche Zinnen im Abendlicht',
+      back: 'Rückseite: „Drei Schwestern, sagt Ida. Wie wir, nur älter.“' },
+  ],
+  toast_photo: n => `Omas Foto gefunden! (${n}/5) · Fotografia trovata!`,
+  photo_hint: 'Hier hat jemand fotografiert — das Licht stimmt genau.',
+  photo_close: 'Tippen · tocca',
+
+  // ---- the Gams ----
+  toast_gams: 'Eine Gams! Sie kennt den Weg — Oma hat es geschrieben.',
+  gams_rest: ['', 'Die Gams bleibt liegen und schaut dich an. Kein Fluchttier mehr, heute nicht. Ihr habt Zeit.'],
 
   // ---- the finale ----
   finale_arrive: [
@@ -436,6 +463,10 @@ const TX = {
     summit:   'Der Klettersteig „Rosa“. Erstes Licht. Der Gipfel.',
     free:     'Das Wochenende gehört dir. (7 Seiten? 5 Murmeltiere? Der Zinnensprung?)',
   },
+
+  title_continue: 'Weiterwandern · continua',
+  title_new: 'Neu beginnen · ricomincia',
+  title_start: 'Los geht\'s · si parte',
 
   ending_title: 'GIPFELBUCH',
   ending_sub: 'Demo-Ende · Fine della demo',

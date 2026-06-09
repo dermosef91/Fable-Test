@@ -41,10 +41,14 @@ sunrise summit.
    after your grandmother. Bivouac, first light, **climb to the summit**.
 5. The Gipfelbuch knows the rest.
 
-Optional: 7 journal pages, 5 marmots, one bench with a view of three pale
-peaks, and the Zinnensprung. After the credits, revisit the *Flugschule
-Gamstal* sign — the Bergfreunde left you a **Gleitschirm** (hold jump in
-mid-air to glide), turning the whole mountain into free-roam airspace.
+Optional: 7 journal pages, **5 of Oma's 1974 photographs** (find the spots
+where they were taken — sepia polaroids with her handwriting on the back),
+5 marmots, one bench with a view of three pale peaks, and the Zinnensprung.
+A **Gams** (chamois) keeps appearing just ahead on the route — "the way the
+chamois take", as the journal says — and bounds off when you get close.
+After the credits, revisit the *Flugschule Gamstal* sign — the Bergfreunde
+left you a **Gleitschirm** (hold jump in mid-air to glide), turning the
+whole mountain into free-roam airspace.
 
 ## Controls
 
