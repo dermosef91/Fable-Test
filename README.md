@@ -6,8 +6,8 @@ A mobile-friendly, story-driven 2D metroidvania demo — set not in a ruined
 castle or an alien cave, but on **one ordinary mountain in modern-day
 Südtirol, over one camping weekend**.
 
-**▶ Play it:** open `index.html` in any browser (no build, no dependencies),
-or serve the folder (`npx serve .`) and open it on your phone.
+**▶ Play it now:** https://dermosef91.github.io/Fable-Test/ — or open
+`index.html` in any browser (no build, no dependencies).
 
 ---
 
@@ -42,7 +42,9 @@ sunrise summit.
 5. The Gipfelbuch knows the rest.
 
 Optional: 7 journal pages, 5 marmots, one bench with a view of three pale
-peaks, and the Zinnensprung.
+peaks, and the Zinnensprung. After the credits, revisit the *Flugschule
+Gamstal* sign — the Bergfreunde left you a **Gleitschirm** (hold jump in
+mid-air to glide), turning the whole mountain into free-roam airspace.
 
 ## Controls
 
@@ -63,7 +65,10 @@ Autosaves at every campfire (localStorage). Resting restores warmth.
 - `game.js` — engine: physics (coyote time, one-way planks, swimming,
   cable climbing, scree sliding, waterfall force fields), camera, day-phase
   sky, dynamic lighting (headlamp/campfires), particles, touch UI, dialog,
-  paper map, save system, synth SFX (WebAudio, no audio files).
+  paper map, save system, synth SFX and a morphing ambience bed — ridge
+  wind, rain hiss, waterfall roar, cave rumble, birdsong, crickets, a
+  distant cowbell — all WebAudio, no audio files. Butterflies, birds and
+  falling larch needles keep the world alive; haptics on mobile.
 - `test/check-world.js` — 180+ headless assertions: every entity has floor
   and headroom, every gate is sealed except its intended route, every jump
   in the gorge ladders is reachable under the real physics arc.

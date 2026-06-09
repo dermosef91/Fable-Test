@@ -286,6 +286,13 @@ const TX = {
   sign_notch:   ['„ACHTUNG SCHARTE! / ATTENZIONE!“', 'Kleiner, in Bleistift: „Der Zinnensprung. Unten ist der Teich. Angeblich.“'],
   sign_flug:    ['„Flugschule Gamstal — demnächst / prossimamente.“', 'Der Berg ist hier noch nicht fertig.'],
 
+  flug_unlock: [
+    'Hinter dem Schild lehnt ein Paket in Wachstuch. Ein Zettel:',
+    '„Für die Enkelin von der Rosa. Der Berg hat dir das Gehen gezeigt —',
+    'jetzt zeigen wir dir das Fliegen. — Die Gamstaler Bergfreunde“',
+    'GLEITSCHIRM — halte SPRINGEN in der Luft. · Parapendio: tieni SALTO in aria.',
+  ],
+
   // ---- the finale ----
   finale_arrive: [
     'Das Gipfelkreuz. Eine Blechdose, festgebunden mit Reepschnur.',
@@ -442,6 +449,7 @@ const GEAR_INFO = {
   jacket: { icon: '🧥', de: 'Regenjacke' },
   lamp:   { icon: '🔦', de: 'Stirnlampe' },
   kit:    { icon: '🧗', de: 'Klettersteigset' },
+  glider: { icon: '🪂', de: 'Gleitschirm' },
 };
 
 if (typeof module !== 'undefined') {
