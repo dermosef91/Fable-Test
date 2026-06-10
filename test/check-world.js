@@ -47,9 +47,9 @@ for (let x = 30; x <= 71; x++) {
 ok(corridor, 'tunnel corridor passable x30..71');
 ok(roofed, 'tunnel has a ceiling');
 // 4. notch carved (the Zinnensprung) with water far below
-ok(!solid(at(172, 12)) && !solid(at(172, 18)), 'ridge notch carved at x172');
+ok(!solid(at(172, 7)) && !solid(at(172, 12)), 'ridge notch carved at x172');
 let clearDrop = true;
-for (let y = 19; y < 70; y++) if (solid(at(172, y)) || at(172, y) === 3) clearDrop = false;
+for (let y = 7; y < 70; y++) if (solid(at(172, y)) || at(172, y) === 3) clearDrop = false;
 ok(clearDrop, 'notch drop column clear to the pond (no log in the way)');
 ok(at(172, 70) === 4, 'pond under the notch');
 // 5. gorge chimney carved through the upper band, lip at its mouth
@@ -87,14 +87,16 @@ for (const [x, y] of [[26, 45], [21, 42], [8, 38], [4, 35], [8, 32], [4, 29]]) o
   for (let x = m.x; x < m.x2 + m.w; x++) for (let y = 38; y <= 41; y++) if (solid(at(x, y))) clear = false;
   ok(clear, 'hoist track is clear of rock');
 }
-// the observer post above the Stellung
-for (const [x, y] of [[12, 25], [7, 22], [12, 19], [6, 16]]) ok(solid(at(x, y)), `lookout ledge at ${x},${y}`);
+// the observer post above the Stellung — a long, airy climb
+for (const [x, y] of [[14, 25], [9, 23], [14, 21], [18, 19], [13, 17], [7, 15], [12, 13], [6, 10]]) ok(solid(at(x, y)) || at(x, y) === 3, `lookout ledge at ${x},${y}`);
 {
   let head = true;
-  for (const [x, y] of [[13, 24], [8, 21], [13, 18], [6, 15]]) if (solid(at(x, y)) || solid(at(x, y - 1))) head = false;
+  for (const [x, y] of [[14, 24], [9, 22], [14, 20], [18, 18], [13, 16], [7, 14], [12, 12], [6, 9]]) if (solid(at(x, y)) || solid(at(x, y - 1))) head = false;
   ok(head, 'lookout ledges have headroom');
 }
-ok(ENTITIES.some(e => e.t === 'gear' && e.gear === 'lamp' && e.r <= 16), 'lamp waits at the observer post (above the tunnel mouth level)');
+ok(ENTITIES.some(e => e.t === 'gear' && e.gear === 'lamp' && e.r <= 10), 'lamp waits at the observer post (above the tunnel mouth level)');
+// one-way plank adds commitment to the climb
+ok(at(18, 19) === 3, 'observer post has a one-way plank at the midpoint');
 // the depot above the tunnel's east mouth
 for (const [x, y] of [[77, 25], [73, 22], [66, 19]]) ok(solid(at(x, y)), `depot ledge/floor at ${x},${y}`);
 ok(!solid(at(66, 17)) && !solid(at(66, 14)) && solid(at(66, 12)), 'depot nook carved with a roof');
@@ -147,10 +149,14 @@ const upperHops = [
 ];
 upperHops.forEach(([a, b], i) => ok(reachable(...a, ...b), `upper gorge hop ${i} reachable`));
 const lookoutHops = [
-  [[16, 28], [14, 25]],
-  [[12, 25], [9, 22]],
-  [[9, 22], [12, 19]],
-  [[12, 19], [9, 16]],
+  [[16, 28], [15, 25]],  // Stellung → first narrow ledge
+  [[14, 25], [10, 23]],  // left step
+  [[10, 23], [15, 21]],  // back right — precision
+  [[15, 21], [19, 19]],  // onto the one-way plank
+  [[18, 19], [14, 17]],  // back left
+  [[13, 17], [8, 15]],   // further left, exposed
+  [[8, 15], [13, 13]],   // back right near the top
+  [[12, 13], [9, 10]],   // onto the lookout shelf
 ];
 lookoutHops.forEach(([a, b], i) => ok(reachable(...a, ...b), `lookout hop ${i} reachable`));
 const depotHops = [
@@ -159,6 +165,33 @@ const depotHops = [
   [[73, 22], [71, 19]],
 ];
 depotHops.forEach(([a, b], i) => ok(reachable(...a, ...b), `depot hop ${i} reachable`));
+// ridge hops: the climb from the shoulder to the summit and down the east side
+const ridgeHops = [
+  // Stage 1 — The Shoulder
+  [[104, 12], [108, 10]],   // entry platform -> first step up
+  // Stage 2 — The Knife Edge
+  [[108, 10], [112, 8]],    // step -> ledge
+  [[112, 8], [117, 6]],     // ledge -> higher
+  [[117, 6], [122, 4]],     // -> knife edge high point
+  [[122, 4], [128, 7]],     // -> deep saddle (big drop!)
+  // Stage 3 — The Summit Block
+  [[128, 7], [133, 5]],     // saddle -> ledge
+  [[133, 5], [137, 3]],     // -> sub-peak
+  [[137, 3], [143, 6]],     // -> deep saddle (big drop!)
+  [[143, 6], [148, 4]],     // -> ledge
+  [[148, 4], [153, 2]],     // -> the pinnacle!
+  [[153, 2], [157, 3]],     // pinnacle -> summit plateau (short drop, walk across)
+  // Stage 4 — East Ridge descent
+  [[165, 3], [169, 5]],     // summit -> descent ledge
+  [[169, 5], [173, 7]],     // -> pre-notch
+  [[176, 7], [178, 7]],     // post-notch -> same level
+  [[178, 7], [184, 9]],     // -> lower ledge
+  [[184, 9], [189, 11]],    // -> final ledge
+];
+ridgeHops.forEach(([a, b], i) => ok(reachable(...a, ...b), `ridge hop ${i} reachable`));
+// summit plateau is solid and has headroom
+ok(solid(at(159, 3)) && solid(at(163, 3)), 'summit plateau solid at key points');
+ok(!solid(at(159, 2)) && !solid(at(163, 2)), 'summit has headroom');
 
 // 14. pond crossing: bank -> log -> bank
 ok(at(169, 69) === 3 && at(170, 69) === 3, 'pond log present');

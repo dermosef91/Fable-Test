@@ -42,6 +42,18 @@ global.window = {
 global.screen = { orientation: null };
 Object.defineProperty(global, 'navigator', { value: {}, configurable: true });
 global.localStorage = { getItem: () => null, setItem() {}, removeItem() {} };
+global.Image = class {
+  constructor() {
+    this.onload = null;
+    this.onerror = null;
+    this._src = '';
+  }
+  set src(v) {
+    this._src = v;
+    setTimeout(() => { if (this.onload) this.onload(); }, 1);
+  }
+  get src() { return this._src; }
+};
 const rafQueue = [];
 global.requestAnimationFrame = cb => { rafQueue.push(cb); return rafQueue.length; };
 

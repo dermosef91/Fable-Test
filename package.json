@@ -1,0 +1,14 @@
+{
+  "name": "gipfelbuch",
+  "version": "1.0.0",
+  "description": "Ein Wochenende in Südtirol · Un fine settimana in Alto Adige",
+  "main": "index.html",
+  "scripts": {
+    "start": "http-server -p 8080",
+    "dev": "http-server -p 8080",
+    "test": "node test/check-world.js"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}

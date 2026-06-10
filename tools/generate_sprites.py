@@ -5,24 +5,31 @@ GIPFELBUCH — Pixel Sprite Generator
 Generates a set of 5 high-fidelity pixel-art character sprites using
 OpenAI's GPT Image 2 (gpt-image-1 model).
 
-Usage:
-    python tools/generate_sprites.py \
-        --name "Lukas" \
-        --description "Young male hiker, early 20s, messy brown hair, ..." \
-        --api-key "sk-..." \
-        --output-dir sprites/lukas
+All sprites are derived from a shared TEMPLATE image to ensure consistent
+art style, proportions, and pixel density across all characters.
 
-Outputs (all 128×128 px, transparent PNG):
-    1. idle_1.png      — base idle, facing left, semi-profile
-    2. idle_2.png      — subtle breathing variation of idle_1
-    3. walking_1.png   — walking pose, left foot forward
-    4. walking_2.png   — walking pose, right foot forward
-    5. portrait.png    — square portrait, shoulders-up, neutral BG
+Pipeline:
+    1. idle_1  — Template + description → character-specific idle sprite
+    2. idle_2  — idle_1 reference → subtle breathing variation
+    3. walk_1  — idle_1 reference → left foot forward
+    4. walk_2  — idle_1 reference → right foot forward
+    5. portrait — idle_1 reference → shoulders-up portrait
+
+Usage:
+    python tools/generate_sprites.py \\
+        --name "Greta" \\
+        --description "Elderly woman, grey hair in a bun, purple shawl..." \\
+        --api-key "sk-..." \\
+        --output-dir sprites/greta
+
+    # Custom template:
+    python tools/generate_sprites.py \\
+        --template sprites/template/idle_1.png \\
+        ...
 """
 
 import argparse
 import base64
-import json
 import os
 import sys
 import time
@@ -41,16 +48,18 @@ except ImportError:
 OPENAI_API_URL = "https://api.openai.com/v1/images"
 MODEL = "gpt-image-1"  # GPT Image 2
 
-# Master style reference baked into every prompt so the model stays consistent.
+# Style instructions baked into every prompt.
+# The template image defines the actual art style; these words reinforce it.
 STYLE_PREFIX = (
-    "High-fidelity pixel art character sprite, 128×128 pixels, "
-    "retro JRPG style similar to high-res GBA or DS era pixel art. "
-    "Visible individual pixels with clean anti-aliasing on edges. "
-    "Rich color palette with careful shading — not flat, uses 3-4 tonal steps per surface. "
-    "Black pixel outline around the character. "
-    "Fully transparent background (alpha channel). "
+    "Pixel art character sprite for a 2D side-scrolling game. "
+    "Match the EXACT art style, pixel density, proportions, "
+    "pose framing, and canvas layout of the reference image. "
+    "Same chibi/SD body ratio (large head, short body). "
+    "Same pixel size and outline thickness. "
+    "Same shading approach (3-4 tonal steps per surface, black outline). "
+    "Transparent background (alpha channel). "
     "Single character, centered on a transparent canvas. "
-    "The character should fill roughly 70-80% of the canvas height. "
+    "The character should occupy the same area of the canvas as the reference. "
     "IMPORTANT: Do NOT include any text, labels, names, watermarks, "
     "letters, words, captions, or signatures anywhere in the image. "
     "The image must contain ONLY the character sprite with zero text elements. "
@@ -58,96 +67,103 @@ STYLE_PREFIX = (
 
 
 # ---------------------------------------------------------------------------
-# Sprite definitions — each one builds on the previous for consistency
+# Sprite definitions
 # ---------------------------------------------------------------------------
-def get_sprite_prompts(name: str, description: str) -> list[dict]:
-    """Return the ordered list of sprite generation tasks."""
+def get_sprite_prompts(description: str) -> list[dict]:
+    """Return the ordered list of sprite generation tasks.
 
-    # NOTE: We intentionally omit the character *name* from the prompt to
-    # prevent GPT Image from rendering it as text on the sprite.
-    base_desc = (
-        f"Visual description: {description}. "
-    )
+    All prompts intentionally omit the character name to prevent
+    GPT Image from rendering it as text on the sprite.
+    """
+
+    desc = f"Character visual description: {description}. "
 
     return [
         {
             "id": "idle_1",
             "filename": "idle_1.png",
-            "label": "Idle 1 (base)",
+            "label": "Idle 1 (base — from template)",
+            "reference": "template",  # uses the shared template image
             "prompt": (
                 f"{STYLE_PREFIX}"
-                f"{base_desc}"
-                "Pose: standing idle, relaxed posture, facing to the LEFT in a three-quarter / semi-profile view. "
-                "Weight evenly distributed on both feet. Arms resting naturally at sides. "
-                "Subtle personality in the stance — slight slouch or confident lean. "
-                "Lighting from above-left, casting small shadow on the ground plane. "
-                "This is the base reference sprite — make it definitive."
+                f"Redraw the character in the reference image, REPLACING the "
+                f"character's identity with the following new character while "
+                f"keeping the EXACT same art style, pixel density, proportions, "
+                f"pose, and canvas position. "
+                f"{desc}"
+                f"Keep the same idle standing pose (facing left, semi-profile, "
+                f"relaxed posture, weight on both feet). "
+                f"Only the character's appearance changes — clothes, hair, "
+                f"body shape, accessories — everything else stays identical."
             ),
-            "uses_reference": False,
         },
         {
             "id": "idle_2",
             "filename": "idle_2.png",
             "label": "Idle 2 (breathing)",
+            "reference": "idle_1",  # uses the generated idle_1
             "prompt": (
                 f"{STYLE_PREFIX}"
-                f"{base_desc}"
-                "Pose: standing idle EXACTLY like the reference image, but with a subtle breathing animation shift. "
-                "Differences from reference: shoulders raised ~1-2 pixels, chest slightly expanded, "
-                "head tilted 1 pixel, maybe a tiny hair strand shifted. "
-                "Keep everything else — outfit colors, proportions, face, shading — pixel-perfect identical. "
-                "This should look like the next frame in a 2-frame idle animation loop."
+                f"{desc}"
+                "Recreate the reference image with a VERY SUBTLE breathing "
+                "animation shift. This is the second frame of a 2-frame idle loop. "
+                "Differences from reference: shoulders raised ~1-2 pixels, "
+                "chest slightly expanded, maybe a tiny hair movement. "
+                "Keep EVERYTHING else pixel-perfect identical — outfit, colors, "
+                "proportions, face, shading, canvas position."
             ),
-            "uses_reference": True,
         },
         {
             "id": "walking_1",
             "filename": "walking_1.png",
             "label": "Walking 1 (left foot forward)",
+            "reference": "idle_1",
             "prompt": (
                 f"{STYLE_PREFIX}"
-                f"{base_desc}"
-                "Pose: mid-stride walking animation, facing LEFT in three-quarter / semi-profile view. "
-                "LEFT foot is forward, RIGHT foot is behind. "
-                "Left arm swings back, right arm swings forward (natural opposing arm-leg motion). "
+                f"{desc}"
+                "Change the pose to a MID-STRIDE WALKING animation. "
+                "Facing LEFT in three-quarter / semi-profile view. "
+                "LEFT foot forward, RIGHT foot behind. "
+                "Left arm swings back, right arm swings forward. "
                 "Slight forward lean to convey momentum. "
-                "Keep the EXACT same character design, outfit, colors, and proportions as the reference image. "
-                "Same pixel outline style, same shading approach. Only the pose changes."
+                "Keep the EXACT same character design, outfit, colors, "
+                "proportions, pixel style, and shading as the reference."
             ),
-            "uses_reference": True,
         },
         {
             "id": "walking_2",
             "filename": "walking_2.png",
             "label": "Walking 2 (right foot forward)",
+            "reference": "idle_1",
             "prompt": (
                 f"{STYLE_PREFIX}"
-                f"{base_desc}"
-                "Pose: mid-stride walking animation, facing LEFT in three-quarter / semi-profile view. "
-                "RIGHT foot is forward, LEFT foot is behind. "
-                "Right arm swings back, left arm swings forward (natural opposing arm-leg motion). "
+                f"{desc}"
+                "Change the pose to a MID-STRIDE WALKING animation. "
+                "Facing LEFT in three-quarter / semi-profile view. "
+                "RIGHT foot forward, LEFT foot behind. "
+                "Right arm swings back, left arm swings forward. "
                 "Slight forward lean to convey momentum. "
-                "This is the mirror-phase of the walking cycle — the opposite leg/arm from the reference. "
-                "Keep the EXACT same character design, outfit, colors, and proportions as the reference image. "
-                "Same pixel outline style, same shading approach. Only the pose changes."
+                "This is the opposite phase from Walking 1. "
+                "Keep the EXACT same character design, outfit, colors, "
+                "proportions, pixel style, and shading as the reference."
             ),
-            "uses_reference": True,
         },
         {
             "id": "portrait",
             "filename": "portrait.png",
             "label": "Portrait (shoulders-up)",
+            "reference": "idle_1",
             "prompt": (
                 f"{STYLE_PREFIX}"
-                f"{base_desc}"
-                "Framing: PORTRAIT / BUST shot — showing head and shoulders only, cropped below the chest. "
-                "Facing slightly to the left, semi-profile, looking towards the viewer with a calm/neutral expression. "
-                "Neutral single-color background (dark charcoal #2a2a3a or similar muted tone). "
-                "Larger, more detailed rendering of the face — show eyes, eyebrows, mouth clearly. "
-                "Keep the EXACT same character design, colors, and style as the reference sprite. "
-                "This is for a character dialog box / menu portrait."
+                f"{desc}"
+                "PORTRAIT / BUST shot — head and shoulders only, "
+                "cropped below the chest. "
+                "Facing slightly left, semi-profile, calm/neutral expression. "
+                "Neutral dark background (charcoal #2a2a3a). "
+                "Larger, more detailed face — show eyes, eyebrows, mouth. "
+                "Keep the EXACT same character design, colors, and pixel style "
+                "as the reference. This is for a dialog box portrait."
             ),
-            "uses_reference": True,
         },
     ]
 
@@ -155,37 +171,13 @@ def get_sprite_prompts(name: str, description: str) -> list[dict]:
 # ---------------------------------------------------------------------------
 # OpenAI API helpers
 # ---------------------------------------------------------------------------
-def generate_image(prompt: str, api_key: str, size: str = "1024x1024") -> bytes:
-    """Generate an image from a text prompt. Returns raw PNG bytes."""
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
-    }
-    payload = {
-        "model": MODEL,
-        "prompt": prompt,
-        "n": 1,
-        "size": size,
-        "output_format": "png",
-    }
-
-    print(f"    → Calling images/generations …")
-    resp = requests.post(
-        f"{OPENAI_API_URL}/generations",
-        headers=headers,
-        json=payload,
-        timeout=180,
-    )
-    resp.raise_for_status()
-    data = resp.json()
-
-    # The response contains base64-encoded image data
-    b64 = data["data"][0]["b64_json"]
-    return base64.b64decode(b64)
-
-
-def edit_image(prompt: str, reference_path: str, api_key: str, size: str = "1024x1024") -> bytes:
-    """Edit/vary an image using a reference. Returns raw PNG bytes."""
+def edit_image(
+    prompt: str,
+    reference_path: str,
+    api_key: str,
+    size: str = "1024x1024",
+) -> bytes:
+    """Edit/transform an image using a reference. Returns raw PNG bytes."""
     headers = {
         "Authorization": f"Bearer {api_key}",
     }
@@ -201,7 +193,7 @@ def edit_image(prompt: str, reference_path: str, api_key: str, size: str = "1024
             "size": size,
         }
 
-        print(f"    → Calling images/edits with reference …")
+        print(f"    → Calling images/edits (ref: {Path(reference_path).name}) …")
         resp = requests.post(
             f"{OPENAI_API_URL}/edits",
             headers=headers,
@@ -216,12 +208,58 @@ def edit_image(prompt: str, reference_path: str, api_key: str, size: str = "1024
     return base64.b64decode(b64)
 
 
+def ensure_transparency(img):
+    """
+    Post-process an image to guarantee transparent background.
+    GPT Image sometimes returns RGB (no alpha) or RGBA with an opaque
+    background of any color. This function samples the corner pixels to
+    determine the background color, then flood-fills from all four corners
+    to remove connected background regions — preserving interior pixels
+    of similar color (e.g. white eyes, highlights).
+    """
+    from PIL import Image
+    import numpy as np
+    from collections import deque
+
+    img = img.convert("RGBA")
+    data = np.array(img)
+    h, w = data.shape[:2]
+
+    bg_mask = np.zeros((h, w), dtype=bool)
+
+    # Flood-fill from each corner using that corner's color as reference
+    for sy, sx in [(0, 0), (0, w - 1), (h - 1, 0), (h - 1, w - 1)]:
+        ref = data[sy, sx, :3].astype(int)
+        # Pixels within 30 RGB units of the corner color
+        diff = np.abs(data[:, :, :3].astype(int) - ref)
+        is_bg = (diff[:, :, 0] < 30) & (diff[:, :, 1] < 30) & (diff[:, :, 2] < 30)
+
+        queue = deque()
+        if is_bg[sy, sx] and not bg_mask[sy, sx]:
+            bg_mask[sy, sx] = True
+            queue.append((sy, sx))
+
+        while queue:
+            y, x = queue.popleft()
+            for dy, dx in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                ny, nx = y + dy, x + dx
+                if 0 <= ny < h and 0 <= nx < w and is_bg[ny, nx] and not bg_mask[ny, nx]:
+                    bg_mask[ny, nx] = True
+                    queue.append((ny, nx))
+
+    removed = int(bg_mask.sum())
+    total = h * w
+    if removed > total * 0.05:  # only apply if >5% is background
+        data[bg_mask, 3] = 0
+        print(f"    ✓ Removed {removed} background pixels ({removed*100//total}%) → transparent")
+
+    return Image.fromarray(data)
+
+
 def resize_to_128(png_bytes: bytes, output_path: str, keep_fullres: bool = False):
     """
-    Downscale the generated image to 128×128 using nearest-neighbor
-    to preserve the pixel-art sharpness, then save.
-    Optionally keeps the full-resolution version alongside.
-    Falls back to saving at original resolution if Pillow is unavailable.
+    Ensure transparent background, then downscale to 128×128 using
+    nearest-neighbor to preserve pixel-art sharpness.
     """
     try:
         from PIL import Image
@@ -229,17 +267,17 @@ def resize_to_128(png_bytes: bytes, output_path: str, keep_fullres: bool = False
 
         img = Image.open(io.BytesIO(png_bytes))
 
-        # Optionally save the full-resolution version
+        # Ensure transparent background
+        img = ensure_transparency(img)
+
         if keep_fullres:
             fullres_path = output_path.replace(".png", "_fullres.png")
             img.save(fullres_path, "PNG")
             print(f"    ✓ Full-res: {fullres_path}")
 
-        # Use NEAREST for crisp pixel art downscale
         img_128 = img.resize((128, 128), Image.NEAREST)
         img_128.save(output_path, "PNG")
     except ImportError:
-        # Fallback: save at original resolution with a warning
         print("    ⚠  Pillow not installed — saving at original resolution.")
         print("       Install with: pip install Pillow")
         with open(output_path, "wb") as f:
@@ -254,6 +292,7 @@ def generate_character_sprites(
     description: str,
     api_key: str,
     output_dir: str,
+    template_path: str,
     size: str = "1024x1024",
     keep_fullres: bool = False,
 ):
@@ -262,36 +301,49 @@ def generate_character_sprites(
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
 
-    sprites = get_sprite_prompts(name, description)
-    base_path = out / sprites[0]["filename"]
+    # Validate template exists
+    if not Path(template_path).is_file():
+        print(f"ERROR: Template not found: {template_path}")
+        sys.exit(1)
+
+    sprites = get_sprite_prompts(description)
+    idle_1_path = str(out / "idle_1.png")
+
+    # Map reference keys to file paths
+    def ref_path(ref_key: str) -> str:
+        if ref_key == "template":
+            return template_path
+        elif ref_key == "idle_1":
+            return idle_1_path
+        else:
+            raise ValueError(f"Unknown reference key: {ref_key}")
 
     generated = []
     for i, sprite in enumerate(sprites):
         print(f"\n[{i+1}/5] Generating: {sprite['label']}")
         print(f"    Output: {out / sprite['filename']}")
 
+        reference = ref_path(sprite["reference"])
+
+        # For sprites 2-5, ensure idle_1 was generated successfully
+        if sprite["reference"] == "idle_1" and "idle_1" not in generated:
+            print("    ✗ Skipped — idle_1 (base) was not generated.")
+            continue
+
         retries = 3
-        success = False
         for attempt in range(retries):
             try:
-                if not sprite["uses_reference"]:
-                    # First sprite: pure generation
-                    raw_png = generate_image(sprite["prompt"], api_key, size)
-                else:
-                    # Subsequent sprites: use idle_1 as reference
-                    raw_png = edit_image(sprite["prompt"], str(base_path), api_key, size)
+                raw_png = edit_image(sprite["prompt"], reference, api_key, size)
 
-                # Downscale to 128×128
-                final_path = str(out / sprite['filename'])
+                final_path = str(out / sprite["filename"])
                 resize_to_128(raw_png, final_path, keep_fullres=keep_fullres)
                 print(f"    ✓ Saved: {final_path}")
-                generated.append(sprite['id'])
-                success = True
+                generated.append(sprite["id"])
                 break
 
             except requests.exceptions.HTTPError as e:
                 print(f"    ✗ API error (attempt {attempt+1}/{retries}): {e}")
-                if hasattr(e, 'response') and e.response is not None:
+                if hasattr(e, "response") and e.response is not None:
                     try:
                         print(f"      Detail: {e.response.json()}")
                     except Exception:
@@ -301,7 +353,10 @@ def generate_character_sprites(
                     print(f"    Retrying in {wait}s …")
                     time.sleep(wait)
                 else:
-                    print(f"    FAILED after {retries} attempts. Skipping {sprite['id']}.")
+                    print(
+                        f"    FAILED after {retries} attempts. "
+                        f"Skipping {sprite['id']}."
+                    )
 
             except Exception as e:
                 print(f"    ✗ Unexpected error: {e}")
@@ -310,14 +365,14 @@ def generate_character_sprites(
                 else:
                     print(f"    FAILED. Skipping {sprite['id']}.")
 
-        # Brief pause between API calls to be polite
+        # Brief pause between API calls
         if i < len(sprites) - 1:
             time.sleep(2)
 
     print(f"\n{'='*60}")
     print(f"Done! {len(generated)}/5 sprites saved to: {out.resolve()}")
     if len(generated) < 5:
-        missing = [s['id'] for s in sprites if s['id'] not in generated]
+        missing = [s["id"] for s in sprites if s["id"] not in generated]
         print(f"Missing: {', '.join(missing)}")
     print(f"{'='*60}")
 
@@ -332,30 +387,41 @@ def main():
         epilog=__doc__,
     )
     parser.add_argument(
-        "--name", "-n",
+        "--name",
+        "-n",
         required=True,
-        help="Character name (e.g. 'Lukas')",
+        help="Character name (for output labeling only — not sent to the model)",
     )
     parser.add_argument(
-        "--description", "-d",
+        "--description",
+        "-d",
         required=True,
         help="Visual description of the character",
     )
     parser.add_argument(
-        "--api-key", "-k",
+        "--api-key",
+        "-k",
         default=os.environ.get("OPENAI_API_KEY"),
         help="OpenAI API key (or set OPENAI_API_KEY env var)",
     )
     parser.add_argument(
-        "--output-dir", "-o",
+        "--template",
+        "-t",
+        default="sprites/template/idle_1.png",
+        help="Path to the template sprite image (default: sprites/template/idle_1.png)",
+    )
+    parser.add_argument(
+        "--output-dir",
+        "-o",
         default="sprites/character",
         help="Output directory for the sprite files (default: sprites/character)",
     )
     parser.add_argument(
-        "--size", "-s",
+        "--size",
+        "-s",
         default="1024x1024",
         choices=["1024x1024", "512x512", "256x256"],
-        help="Generation resolution before downscaling to 128×128 (default: 1024x1024)",
+        help="Generation resolution before downscaling to 128×128",
     )
     parser.add_argument(
         "--keep-fullres",
@@ -375,6 +441,7 @@ def main():
     print(f"║  Model: {MODEL:<48} ║")
     print(f"╚{'═'*58}╝")
     print(f"\nCharacter: {args.name}")
+    print(f"Template:  {args.template}")
     print(f"Output:    {args.output_dir}")
     print(f"Gen size:  {args.size} → 128×128")
 
@@ -383,6 +450,7 @@ def main():
         description=args.description,
         api_key=args.api_key,
         output_dir=args.output_dir,
+        template_path=args.template,
         size=args.size,
         keep_fullres=args.keep_fullres,
     )
