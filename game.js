@@ -474,6 +474,39 @@ function setPhase(p) {
   if (ph) caption([L(ph.caption), L(ph.sub)], 260);
 }
 
+// ---------------------------------------------------------------- movers --
+// the old material hoist: platforms that drift between two anchor points
+function moversTick() {
+  for (const m of MOVERS) {
+    const t = (Math.sin(frame * Math.PI * 2 / m.period + (m.phase || 0)) + 1) / 2;
+    const nx = (m.x + (m.x2 - m.x) * t) * TILE;
+    const ny = (m.y + (m.y2 - m.y) * t) * TILE;
+    m.dx = m.px === undefined ? 0 : nx - m.px;
+    m.dy = m.py === undefined ? 0 : ny - m.py;
+    m.px = nx; m.py = ny;
+  }
+}
+function drawMovers() {
+  for (const m of MOVERS) {
+    if (m.px === undefined) continue;
+    const x = m.px - cam.x, y = m.py - cam.y, w = m.w * TILE;
+    if (x > VW + 40 || x + w < -40) continue;
+    const ropeTop = y - 7 * TILE;
+    cx.strokeStyle = 'rgba(60,55,45,0.8)'; cx.lineWidth = 1.5;
+    cx.beginPath();
+    cx.moveTo(x + 5, y); cx.lineTo(x + 5, ropeTop);
+    cx.moveTo(x + w - 5, y); cx.lineTo(x + w - 5, ropeTop);
+    cx.stroke();
+    cx.fillStyle = '#4a4e55';
+    cx.fillRect(x + 2, ropeTop - 4, 6, 5); cx.fillRect(x + w - 8, ropeTop - 4, 6, 5); // pulleys
+    cx.fillStyle = '#7a5a39'; cx.fillRect(x, y, w, 5);
+    cx.fillStyle = '#5e4429'; cx.fillRect(x, y + 5, w, 2.5);
+    cx.fillStyle = 'rgba(255,255,255,0.15)'; cx.fillRect(x, y, w, 1.2);
+    cx.strokeStyle = '#5e4429'; cx.lineWidth = 1;
+    cx.beginPath(); cx.moveTo(x + w / 2 - 5, y); cx.lineTo(x + w / 2 + 5, y); cx.stroke();
+  }
+}
+
 // ------------------------------------------------------------- particles --
 const parts = [];
 function spawnPart(p) { if (parts.length < 380) parts.push(p); }
@@ -522,6 +555,16 @@ function physTick() {
   // ---- swim check (entry speed recorded before water physics caps it)
   p.swim = overlapTile(4);
   const vyEnter = p.vy;
+
+  // ---- riding the hoist: get carried, stay planted
+  if (p.moverRef) {
+    const m = p.moverRef;
+    if (p.x + p.w > m.px - 2 && p.x < m.px + m.w * TILE + 2 && Math.abs(p.y + p.h - m.py) < 6 && p.vy >= 0) {
+      p.x += m.dx;
+      p.y = m.py - p.h;
+      if (frame % 100 === 0) blip(160, 0.18, 'sawtooth', 0.012, 25); // the old ropes creak
+    } else p.moverRef = null;
+  }
 
   // ---- cable / climbing (small horizontal tolerance for the grab)
   const onCableTile = overlapTile(5) || overlapTileWide(5, 5);
@@ -580,7 +623,7 @@ function physTick() {
     if (jumpEdge) p.jbuf = 8;
     if (p.jbuf > 0 && (p.grounded || p.coyote > 0 || p.swim) && !(p.sliding && !G.gear.boots)) {
       p.vy = p.swim ? -5.6 : -8.4;
-      p.grounded = false; p.coyote = 0; p.jbuf = 0;
+      p.grounded = false; p.coyote = 0; p.jbuf = 0; p.moverRef = null;
       sfx.jump();
     }
     if (p.jbuf > 0) p.jbuf--;
@@ -674,6 +717,16 @@ function physTick() {
           }
         }
       }
+      // the hoist platforms catch you the same way
+      if (!landed) for (const m of MOVERS) {
+        if (m.px === undefined) continue;
+        const top = m.py;
+        if (p.x + p.w > m.px && p.x < m.px + m.w * TILE &&
+            p.y + p.h <= top + 0.01 + p.vy + Math.abs(m.dy || 0) + 2 && ny + p.h >= top) {
+          p.y = top - p.h; landIfFalling(); p.grounded = true; p.vy = 0;
+          p.moverRef = m; landed = true; break;
+        }
+      }
       if (!landed) p.y = ny;
     } else p.y = ny;
   }
@@ -750,7 +803,7 @@ function findInteract() {
   for (const e of ENTITIES) {
     if (takenIds.has(eid(e))) continue;
     if (e.hide) continue;
-    const types = ['tent', 'fire', 'sign', 'npc', 'gear', 'page', 'chestnut', 'book', 'bench', 'relic', 'plaque', 'cow', 'dog', 'bunker', 'shelter', 'photo', 'chapel'];
+    const types = ['tent', 'fire', 'sign', 'npc', 'gear', 'page', 'chestnut', 'book', 'bench', 'relic', 'plaque', 'cow', 'dog', 'bunker', 'shelter', 'photo', 'chapel', 'lookout'];
     if (!types.includes(e.t) || e.present === false) continue;
     if (e.t === 'photo' && !G.flags.finale) continue; // the photo hunt unlocks at the summit
     const d = Math.hypot(e.x * TILE + 8 - px, e.r * TILE - 14 - py);
@@ -808,6 +861,7 @@ function doInteract(e) {
     case 'relic': say(TX.relic); break;
     case 'plaque': say(TX.plaque); break;
     case 'chapel': say(TX.chapel); break;
+    case 'lookout': say(TX.lookout); break;
     case 'bunker': say(TX.bunker_look); break;
     case 'shelter': say(TX.shelter_look); break;
     case 'book': finale(); break;
@@ -964,7 +1018,11 @@ function gamsSpot() {
   }
   if (!G.chestnutsDone) return { x: 116, r: 48, stage: 'alm' };
   if (!G.gear.jacket) return null;
-  if (!G.gear.lamp) return { x: 35, r: 47, stage: 'falls' };
+  if (!G.gear.lamp) {
+    // once you're up at the Stellung, she waits below the observer-post climb
+    return (player.y < 32 * TILE && player.x < 32 * TILE)
+      ? { x: 13, r: 25, stage: 'lamp2' } : { x: 35, r: 47, stage: 'lamp1' };
+  }
   if (!G.gear.kit) return { x: 25, r: 28, stage: 'tunnel' };
   if (!G.flags.biwakDone) return { x: 90, r: 28, stage: 'cable' };
   return { x: 150, r: 12, stage: 'ridge' };
@@ -1358,6 +1416,27 @@ function drawEntity(e) {
       cx.fillText('GAMSBLICK-ALM 1924', x, y - 37);
       // smoke
       if (Math.random() < 0.1) spawnPart({ x: e.x * TILE + 8 + 20, y: e.r * TILE - 50, vx: 0.2, vy: -0.4, t: 60, c: 'rgba(200,200,200,0.5)', s: 3 });
+      break;
+    }
+    case 'lookout': {
+      // sandbag parapet
+      cx.fillStyle = '#a89a78';
+      cx.beginPath(); cx.ellipse(x - 6, y - 3, 5, 3, 0, 0, 7); cx.fill();
+      cx.beginPath(); cx.ellipse(x + 1, y - 3, 5, 3, 0, 0, 7); cx.fill();
+      cx.beginPath(); cx.ellipse(x - 2.5, y - 8, 5, 3, 0, 0, 7); cx.fill();
+      cx.strokeStyle = '#8a7c5e'; cx.lineWidth = 0.8;
+      cx.beginPath(); cx.moveTo(-9 + x, y - 3); cx.lineTo(x + 6, y - 3); cx.stroke();
+      // rusted scope on a tripod
+      cx.strokeStyle = '#6b5a40'; cx.lineWidth = 1.6;
+      cx.beginPath();
+      cx.moveTo(x + 10, y); cx.lineTo(x + 13, y - 9);
+      cx.moveTo(x + 16, y); cx.lineTo(x + 13, y - 9);
+      cx.moveTo(x + 13, y); cx.lineTo(x + 13, y - 9);
+      cx.stroke();
+      cx.save(); cx.translate(x + 13, y - 11); cx.rotate(-0.35);
+      cx.fillStyle = '#5f6259'; cx.fillRect(-5, -2, 12, 4);
+      cx.fillStyle = '#3d4046'; cx.fillRect(6, -2.5, 2.5, 5);
+      cx.restore();
       break;
     }
     case 'bunker': {
@@ -2549,6 +2628,7 @@ function tick() {
 
   if (G.mode === 'play') {
     G.playMin += 1 / 3600;
+    moversTick();
     physTick();
     findInteract();
     if (actEdge && nearInteract) doInteract(nearInteract);
@@ -2590,6 +2670,7 @@ function render() {
   for (const t of TREES) drawTree(t[0], t[1], t[2], t[3]);
   for (const f of FLOWERS) drawFlower(f[0], f[1], f[2]);
   drawTiles();
+  drawMovers();
   drawThermals();
   for (const e of ENTITIES) drawEntity(e);
   drawRings();
