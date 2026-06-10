@@ -1,6 +1,6 @@
 /* Headless sanity checks for the world geometry.
    Run: node test/check-world.js */
-const { TILE, WORLD_W, WORLD_H, buildWorld, WATERFALL, THERMALS, RINGS, ZONES, ENTITIES, TREES } = require('../world.js');
+const { TILE, WORLD_W, WORLD_H, buildWorld, WATERFALL, THERMALS, RINGS, MOVERS, ZONES, ENTITIES, TREES } = require('../world.js');
 
 const g = buildWorld();
 const at = (x, y) => (x < 0 || x >= WORLD_W || y < 0 || y >= WORLD_H) ? 1 : g[y * WORLD_W + x];
@@ -78,7 +78,24 @@ ok(valley, 'valley floor continuous (ground or water)');
 // 9. lower gorge ledge ladder exists
 for (const [x, y] of [[3, 66], [9, 63], [14, 60], [19, 57], [24, 54], [29, 51]]) ok(solid(at(x, y)), `gorge ledge at ${x},${y}`);
 // 10. upper gorge ledge ladder exists
-for (const [x, y] of [[26, 45], [21, 42], [15, 40], [8, 38], [4, 35], [8, 32], [4, 29]]) ok(solid(at(x, y)), `upper ledge at ${x},${y}`);
+for (const [x, y] of [[26, 45], [21, 42], [8, 38], [4, 35], [8, 32], [4, 29]]) ok(solid(at(x, y)), `upper ledge at ${x},${y}`);
+// the hoist bridges the removed middle step
+{
+  const m = MOVERS[0];
+  ok(m && m.y === 40 && m.y2 === 40 && m.x === 13 && m.x2 === 18 && m.w === 3, 'hoist runs x13..21 at row 40');
+  let clear = true; // its whole track must be open air
+  for (let x = m.x; x < m.x2 + m.w; x++) for (let y = 38; y <= 41; y++) if (solid(at(x, y))) clear = false;
+  ok(clear, 'hoist track is clear of rock');
+}
+// the observer post above the Stellung
+for (const [x, y] of [[12, 25], [7, 22], [12, 19], [6, 16]]) ok(solid(at(x, y)), `lookout ledge at ${x},${y}`);
+{
+  let head = true;
+  for (const [x, y] of [[13, 24], [8, 21], [13, 18], [6, 15]]) if (solid(at(x, y)) || solid(at(x, y - 1))) head = false;
+  ok(head, 'lookout ledges have headroom');
+}
+ok(ENTITIES.some(e => e.t === 'gear' && e.gear === 'lamp' && e.r <= 16), 'lamp waits at the observer post (above the tunnel mouth level)');
+ok(ENTITIES.filter(e => e.t === 'chestnut' && e.x < 60).length >= 1, 'a chestnut waits west of the Alm — the quest sends you somewhere new');
 // 11. waterfall column intersects both climbs
 const wf = WATERFALL;
 ok(wf.x <= 25 && wf.x + wf.w >= 27, 'waterfall covers the crossing ledges');
@@ -111,14 +128,21 @@ lowerHops.forEach(([a, b], i) => ok(reachable(...a, ...b), `lower gorge hop ${i}
 const upperHops = [
   [[32, 48], [28, 45]],  // off the shelf into the falls
   [[26, 45], [23, 42]],
-  [[21, 42], [17, 40]],
-  [[15, 40], [11, 38]],
+  [[21, 42], [20, 40]],  // onto the hoist at its east end
+  [[13, 40], [11, 38]],  // off the hoist at its west end
   [[8, 38], [6, 35]],    // into the chimney
   [[6, 35], [8, 32]],
   [[8, 32], [6, 29]],
   [[6, 29], [10, 28]],   // onto the lip — top out
 ];
 upperHops.forEach(([a, b], i) => ok(reachable(...a, ...b), `upper gorge hop ${i} reachable`));
+const lookoutHops = [
+  [[16, 28], [14, 25]],
+  [[12, 25], [9, 22]],
+  [[9, 22], [12, 19]],
+  [[12, 19], [9, 16]],
+];
+lookoutHops.forEach(([a, b], i) => ok(reachable(...a, ...b), `lookout hop ${i} reachable`));
 
 // 14. pond crossing: bank -> log -> bank
 ok(at(169, 69) === 3 && at(170, 69) === 3, 'pond log present');

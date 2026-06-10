@@ -57,14 +57,21 @@ function buildWorld() {
   fill(25, 65, 3, 1, 1);   // hidden ledge behind the falls (journal page)
 
   // --- gorge ledges (upper climb: Alm shelf -> Stellung terrace) ----------
-  // a gentle zig-zag: every hop is at most 3 tiles up and a couple across
+  // a gentle zig-zag: every hop is at most 3 tiles up and a couple across.
+  // the middle step is the old material hoist (see MOVERS) — time your jump.
   fill(26, 45, 4, 1, 1);   // inside the waterfall, reaching dry air at x29
   fill(21, 42, 3, 1, 1);
-  fill(15, 40, 3, 1, 1);
   fill(8, 38, 4, 1, 1);
   fill(4, 35, 3, 1, 1);    // inside the chimney
   fill(8, 32, 3, 1, 1);    // inside the chimney
   fill(4, 29, 3, 1, 1);    // inside the chimney, one easy hop from the lip
+
+  // --- the observer post: a short, airier climb above the Stellung --------
+  // (the lamp waits at the top — most will meet the dark tunnel first)
+  fill(12, 25, 3, 1, 1);
+  fill(7, 22, 3, 1, 1);    // misstep here and the chimney takes you back down
+  fill(12, 19, 3, 1, 1);
+  fill(2, 16, 9, 1, 1);    // the lookout shelf
 
   // --- tunnel furniture ----------------------------------------------------
   fill(40, 26, 2, 2, 1);   // rubble heap to hop
@@ -107,11 +114,18 @@ const THERMALS = [
 // The flying course: five rings hung in the air. [tileX, tileY of center]
 const RINGS = [[210, 36], [222, 24], [233, 46], [247, 30], [256, 55]];
 
+// Moving platforms — the hut's old material hoist still runs in the gorge.
+// Oscillates between (x,y) and (x2,y2); w tiles wide; period in frames.
+const MOVERS = [
+  { x: 13, y: 40, x2: 18, y2: 40, w: 3, period: 300 },
+];
+
 // =========================================================================
 // Zones — names show as banners, fill in the paper map, control ambience.
 // First match wins; specific before general.
 // =========================================================================
 const ZONES = [
+  { id: 'wache',    x: 2,   y: 8,  w: 26, h: 9,  en: 'Observer Post',         de: 'Beobachterstand',       it: 'Posto di vedetta',      outdoor: true },
   { id: 'start',    x: 188, y: 0,  w: 12, h: 14, en: 'Launch Site',           de: 'Startplatz',            it: 'Decollo',               outdoor: true },
   { id: 'hintertal', x: 192, y: 0, w: 72, h: 80, en: 'The Hidden Valley',     de: 'Hinteres Tal',          it: 'Valle nascosta',        outdoor: true },
   { id: 'gipfel',   x: 150, y: 0,  w: 24, h: 12, en: 'The Summit',            de: 'Gipfel',                it: 'Cima Gamsblick',        outdoor: true },
@@ -170,7 +184,6 @@ const ENTITIES = [
 
   // -- Geröllfeld -------------------------------------------------------------
   { t: 'marmot',   x: 140, r: 63 },
-  { t: 'chestnut', x: 154, r: 70 },
 
   // -- Lärchenwald & Teich ----------------------------------------------------
   { t: 'shelter',  x: 160, r: 70 },
@@ -193,14 +206,20 @@ const ENTITIES = [
 
   // -- Wasserfallschlucht -------------------------------------------------------
   { t: 'page',     x: 26,  r: 65, n: 4 }, // behind the falls
+  { t: 'chestnut', x: 20,  r: 57 },       // up the dry half of the gorge climb —
+                                          // Norbert's third chestnut sends you somewhere new
 
   // -- Alte Stellung 1916 ---------------------------------------------------------
-  { t: 'gear',     x: 11,  r: 28, gear: 'lamp', key: 'get_lamp' },
+  { t: 'sign',     x: 11,  r: 28, key: 'sign_wache' },
   { t: 'bunker',   x: 14,  r: 28 },
   { t: 'page',     x: 17,  r: 28, n: 5 },
   { t: 'fire',     x: 20,  r: 28, id: 'stellung', name: 'Feuerstelle an der Stellung' },
   { t: 'photo',    x: 22,  r: 28, n: 4 },
   { t: 'marmot',   x: 24,  r: 28 },
+
+  // -- Beobachterstand --------------------------------------------------------------
+  { t: 'lookout',  x: 3,   r: 16 },
+  { t: 'gear',     x: 6,   r: 16, gear: 'lamp', key: 'get_lamp' },
 
   // -- Stollen ---------------------------------------------------------------------
   { t: 'relic',    x: 56,  r: 28 },
@@ -319,7 +338,7 @@ const TX_DE = {
     'WANDERSCHUHE — auf Geröll trittsicher. Scarponi: passo sicuro sul ghiaione.',
   ],
   get_lamp: [
-    'In der Stellung hängt eine Grubenlampe. Geputzt. Geölt.',
+    'Im Beobachterstand hängt eine Grubenlampe. Geputzt. Geölt.',
     'Jemand kommt seit Jahren hierher und hält sie bereit.',
     'STIRNLAMPE — Licht im Dunkel. Lampada: luce nel buio.',
   ],
@@ -340,6 +359,7 @@ const TX_DE = {
   sign_camp:    ['„Lärchenwald & Teich → durchs Schartl · Wasserfall 20 min ←“', '„Bosco e laghetto → · Cascata ←“ — und in Filzstift: „Knödel!!“'],
   sign_schartl: ['„Durchs Schartl → Lärchenwald, Teich, Unterstand.“', '„Attraverso la forcella → bosco e laghetto.“ Die Stufen sind ausgetreten — hier gehen alle durch.'],
   sign_sattel:  ['„↖ Gamsblick-Alm übers Geröll — NUR mit festen Schuhen! / solo con scarponi!“', '„↙ Schartl: Campingplatz · → Wald & Teich“'],
+  sign_wache:   ['„Beobachterstand ↑ / Osservatorio ↑“', 'Mit Kreide darunter: „Die Lampe ist mit der Wache hinauf. Bring sie brennend zurück.“'],
   sign_almweg:  ['„Wasserfallsteig ↓ — nur für Gämsen und Sture.“', '„Sentiero della cascata — solo per camosci e testardi.“'],
   sign_alm:     ['„Gamsblick-Alm, 1924. Heute: Kastanienwochen!“', '„Malga Gamsblick — settimane della castagna!“'],
   sign_hochband:['„Klettersteig ‚Rosa‘ → · Biwak · Nur mit Set / solo con set!“'],
@@ -477,7 +497,7 @@ const TX_DE = {
     ],
     after: [
       ['Norbert', 'Der Wasserfallsteig fängt drüben hinter der Brücke an, immer der Gischt nach.'],
-      ['Norbert', 'Wenn\'s dunkel wird: in der alten Stellung oben hängt seit Jahren eine Lampe. Frag nicht, wer sie ölt.'],
+      ['Norbert', 'Wenn\'s dunkel wird: im Beobachterstand über der alten Stellung hängt seit Jahren eine Lampe. Frag nicht, wer sie ölt.'],
     ],
     done: [
       ['Norbert', 'Du warst oben! Heut gehen die Knödel aufs Haus. Alle.'],
@@ -504,6 +524,10 @@ const TX_DE = {
   bunker_look: [
     ['', 'Die alte Stellung. Schießscharten Richtung Süden, Stille Richtung überall.'],
     ['', 'Hundert Jahre, und der Beton riecht immer noch nach Winter.'],
+  ],
+  lookout: [
+    ['', 'Sandsäcke, ein verrostetes Fernrohr, Initialen im Holz.'],
+    ['', 'Von hier oben siehst du jeden Weg, den du bis jetzt gegangen bist.'],
   ],
   shelter_look: [['', 'Ein offener Unterstand: Brennholz, eine Bank, eine Blechkiste — „Nimm was, lass was“.']],
 
@@ -545,7 +569,7 @@ const TX_DE = {
     alm:      'Der Geröllweg zur Gamsblick-Alm ist jetzt machbar',
     chestnut: 'Drei Kastanien für Norbert (Wald & Teich)',
     jacket:   'Der Wasserfallsteig — Gämsen und Sture',
-    lamp:     'Hinter der Schlucht: die alte Stellung. Dort soll eine Lampe hängen',
+    lamp:     'Der Stollen ist stockfinster — im Beobachterstand über der Stellung soll eine Lampe hängen',
     tunnel:   'Durch den Stollen von 1916',
     biwak:    'Zu dunkel zum Klettern — biwakiere am Hochband',
     summit:   'Der Klettersteig „Rosa“. Erstes Licht. Der Gipfel.',
@@ -638,7 +662,7 @@ const TX_EN = {
     'HIKING BOOTS — sure-footed on scree. Wanderschuhe!',
   ],
   get_lamp: [
-    'A miner\'s lamp hangs in the old position. Polished. Oiled.',
+    'A miner\'s lamp hangs at the observer post. Polished. Oiled.',
     'Someone has been coming up here for years, keeping it ready.',
     'HEADLAMP — light in the dark. Stirnlampe!',
   ],
@@ -658,6 +682,7 @@ const TX_EN = {
   sign_camp:    ['"Larch forest & pond → through the Schartl · Waterfall 20 min ←"', 'And in marker pen: "KNÖDEL!!"'],
   sign_schartl: ['"Through the Schartl → larch forest, pond, shelter."', 'The steps are worn smooth — everyone comes this way.'],
   sign_sattel:  ['"↖ Gamsblick Alm over the scree — ONLY with proper boots!"', '"↙ Schartl: campsite · → forest & pond"'],
+  sign_wache:   ['"Observer post ↑ / Osservatorio ↑"', 'Chalked beneath: "The lamp went up with the watch. Bring it back lit."'],
   sign_almweg:  ['"Waterfall route ↓ — for chamois and the stubborn only."', '"Sentiero della cascata — solo per camosci e testardi."'],
   sign_alm:     ['"Gamsblick Alm, est. 1924. This week: chestnut weeks!"', '"Malga Gamsblick — settimane della castagna!"'],
   sign_hochband:['"Via ferrata \'Rosa\' → · Bivouac · Set required / solo con set!"'],
@@ -791,7 +816,7 @@ const TX_EN = {
     ],
     after: [
       ['Norbert', 'The waterfall route starts over there past the bridge — follow the spray.'],
-      ['Norbert', 'When it gets dark: in the old position up top a lamp has hung for years. Don\'t ask who oils it.'],
+      ['Norbert', 'When it gets dark: at the observer post above the old position a lamp has hung for years. Don\'t ask who oils it.'],
     ],
     done: [
       ['Norbert', 'You made the top! Today the Knödel are on the house. All of them.'],
@@ -818,6 +843,10 @@ const TX_EN = {
   bunker_look: [
     ['', 'The old position. Firing slits facing south, silence facing everywhere.'],
     ['', 'A hundred years on, the concrete still smells of winter.'],
+  ],
+  lookout: [
+    ['', 'Sandbags, a rusted scope, initials scratched into the wood.'],
+    ['', 'From up here you can see every path you have walked so far.'],
   ],
   shelter_look: [['', 'An open shelter: firewood, a bench, a tin box — "take something, leave something".']],
 
@@ -857,7 +886,7 @@ const TX_EN = {
     alm:      'The scree path up to Gamsblick Alm is doable now',
     chestnut: 'Three chestnuts for Norbert (forest & pond)',
     jacket:   'The waterfall route — chamois and the stubborn',
-    lamp:     'Beyond the gorge: the old position. A lamp is said to hang there',
+    lamp:     'The tunnel is pitch dark — a lamp is said to hang at the observer post above the old position',
     tunnel:   'Through the tunnel of 1916',
     biwak:    'Too dark to climb — bivouac at the high ledge',
     summit:   'The via ferrata "Rosa". First light. The summit.',
@@ -907,5 +936,5 @@ const GEAR_INFO = { // icons are drawn by drawIcon(key) in game.js
 };
 
 if (typeof module !== 'undefined') {
-  module.exports = { TILE, WORLD_W, WORLD_H, buildWorld, WATERFALL, THERMALS, RINGS, ZONES, PHASES, ENTITIES, TREES, FLOWERS, BG_ROCK, TX_DE, TX_EN, GEAR_INFO };
+  module.exports = { TILE, WORLD_W, WORLD_H, buildWorld, WATERFALL, THERMALS, RINGS, MOVERS, ZONES, PHASES, ENTITIES, TREES, FLOWERS, BG_ROCK, TX_DE, TX_EN, GEAR_INFO };
 }
