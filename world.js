@@ -424,7 +424,6 @@ const TX_DE = {
   photo_close: 'Tippen · tocca',
 
   // ---- the Gams ----
-  toast_gams: 'Eine Gams! Sie kennt den Weg — Oma hat es geschrieben.',
   gams_rest: ['', 'Die Gams bleibt liegen und schaut dich an. Kein Fluchttier mehr, heute nicht. Ihr habt Zeit.'],
 
   // ---- the finale ----
@@ -745,7 +744,6 @@ const TX_EN = {
   photo_hint: 'Someone took a photograph here — the light is exactly right.',
   photo_close: 'Tap to continue',
 
-  toast_gams: 'A chamois! She knows the way — Oma wrote it.',
   gams_rest: ['', 'The chamois stays where she lies and watches you. Not a fleeing animal anymore — not today. You both have time.'],
 
   finale_arrive: [

@@ -1048,7 +1048,7 @@ function gamsTick() {
     if (d < 60 && !gams.restSaid && G.mode === 'play') { gams.restSaid = true; say([TX.gams_rest]); }
     return;
   }
-  if (d < 200 && !gams.met) { gams.met = true; G.gamsSeen++; toast(TX.toast_gams); sfx.marmot(); }
+  if (d < 200 && !gams.met) { gams.met = true; G.gamsSeen++; sfx.marmot(); }
   if (d < 64) { gams.fleeT = 55; gams.dir = player.x < gams.x ? 1 : -1; }
 }
 function drawGams() {
