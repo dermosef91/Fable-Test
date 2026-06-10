@@ -39,6 +39,18 @@ const inWaterfall = (px, py) =>
 const inThermal = (px, py) => THERMALS.some(t =>
   px >= t.x * TILE && px < (t.x + t.w) * TILE && py >= t.y * TILE && py < (t.y + t.h) * TILE);
 
+// -------------------------------------------------------------- language --
+let LANG = 'en';
+try { LANG = localStorage.getItem('gipfelbuch_lang') || 'en'; } catch (e) {}
+TX = LANG === 'de' ? TX_DE : TX_EN;
+const L = v => (v && typeof v === 'object' && v.en !== undefined) ? (v[LANG] || v.en) : v;
+function setLanguage(l) {
+  LANG = l;
+  TX = l === 'de' ? TX_DE : TX_EN;
+  try { localStorage.setItem('gipfelbuch_lang', l); } catch (e) {}
+  if (typeof G !== 'undefined') G.objective = TX.objectives[G.objKey] || G.objective;
+}
+
 // ------------------------------------------------------------------ state --
 const G = {
   mode: 'title',              // title | play | dialog | map | sleep | end
@@ -53,6 +65,7 @@ const G = {
   chestnutsDone: false,
   knoedel: false,
   flags: {},                  // tentOpened, gretaMet, norbertMet, biwakDone, finale, zinnensprung...
+  objKey: 'start',
   objective: TX.objectives.start,
   lastFire: 'camp',
   visited: {},
@@ -87,7 +100,7 @@ function save() {
       phase: G.phase, gear: G.gear, pages: G.pages, marmots: G.marmots,
       photos: G.photos, rings: G.rings, gamsSeen: G.gamsSeen,
       chestnuts: G.chestnuts, chestnutsDone: G.chestnutsDone, knoedel: G.knoedel,
-      flags: G.flags, objective: G.objective, lastFire: G.lastFire,
+      flags: G.flags, objKey: G.objKey, objective: G.objective, lastFire: G.lastFire,
       visited: G.visited, playMin: G.playMin, maxWarmth: player.maxWarmth,
       taken: [...takenIds],
     }));
@@ -102,9 +115,15 @@ function loadSave() {
       phase: d.phase, gear: d.gear, pages: d.pages, marmots: d.marmots,
       photos: d.photos || {}, rings: d.rings || {}, gamsSeen: d.gamsSeen || 0,
       chestnuts: d.chestnuts, chestnutsDone: d.chestnutsDone, knoedel: d.knoedel,
-      flags: d.flags, objective: d.objective, lastFire: d.lastFire,
+      flags: d.flags, objKey: d.objKey, objective: d.objective, lastFire: d.lastFire,
       visited: d.visited, playMin: d.playMin,
     });
+    if (!G.objKey) { // older saves: infer progress
+      G.objKey = G.flags.finale ? 'free' : G.flags.biwakDone ? 'summit' : G.gear.kit ? 'biwak'
+        : G.gear.lamp ? 'tunnel' : G.gear.jacket ? 'jacket' : G.chestnutsDone ? 'jacket'
+        : G.gear.boots ? 'alm' : G.flags.tentOpened ? 'boots' : 'start';
+    }
+    G.objective = TX.objectives[G.objKey];
     player.maxWarmth = d.maxWarmth || 100;
     player.warmth = player.maxWarmth;
     for (const id of d.taken || []) takenIds.add(id);
@@ -186,7 +205,7 @@ cv.addEventListener('touchstart', e => {
     if (b === 'act') pendAct = true;
     if (b === 'up') pendUp = true;
     if (b === 'mute') toggleMute();
-    if (b === 'cont' || b === 'new' || b === 'start') pendTitle = b;
+    if (b === 'cont' || b === 'new' || b === 'start' || b === 'lang') pendTitle = b;
     if (b && (b === 'album' || b === 'albumBack' || b.startsWith('ph'))) pendUI = b;
   }
   refreshTouch();
@@ -209,7 +228,7 @@ cv.addEventListener('mousedown', e => {
   const b = hitBtn({ x: e.clientX * DPR, y: e.clientY * DPR });
   if (b === 'map') pendMap = true;
   if (b === 'mute') toggleMute();
-  if (b === 'cont' || b === 'new' || b === 'start') pendTitle = b;
+  if (b === 'cont' || b === 'new' || b === 'start' || b === 'lang') pendTitle = b;
   if (b && (b === 'album' || b === 'albumBack' || b.startsWith('ph'))) pendUI = b;
   tapAt(e);
 });
@@ -402,15 +421,16 @@ function endDialog() {
 function caption(lines, t) { G.caption = { lines, t: t || 200, t0: t || 200 }; }
 
 function setObjective(key) {
+  G.objKey = key;
   G.objective = TX.objectives[key];
-  toast('Neues Ziel: ' + G.objective);
+  toast(TX.newobj_prefix + G.objective);
 }
 
 function setPhase(p) {
   if (p <= G.phase) return;
   G.phase = p;
   const ph = PHASES[p];
-  if (ph) caption([ph.caption, ph.sub], 260);
+  if (ph) caption([L(ph.caption), L(ph.sub)], 260);
 }
 
 // ------------------------------------------------------------- particles --
@@ -691,6 +711,7 @@ function findInteract() {
     if (e.hide) continue;
     const types = ['tent', 'fire', 'sign', 'npc', 'gear', 'page', 'chestnut', 'book', 'bench', 'relic', 'plaque', 'cow', 'dog', 'bunker', 'shelter', 'photo', 'chapel'];
     if (!types.includes(e.t) || e.present === false) continue;
+    if (e.t === 'photo' && !G.flags.finale) continue; // the photo hunt unlocks at the summit
     const d = Math.hypot(e.x * TILE + 8 - px, e.r * TILE - 14 - py);
     if (d < best) { best = d; nearInteract = e; }
   }
@@ -764,7 +785,7 @@ function restAt(id, prompt) {
   player.warmth = player.maxWarmth;
   sfx.fire();
   save();
-  say(['Kurz gerastet. Wärme aufgefüllt, Spielstand gespeichert. · Riposato e salvato.']);
+  say([TX.rested]);
   for (let i = 0; i < 8; i++) spawnPart({ x: player.x, y: player.y, vx: (Math.random() - 0.5), vy: -1 - Math.random(), t: 40, c: '#ffd54f', s: 2 });
 }
 
@@ -1459,7 +1480,7 @@ function drawEntity(e) {
       break;
     }
     case 'photo': {
-      if (taken) return;
+      if (taken || !G.flags.finale) return;
       const a = 0.45 + Math.sin(frame * 0.07 + e.x) * 0.25;
       cx.save(); cx.globalAlpha = a;
       cx.strokeStyle = '#ffe9a8'; cx.lineWidth = 1.2; cx.setLineDash([3, 3]);
@@ -1713,11 +1734,12 @@ function drawHUD() {
   // persistent objective line (so nobody is ever lost)
   if (G.mode === 'play' && !G.caption && bannerT <= 120 && G.objective) {
     cx.font = '11px sans-serif';
-    const ow = Math.min(cx.measureText('Ziel: ' + G.objective).width + 20, W - 200);
+    const ot = TX.obj_prefix + G.objective;
+    const ow = Math.min(cx.measureText(ot).width + 20, W - 200);
     cx.fillStyle = 'rgba(20,24,38,0.42)'; roundRect(W / 2 - ow / 2, 12, ow, 20, 8); cx.fill();
     cx.fillStyle = 'rgba(243,236,210,0.85)';
     cx.save(); cx.beginPath(); cx.rect(W / 2 - ow / 2 + 4, 12, ow - 8, 20); cx.clip();
-    cx.fillText('Ziel: ' + G.objective, W / 2, 23);
+    cx.fillText(ot, W / 2, 23);
     cx.restore();
   }
 
@@ -1769,9 +1791,9 @@ function drawHUD() {
     const a = Math.min(1, (220 - bannerT) / 30);
     cx.globalAlpha = a;
     cx.fillStyle = '#f3ecd2'; cx.font = 'bold 19px Georgia, serif'; cx.textAlign = 'center';
-    cx.fillText(bannerZone.de, W / 2, H * 0.2);
+    cx.fillText(LANG === 'en' ? bannerZone.en : bannerZone.de, W / 2, H * 0.2);
     cx.font = 'italic 13px Georgia, serif'; cx.fillStyle = 'rgba(243,236,210,0.8)';
-    cx.fillText(bannerZone.it, W / 2, H * 0.2 + 22);
+    cx.fillText(LANG === 'en' ? `${bannerZone.de} · ${bannerZone.it}` : bannerZone.it, W / 2, H * 0.2 + 22);
     cx.globalAlpha = 1;
   }
 
@@ -1854,26 +1876,60 @@ function drawMap() {
   cx.setTransform(DPR, 0, 0, DPR, 0, 0);
   const W = cv.width / DPR, H = cv.height / DPR;
   cx.fillStyle = 'rgba(10,12,24,0.85)'; cx.fillRect(0, 0, W, H);
-  // paper
-  const mw = Math.min(W - 40, 560), mh = mw * (WORLD_H / WORLD_W) + 80;
-  const mx = (W - mw) / 2, my = Math.max(20, (H - mh) / 2);
-  cx.fillStyle = '#ece3c8'; roundRect(mx, my, mw, mh, 8); cx.fill();
-  cx.strokeStyle = '#b9ac82'; cx.lineWidth = 2; cx.stroke();
-  cx.fillStyle = '#5a4a35'; cx.font = 'bold 16px Georgia, serif'; cx.textAlign = 'center';
-  cx.fillText('Wanderkarte Gamstal · Carta escursionistica', mx + mw / 2, my + 24);
+  cx.textBaseline = 'middle';
 
-  const sc = (mw - 40) / WORLD_W;
-  const ox = mx + 20, oy = my + 44;
+  // paper fills the screen sensibly on any orientation
+  const pw = Math.min(W - 24, 700), ph = Math.min(H - 48, 480);
+  const mx = (W - pw) / 2, my = (H - ph) / 2;
+  cx.fillStyle = '#ece3c8'; roundRect(mx, my, pw, ph, 10); cx.fill();
+  cx.strokeStyle = '#b9ac82'; cx.lineWidth = 2; cx.stroke();
+  cx.fillStyle = '#5a4a35'; cx.textAlign = 'center';
+  cx.font = `bold ${Math.max(12, Math.min(16, pw * 0.032))}px Georgia, serif`;
+  cx.fillText(TX.map_title, mx + pw / 2, my + 20);
+
+  // view crops to the explored world, so the map fills in as you wander
+  let b = null;
   for (const z of ZONES) {
     if (!G.visited[z.id]) continue;
-    cx.fillStyle = z.dark ? 'rgba(90,74,53,0.5)' : 'rgba(111,174,87,0.35)';
-    roundRect(ox + z.x * sc, oy + z.y * sc, z.w * sc, z.h * sc, 4); cx.fill();
-    cx.strokeStyle = 'rgba(90,74,53,0.6)'; cx.lineWidth = 1; cx.stroke();
-    cx.fillStyle = '#5a4a35'; cx.font = `${Math.max(8, Math.min(11, z.w * sc * 0.09))}px Georgia, serif`;
-    cx.fillText(z.de, ox + (z.x + z.w / 2) * sc, oy + (z.y + z.h / 2) * sc);
+    if (!b) b = { x0: z.x, y0: z.y, x1: z.x + z.w, y1: z.y + z.h };
+    else {
+      b.x0 = Math.min(b.x0, z.x); b.y0 = Math.min(b.y0, z.y);
+      b.x1 = Math.max(b.x1, z.x + z.w); b.y1 = Math.max(b.y1, z.y + z.h);
+    }
   }
-  // campfires & landmarks in visited zones
-  cx.font = `${Math.max(9, sc * 14)}px sans-serif`; cx.textAlign = 'center';
+  if (!b) b = { x0: 30, y0: 40, x1: 100, y1: 80 };
+  b.x0 -= 4; b.y0 -= 4; b.x1 += 4; b.y1 += 4;
+  const bw = b.x1 - b.x0, bh = b.y1 - b.y0;
+  const areaY = my + 34, areaH = ph - 110;
+  const sc = Math.min((pw - 36) / bw, areaH / bh, 4.5);
+  const ox = mx + (pw - bw * sc) / 2 - b.x0 * sc;
+  const oy = areaY + (areaH - bh * sc) / 2 - b.y0 * sc;
+
+  for (const z of ZONES) {
+    if (!G.visited[z.id]) continue;
+    const zx = ox + z.x * sc, zy = oy + z.y * sc, zw = z.w * sc, zh = z.h * sc;
+    cx.fillStyle = z.dark ? 'rgba(90,74,53,0.45)' : 'rgba(111,174,87,0.32)';
+    roundRect(zx, zy, zw, zh, 4); cx.fill();
+    cx.strokeStyle = 'rgba(90,74,53,0.55)'; cx.lineWidth = 1; cx.stroke();
+    // label only where it actually fits — one line, or two, or not at all
+    const name = LANG === 'en' ? z.en : z.de;
+    let lcx = zx + zw / 2, lcy = zy + zh / 2;
+    if (z.id === 'grat') lcx = ox + (z.x + 26) * sc;   // clear of the nested summit
+    if (z.id === 'gipfel') lcy = zy + zh + 9;          // beneath its little box
+    cx.fillStyle = '#5a4a35'; cx.font = '10px Georgia, serif';
+    if (cx.measureText(name).width <= zw - 8 || z.id === 'gipfel') cx.fillText(name, lcx, lcy);
+    else if (zh > 30) {
+      const words = name.split(' ');
+      const half = Math.ceil(words.length / 2);
+      const l1 = words.slice(0, half).join(' '), l2 = words.slice(half).join(' ');
+      if (words.length > 1 && cx.measureText(l1).width <= zw - 6 && cx.measureText(l2).width <= zw - 6) {
+        cx.fillText(l1, lcx, lcy - 6);
+        cx.fillText(l2, lcx, lcy + 6);
+      }
+    }
+  }
+  // landmarks at a fixed, modest size
+  cx.font = '11px sans-serif';
   for (const id in FIRES) {
     const f = FIRES[id];
     const fz = ZONES.find(z => f.x >= z.x && f.x < z.x + z.w && f.r - 1 >= z.y && f.r - 1 < z.y + z.h);
@@ -1882,27 +1938,39 @@ function drawMap() {
   if (G.visited.schlucht) cx.fillText('💧', ox + 26 * sc, oy + 52 * sc);
   if (G.visited.ferrata) cx.fillText('🧗', ox + 95 * sc, oy + 20 * sc);
   if (G.visited.gipfel) cx.fillText('✝', ox + 161 * sc, oy + 9 * sc);
-  // player dot
+  // player
   cx.fillStyle = '#c0392b';
   cx.beginPath(); cx.arc(ox + (player.x / TILE) * sc, oy + (player.y / TILE) * sc, 4 + Math.sin(frame * 0.15), 0, 7); cx.fill();
 
-  // stats & objective
-  cx.fillStyle = '#5a4a35'; cx.font = '12px Georgia, serif'; cx.textAlign = 'center';
-  cx.fillText(`Ziel: ${G.objective}`, mx + mw / 2, my + mh - 40);
-  cx.fillText(`📖 ${Object.keys(G.pages).length}/7 · 📷 ${Object.keys(G.photos).length}/5 · 🐹 ${Object.keys(G.marmots).length}/5 · 🌰 ${G.chestnuts}/3`, mx + mw / 2, my + mh - 20);
+  // footer: where you are, current goal, the tally
+  cx.fillStyle = '#5a4a35'; cx.textAlign = 'center';
+  cx.font = 'italic 12px Georgia, serif';
+  const here = curZone ? (LANG === 'en' ? curZone.en : curZone.de) : '';
+  cx.fillText(`${TX.map_here} ${here}`, mx + pw / 2, my + ph - 56);
+  let of2 = 12;
+  cx.font = `${of2}px Georgia, serif`;
+  while (cx.measureText(TX.obj_prefix + G.objective).width > pw - 28 && of2 > 8) { of2--; cx.font = `${of2}px Georgia, serif`; }
+  cx.fillText(TX.obj_prefix + G.objective, mx + pw / 2, my + ph - 38);
+  const stats = [`📖 ${Object.keys(G.pages).length}/7`];
+  if (G.flags.finale) stats.push(`📷 ${Object.keys(G.photos).length}/5`);
+  stats.push(`🐹 ${Object.keys(G.marmots).length}/5`);
+  if (!G.chestnutsDone) stats.push(`🌰 ${G.chestnuts}/3`);
+  if (G.gear.glider) stats.push(`◎ ${Object.keys(G.rings).length}/5`);
+  cx.font = '12px Georgia, serif';
+  cx.fillText(stats.join(' · '), mx + pw / 2, my + ph - 18);
 
-  cx.fillStyle = 'rgba(243,236,210,0.7)'; cx.font = '12px sans-serif';
-  cx.fillText('M / 🗺 zum Schließen · chiudi', W / 2, my + mh + 18 > H - 10 ? my + 40 : my + mh + 18);
+  cx.fillStyle = 'rgba(243,236,210,0.7)'; cx.font = '11px sans-serif';
+  cx.fillText(TX.map_close, W / 2, Math.min(H - 10, my + ph + 14));
 
   BTNS = [];
   addBtn('map', W - 49, 60, 20, '✕');
   drawBtn(BTNS[0]);
-  if (Object.keys(G.photos).length) {
+  if (G.flags.finale && Object.keys(G.photos).length) {
     cx.textBaseline = 'middle';
-    cx.fillStyle = 'rgba(20,24,38,0.55)'; roundRect(mx + 10, my + 8, 92, 26, 8); cx.fill();
+    cx.fillStyle = 'rgba(20,24,38,0.55)'; roundRect(mx + pw - 100, my + 32, 90, 24, 8); cx.fill();
     cx.fillStyle = '#f3ecd2'; cx.font = '12px sans-serif'; cx.textAlign = 'center';
-    cx.fillText('📷 Album', mx + 56, my + 21);
-    BTNS.push({ id: 'album', x: (mx + 56) * DPR, y: (my + 21) * DPR, w: 100 * DPR, h: 34 * DPR, lr: 0 });
+    cx.fillText(TX.album_btn, mx + pw - 55, my + 44);
+    BTNS.push({ id: 'album', x: (mx + pw - 55) * DPR, y: (my + 44) * DPR, w: 100 * DPR, h: 32 * DPR, lr: 0 });
   }
   cx.restore();
   if (pendUI === 'album') { G.mode = 'album'; }
@@ -1985,7 +2053,7 @@ function drawAlbum() {
   const W = cv.width / DPR, H = cv.height / DPR;
   cx.fillStyle = 'rgba(10,12,24,0.88)'; cx.fillRect(0, 0, W, H);
   cx.fillStyle = '#f3ecd2'; cx.font = 'bold 18px Georgia, serif'; cx.textAlign = 'center';
-  cx.fillText('Omas Fotos · Le fotografie', W / 2, 36);
+  cx.fillText(TX.album_title, W / 2, 36);
 
   BTNS = [];
   const tw = Math.min(96, (W - 60) / 3.4), th = tw * 1.18;
@@ -2021,7 +2089,7 @@ function drawAlbum() {
     }
   }
   cx.fillStyle = 'rgba(243,236,210,0.6)'; cx.font = '12px sans-serif';
-  cx.fillText('Antippen zum Ansehen · tocca per vedere', W / 2, H - 22);
+  cx.fillText(TX.album_hint, W / 2, H - 22);
   addBtn('albumBack', W - 49, 60, 20, '✕');
   drawBtn(BTNS[BTNS.length - 1]);
   cx.restore();
@@ -2103,17 +2171,24 @@ function drawTitle() {
     cx.fillStyle = '#f3ecd2'; cx.font = '14px sans-serif'; cx.fillText(label, W / 2, y + 1);
     BTNS.push({ id, x: (W / 2) * DPR, y: y * DPR, w: bw2 * DPR, h: 38 * DPR, lr: 0 });
   };
+  let rowY = H * 0.56;
   if (hasSave()) {
-    mkRow('cont', '⛺ ' + TX.title_continue, H * 0.58);
-    mkRow('new', '🥾 ' + TX.title_new, H * 0.58 + 46);
+    mkRow('cont', '⛺ ' + TX.title_continue, rowY); rowY += 44;
+    mkRow('new', '🥾 ' + TX.title_new, rowY); rowY += 44;
   } else {
-    mkRow('start', '🥾 ' + TX.title_start, H * 0.58);
+    mkRow('start', '🥾 ' + TX.title_start, rowY); rowY += 44;
   }
+  mkRow('lang', TX.lang_btn, rowY); rowY += 44;
   cx.fillStyle = 'rgba(243,236,210,0.55)'; cx.font = '12px sans-serif';
-  cx.fillText('← → laufen · Leertaste springen · E benutzen · M Karte', W / 2, H * 0.58 + 92);
-  cx.fillText('Ein Spaziergang, kein Kampf. · Niente combattimenti, solo montagna.', W / 2, H * 0.58 + 112);
+  cx.fillText(TX.ctl_hint1, W / 2, rowY + 14);
+  cx.fillText(TX.ctl_hint2, W / 2, rowY + 34);
   cx.restore();
 
+  if (pendTitle === 'lang') {
+    pendTitle = null;
+    setLanguage(LANG === 'en' ? 'de' : 'en');
+    return;
+  }
   if (pendTitle === 'new') {
     pendTitle = null;
     try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
@@ -2127,7 +2202,7 @@ function drawTitle() {
     audioUnlock();
     if (hasSave() && loadSave()) {
       G.mode = 'play';
-      caption(['Weiter geht\'s · si continua', G.objective], 200);
+      caption([TX.continue_caption, G.objective], 200);
     } else {
       G.mode = 'play';
       startIntro();
@@ -2140,7 +2215,7 @@ function startIntro() {
   say(TX.intro.map(l => ['', l]), () => {
     setPhase(1);
     G.phase = 1;
-    caption([PHASES[1].caption, PHASES[1].sub], 240);
+    caption([L(PHASES[1].caption), L(PHASES[1].sub)], 240);
     setObjective('start');
   });
 }
@@ -2162,12 +2237,12 @@ function drawEnd() {
   cx.font = '14px sans-serif';
   const mins = Math.round(G.playMin);
   const lines = [
-    `Wanderzeit: ${mins} min`,
-    `Tagebuchseiten: ${Object.keys(G.pages).length}/7 · Omas Fotos: ${Object.keys(G.photos).length}/5`,
-    `Murmeltiere: ${Object.keys(G.marmots).length}/5 · Gams gesehen: ${G.gamsSeen}×`,
-    `Zinnensprung: ${G.flags.zinnensprung ? 'JA!' : 'noch nicht…'}`,
-    `Knödel: ${G.knoedel ? 'die besten deines Lebens' : 'verpasst?!'}`,
-    `Flugschule: ${G.flags.flugschein ? 'FLUGSCHÜLERIN NR. 1' : G.gear.glider ? `Ringe ${Object.keys(G.rings).length}/5` : 'demnächst…'}`,
+    TX.st_time(mins),
+    TX.st_pages(Object.keys(G.pages).length, Object.keys(G.photos).length),
+    TX.st_animals(Object.keys(G.marmots).length, G.gamsSeen),
+    TX.st_sprung(G.flags.zinnensprung),
+    TX.st_knoedel(G.knoedel),
+    TX.st_flug(G.flags.flugschein, G.gear.glider, Object.keys(G.rings).length),
   ];
   lines.forEach((l, i) => cx.fillText(l, W / 2, H * 0.42 + i * 24));
   cx.fillStyle = '#ffd54f';
@@ -2182,7 +2257,13 @@ function drawEnd() {
     anyInputEdge = false;
     G.mode = 'play';
     setPhase(5);
+    G.objKey = 'free';
     G.objective = TX.objectives.free;
+    if (!G.flags.photosIntro) {
+      G.flags.photosIntro = true;
+      say([TX.photos_unlocked]); // the photo hunt begins
+      save();
+    }
   }
 }
 

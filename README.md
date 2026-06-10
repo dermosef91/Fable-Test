@@ -7,7 +7,8 @@ castle or an alien cave, but on **one ordinary mountain in modern-day
 Südtirol, over one camping weekend**.
 
 **▶ Play it now:** https://dermosef91.github.io/Fable-Test/ — or open
-`index.html` in any browser (no build, no dependencies).
+`index.html` in any browser (no build, no dependencies). **English by
+default**, full German version one tap away on the title screen.
 
 ---
 
@@ -41,9 +42,10 @@ sunrise summit.
    after your grandmother. Bivouac, first light, **climb to the summit**.
 5. The Gipfelbuch knows the rest.
 
-Optional: 7 journal pages, **5 of Oma's 1974 photographs** (find the spots
-where they were taken — sepia polaroids with her handwriting on the back),
-5 marmots, one bench with a view of three pale peaks, and the Zinnensprung.
+Optional: 7 journal pages, 5 marmots, one bench with a view of three pale
+peaks, and the Zinnensprung. **After the summit**, the tin box reveals five
+more of Oma's 1974 photographs — the post-game hunt is finding the exact
+spots where they were taken (sepia polaroids, her handwriting on the back).
 A **Gams** (chamois) keeps appearing just ahead on the route — "the way the
 chamois take", as the journal says — and bounds off when you get close.
 After the credits, revisit the *Flugschule Gamstal* sign — the Bergfreunde
