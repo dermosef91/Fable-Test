@@ -1012,20 +1012,12 @@ function npcTick() {
 const gams = { x: 0, y: 0, stage: '', fleeT: 0, hidden: false, met: false, restSaid: false };
 function gamsSpot() {
   if (G.flags.finale) return { x: 184, r: 12, stage: 'rest' };
-  if (!G.gear.boots) {
-    // first it waits at the Schartl, then deeper in the forest
-    return player.x < 118 * TILE ? { x: 108, r: 70, stage: 'boots1' } : { x: 157, r: 70, stage: 'boots2' };
-  }
-  if (!G.chestnutsDone) return { x: 116, r: 48, stage: 'alm' };
-  if (!G.gear.jacket) return null;
-  if (!G.gear.lamp) {
-    // once you're up at the Stellung, she waits below the observer-post climb
-    return (player.y < 32 * TILE && player.x < 32 * TILE)
-      ? { x: 13, r: 25, stage: 'lamp2' } : { x: 35, r: 47, stage: 'lamp1' };
-  }
-  if (!G.gear.kit) return { x: 25, r: 28, stage: 'tunnel' };
-  if (!G.flags.biwakDone) return { x: 90, r: 28, stage: 'cable' };
-  return { x: 150, r: 12, stage: 'ridge' };
+  if (!G.gear.boots) return player.x < 118 * TILE ? { x: 108, r: 70, stage: 'boots1' } : null;
+  if (!G.chestnutsDone) return { x: 108, r: 48, stage: 'alm' };
+  // once you're up at the Stellung, she waits below the observer-post climb
+  if (G.gear.jacket && !G.gear.lamp && player.y < 32 * TILE && player.x < 32 * TILE)
+    return { x: 13, r: 25, stage: 'lamp2' };
+  return null;
 }
 function gamsTick() {
   const spot = gamsSpot();
