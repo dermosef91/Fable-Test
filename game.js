@@ -585,7 +585,10 @@ function physTick() {
     if (jumpEdge) { p.climbing = false; p.vy = -4.5; p.vx = p.face * 1.5; sfx.jump(); }
     p.anim += Math.abs(p.vy) * 0.06;
   } else if (onCableTile && upEdge) {
-    if (!G.gear.kit) { if (cableToastCd <= 0) { toast(TX.toast_cable); cableToastCd = 180; } }
+    if (!G.gear.kit) {
+      if (cableToastCd <= 0) { toast(TX.toast_cable); cableToastCd = 180; }
+      if (!G.flags.kitHint && player.x < 100 * TILE) { G.flags.kitHint = true; setObjective('kit'); }
+    }
     else if (G.phase === 3 && !G.flags.biwakDone) { say(TX.biwak_blocked); }
     else { p.climbing = true; p.vx = 0; p.vy = 0; }
   }
@@ -803,9 +806,10 @@ function findInteract() {
   for (const e of ENTITIES) {
     if (takenIds.has(eid(e))) continue;
     if (e.hide) continue;
-    const types = ['tent', 'fire', 'sign', 'npc', 'gear', 'page', 'chestnut', 'book', 'bench', 'relic', 'plaque', 'cow', 'dog', 'bunker', 'shelter', 'photo', 'chapel', 'lookout'];
+    const types = ['tent', 'fire', 'sign', 'npc', 'gear', 'page', 'chestnut', 'book', 'bench', 'relic', 'plaque', 'cow', 'dog', 'bunker', 'shelter', 'photo', 'chapel', 'lookout', 'depot', 'tin'];
     if (!types.includes(e.t) || e.present === false) continue;
     if (e.t === 'photo' && !G.flags.finale) continue; // the photo hunt unlocks at the summit
+    if (e.t === 'tin' && !G.flags.zinnensprung) continue; // the silt keeps its secret until the jump
     const d = Math.hypot(e.x * TILE + 8 - px, e.r * TILE - 14 - py);
     if (d < best) { best = d; nearInteract = e; }
   }
@@ -862,6 +866,14 @@ function doInteract(e) {
     case 'plaque': say(TX.plaque); break;
     case 'chapel': say(TX.chapel); break;
     case 'lookout': say(TX.lookout); break;
+    case 'depot': say(TX.depot); break;
+    case 'tin': {
+      takenIds.add(eid(e)); sfx.page(); vib([20, 40, 20]);
+      G.flags.tinFound = true;
+      toast(TX.toast_tin);
+      say(TX.tin_find, () => save(), 'journal');
+      break;
+    }
     case 'bunker': say(TX.bunker_look); break;
     case 'shelter': say(TX.shelter_look); break;
     case 'book': finale(); break;
@@ -1023,7 +1035,11 @@ function gamsSpot() {
     return (player.y < 32 * TILE && player.x < 32 * TILE)
       ? { x: 13, r: 25, stage: 'lamp2' } : { x: 35, r: 47, stage: 'lamp1' };
   }
-  if (!G.gear.kit) return { x: 25, r: 28, stage: 'tunnel' };
+  if (!G.gear.kit) {
+    // through the tunnel: she waits below the depot climb
+    return (player.x > 70 * TILE && player.y < 32 * TILE)
+      ? { x: 78, r: 25, stage: 'depot' } : { x: 25, r: 28, stage: 'tunnel' };
+  }
   if (!G.flags.biwakDone) return { x: 90, r: 28, stage: 'cable' };
   return { x: 150, r: 12, stage: 'ridge' };
 }
@@ -1081,6 +1097,7 @@ function drawGams() {
 
 // ---- marmots (proximity, not interaction) ----
 function marmotTick() {
+  const all5 = Object.keys(G.marmots).length >= 5;
   for (const e of ENTITIES) {
     if (e.t !== 'marmot') continue;
     const k = eid(e);
@@ -1088,10 +1105,22 @@ function marmotTick() {
     e.alert = d < 90 && Math.abs(player.y - e.r * TILE) < 80;
     if (e.alert && !G.marmots[k]) {
       G.marmots[k] = true; sfx.marmot();
-      toast(TX.toast_marmot(Object.keys(G.marmots).length));
+      const n = Object.keys(G.marmots).length;
+      toast(TX.toast_marmot(n));
+      if (n >= 5) { toast(TX.toast_marmots_all); sfx.fanfare(); }
       e.diveT = 40;
     }
     if (e.diveT > 0) e.diveT--;
+    // once you know all five, they stay out and whistle hello
+    if (all5) {
+      if (e.greetCd > 0) e.greetCd--;
+      if (e.alert && (e.greetCd === undefined || e.greetCd <= 0)) {
+        e.greetCd = 260;
+        blip(1900, 0.12, 'sine', 0.03, -600);
+        setTimeout(() => blip(2100, 0.1, 'sine', 0.025, -500), 160);
+        for (let i = 0; i < 3; i++) spawnPart({ x: e.x * TILE + 8, y: e.r * TILE - 16, vx: (i - 1) * 0.4, vy: -0.7, t: 30, c: '#ffd54f', s: 1.8 });
+      }
+    }
   }
 }
 
@@ -1439,6 +1468,28 @@ function drawEntity(e) {
       cx.restore();
       break;
     }
+    case 'depot': {
+      // weatherproof crate with a coil of rope and spare slings on a peg
+      cx.fillStyle = '#6b5a40'; cx.fillRect(x - 9, y - 9, 18, 9);
+      cx.strokeStyle = '#4a3e2c'; cx.lineWidth = 1; cx.strokeRect(x - 9, y - 9, 18, 9);
+      cx.beginPath(); cx.moveTo(x - 9, y - 9); cx.lineTo(x + 9, y); cx.stroke();
+      cx.fillStyle = '#8a7c5e'; cx.fillRect(x - 7, y - 12, 14, 3); // lid
+      cx.strokeStyle = '#c9a96a'; cx.lineWidth = 2;
+      cx.beginPath(); cx.arc(x + 13, y - 12, 4, 0, 7); cx.stroke(); // rope coil
+      cx.strokeStyle = '#e07b30'; cx.lineWidth = 1.5;
+      cx.beginPath(); cx.ellipse(x - 13, y - 13, 2, 3, 0.3, 0, 7); cx.stroke(); // sling on a peg
+      break;
+    }
+    case 'tin': {
+      if (taken || !G.flags.zinnensprung) return;
+      const shimmer = 0.5 + Math.sin(frame * 0.08) * 0.3;
+      cx.fillStyle = '#9c3d2e'; cx.fillRect(x - 5, y - 5, 10, 5);
+      cx.fillStyle = '#d8d2bd'; cx.fillRect(x - 4, y - 7, 8, 2);
+      cx.fillStyle = `rgba(255,250,210,${0.2 * shimmer})`;
+      cx.beginPath(); cx.arc(x, y - 5, 9, 0, 7); cx.fill();
+      if (Math.random() < 0.06) spawnPart({ x: e.x * TILE + 8, y: e.r * TILE - 8, vx: 0, vy: -0.4, t: 40, c: 'rgba(220,240,255,0.6)', s: 2 }); // a bubble
+      break;
+    }
     case 'bunker': {
       cx.fillStyle = '#8e8d85';
       cx.beginPath(); cx.moveTo(x - 18, y); cx.lineTo(x - 18, y - 16); cx.quadraticCurveTo(x, y - 30, x + 18, y - 16); cx.lineTo(x + 18, y); cx.closePath(); cx.fill();
@@ -1614,16 +1665,21 @@ function drawEntity(e) {
     }
     case 'marmot': {
       const k = eid(e);
-      const hidden = e.diveT === 0 && G.marmots[k] && e.alert === false;
+      const all5 = Object.keys(G.marmots).length >= 5;
+      const hidden = !all5 && G.marmots[k] && e.diveT === 0;
       // burrow
       cx.fillStyle = '#5a4a35'; cx.beginPath(); cx.ellipse(x, y, 8, 3.5, 0, 0, 7); cx.fill();
-      if (!hidden && !(G.marmots[k] && e.diveT === 0)) {
-        const up = e.alert ? 0 : Math.sin(frame * 0.05 + e.x) * 1;
+      if (!hidden) {
+        const greeting = all5 && e.greetCd > 200;
+        const up = greeting ? -2 - Math.sin(frame * 0.5) * 1.5 : e.alert ? 0 : Math.sin(frame * 0.05 + e.x) * 1;
         cx.fillStyle = '#b08a55';
         cx.fillRect(x - 4, y - 12 + up, 8, 11);
         cx.beginPath(); cx.arc(x, y - 13 + up, 4, 0, 7); cx.fill();
         cx.fillStyle = '#2c2a25'; cx.fillRect(x + 1, y - 14 + up, 1.5, 1.5);
         cx.fillStyle = '#d8c9a8'; cx.fillRect(x - 2, y - 6 + up, 4, 4); // belly
+        if (greeting) { // tiny raised paw
+          cx.fillStyle = '#b08a55'; cx.fillRect(x + 4, y - 13 + up, 2, 4);
+        }
       }
       break;
     }
@@ -2583,7 +2639,7 @@ function drawEnd() {
     TX.st_time(mins),
     TX.st_pages(Object.keys(G.pages).length, Object.keys(G.photos).length),
     TX.st_animals(Object.keys(G.marmots).length, G.gamsSeen),
-    TX.st_sprung(G.flags.zinnensprung),
+    TX.st_sprung(G.flags.zinnensprung, G.flags.tinFound),
     TX.st_knoedel(G.knoedel),
     TX.st_flug(G.flags.flugschein, G.gear.glider, Object.keys(G.rings).length),
   ];
