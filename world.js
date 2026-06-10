@@ -73,6 +73,12 @@ function buildWorld() {
   fill(12, 19, 3, 1, 1);
   fill(2, 16, 9, 1, 1);    // the lookout shelf
 
+  // --- the depot: a balcony nook above the tunnel's east mouth ------------
+  // (the ferrata set waits here — the cable below sends you looking)
+  carve(63, 13, 10, 6);    // east-facing nook, floor y19, tunnel roof stays 3 thick
+  fill(77, 25, 3, 1, 1);   // climb back up from the Hochband
+  fill(73, 22, 2, 1, 1);
+
   // --- tunnel furniture ----------------------------------------------------
   fill(40, 26, 2, 2, 1);   // rubble heap to hop
   fill(52, 22, 2, 2, 1);   // collapsed lintel to duck past
@@ -126,6 +132,7 @@ const MOVERS = [
 // =========================================================================
 const ZONES = [
   { id: 'wache',    x: 2,   y: 8,  w: 26, h: 9,  en: 'Observer Post',         de: 'Beobachterstand',       it: 'Posto di vedetta',      outdoor: true },
+  { id: 'depot',    x: 62,  y: 11, w: 12, h: 9,  en: 'The Depot',             de: 'Das Materialdepot',     it: 'Il deposito',           outdoor: true },
   { id: 'start',    x: 188, y: 0,  w: 12, h: 14, en: 'Launch Site',           de: 'Startplatz',            it: 'Decollo',               outdoor: true },
   { id: 'hintertal', x: 192, y: 0, w: 72, h: 80, en: 'The Hidden Valley',     de: 'Hinteres Tal',          it: 'Valle nascosta',        outdoor: true },
   { id: 'gipfel',   x: 150, y: 0,  w: 24, h: 12, en: 'The Summit',            de: 'Gipfel',                it: 'Cima Gamsblick',        outdoor: true },
@@ -190,6 +197,7 @@ const ENTITIES = [
   { t: 'photo',    x: 166, r: 70, n: 2 },
   { t: 'gear',     x: 162, r: 70, gear: 'boots', key: 'get_boots' },
   { t: 'chestnut', x: 178, r: 70 },
+  { t: 'tin',      x: 171, r: 73 },  // shaken loose from the silt by the Zinnensprung
   { t: 'page',     x: 181, r: 70, n: 2 },
   { t: 'marmot',   x: 185, r: 70 },
   { t: 'page',     x: 188, r: 69, n: 0, hide: true }, // (slot kept free — page 2 sits on the path)
@@ -227,10 +235,13 @@ const ENTITIES = [
 
   // -- Hochband ----------------------------------------------------------------------
   { t: 'sign',     x: 75,  r: 28, key: 'sign_hochband' },
-  { t: 'plaque',   x: 78,  r: 28 },
-  { t: 'gear',     x: 80,  r: 28, gear: 'kit', key: 'get_kit' },
+  { t: 'plaque',   x: 81,  r: 28 },
   { t: 'fire',     x: 87,  r: 28, id: 'biwak', name: 'Biwak am Hochband', biwak: true },
   { t: 'marmot',   x: 92,  r: 28 },
+
+  // -- Materialdepot -----------------------------------------------------------------
+  { t: 'gear',     x: 66,  r: 19, gear: 'kit', key: 'get_kit' },
+  { t: 'depot',    x: 70,  r: 19 },
 
   // -- Grat & Gipfel ---------------------------------------------------------------------
   { t: 'sign',     x: 98,  r: 12, key: 'sign_grat' },
@@ -343,11 +354,22 @@ const TX_DE = {
     'STIRNLAMPE — Licht im Dunkel. Lampada: luce nel buio.',
   ],
   get_kit: [
-    'Am Einstieg hängt ein Klettersteigset über dem Anker, wie frisch geprüft.',
-    'Daneben die Plakette: „Steig der Rosa, erbaut 1975 —',
-    'für die, die zuerst oben war. Per chi arrivò prima.“',
+    'In der Depotkiste: ein Klettersteigset, geölt und gepackt.',
+    'Ein Anhänger: „Leihgabe der Bergfreunde. Zurückbringen — oder weitergeben.“',
     'KLETTERSTEIGSET — Seile sind jetzt Wege. Set da ferrata: le funi diventano sentieri.',
   ],
+  depot: [
+    ['', 'Eine wetterfeste Kiste der Bergfreunde: Reservschlingen, ein Seilring, Karbiddosen.'],
+    ['', 'Wer das hier auffüllt, klettert jedes Mal den harten Weg herauf. Respekt.'],
+  ],
+  tin_find: [
+    'Halb im Schlamm: eine Blechdose, mit Wachs verschlossen. Dein Sprung hat sie freigelegt.',
+    'Darin: eine 10-Lire-Münze und ein Bleistiftzettel:',
+    '„Ida — wenn du das findest, bist du gesprungen. Du schuldest mir zehn Lire. — R.“',
+    'Der Zinnensprung war also schon IHRE Mutprobe. Natürlich war er das.',
+  ],
+  toast_tin: 'Idas Dose! Vom Grund des Teichs.',
+  toast_marmots_all: 'Alle fünf Murmeltiere! Ab jetzt pfeifen sie dir zur Begrüßung.',
   get_jacket: [
     'Norbert verschwindet in der Hütte und kommt mit einer roten,',
     'x-mal geflickten Regenjacke zurück. Innen, verblasst: R.O.',
@@ -362,7 +384,7 @@ const TX_DE = {
   sign_wache:   ['„Beobachterstand ↑ / Osservatorio ↑“', 'Mit Kreide darunter: „Die Lampe ist mit der Wache hinauf. Bring sie brennend zurück.“'],
   sign_almweg:  ['„Wasserfallsteig ↓ — nur für Gämsen und Sture.“', '„Sentiero della cascata — solo per camosci e testardi.“'],
   sign_alm:     ['„Gamsblick-Alm, 1924. Heute: Kastanienwochen!“', '„Malga Gamsblick — settimane della castagna!“'],
-  sign_hochband:['„Klettersteig ‚Rosa‘ → · Biwak · Nur mit Set / solo con set!“'],
+  sign_hochband:['„Klettersteig ‚Rosa‘ → · Biwak · Nur mit Set / solo con set!“', 'Mit Kreide: „Kein Set dabei? Die Bergfreunde lagern Ersatz im Depot — oben überm Stollenmaul.“'],
   sign_grat:    ['„Gipfel / Cima 20 min →“', 'Darunter, eingeritzt und fast verwittert: „R + I 1974“'],
   sign_notch:   ['„ACHTUNG SCHARTE! / ATTENZIONE!“', 'Kleiner, in Bleistift: „Der Zinnensprung. Unten ist der Teich. Angeblich.“'],
   sign_flug:    ['„Flugschule Gamstal — demnächst / prossimamente.“', 'Der Berg ist hier noch nicht fertig.'],
@@ -570,6 +592,7 @@ const TX_DE = {
     jacket:   'Der Wasserfallsteig — Gämsen und Sture',
     lamp:     'Der Stollen ist stockfinster — im Beobachterstand über der Stellung soll eine Lampe hängen',
     tunnel:   'Durch den Stollen von 1916',
+    kit:      'Ohne Set kein Seil — die Bergfreunde lagern Ersatz im Depot überm Stollenmaul',
     biwak:    'Zu dunkel zum Klettern — biwakiere am Hochband',
     summit:   'Der Klettersteig „Rosa“. Erstes Licht. Der Gipfel.',
     free:     'Das Wochenende gehört dir — finde die Orte von Omas fünf Fotos! (Und: Murmeltiere? Zinnensprung? Flugschule?)',
@@ -602,7 +625,7 @@ const TX_DE = {
   st_time: m => `Wanderzeit: ${m} min`,
   st_pages: (a, b) => `Tagebuchseiten: ${a}/7 · Omas Fotos: ${b}/5`,
   st_animals: (a, b) => `Murmeltiere: ${a}/5 · Gams gesehen: ${b}×`,
-  st_sprung: y => `Zinnensprung: ${y ? 'JA!' : 'noch nicht…'}`,
+  st_sprung: (y, tin) => `Zinnensprung: ${y ? (tin ? 'JA — und Idas Dose gefunden!' : 'JA!') : 'noch nicht…'}`,
   st_knoedel: y => `Knödel: ${y ? 'die besten deines Lebens' : 'verpasst?!'}`,
   st_flug: (f, g, n) => `Flugschule: ${f ? 'FLUGSCHÜLERIN NR. 1' : g ? `Ringe ${n}/5` : 'demnächst…'}`,
 };
@@ -667,11 +690,22 @@ const TX_EN = {
     'HEADLAMP — light in the dark. Stirnlampe!',
   ],
   get_kit: [
-    'A via ferrata set hangs over the anchor, as if freshly checked.',
-    'Beside it, the plaque: "Steig der Rosa, built 1975 —',
-    'for the one who got up first. Per chi arrivò prima."',
+    'In the depot crate: a via ferrata set, oiled and packed.',
+    'A tag: "On loan from the mountain friends. Bring it back — or pass it on."',
     'FERRATA SET — cables are paths now. Klettersteigset!',
   ],
+  depot: [
+    ['', 'A weatherproof crate of the mountain friends: spare slings, a coil of rope, carbide tins.'],
+    ['', 'Whoever restocks this climbs up here the hard way, every time. Respect.'],
+  ],
+  tin_find: [
+    'Half-buried in the silt: a tin, sealed with wax. Your jump shook it loose.',
+    'Inside: a 10-lire coin and a pencil note:',
+    '"Ida — if you ever find this, you jumped. You owe me ten lire. — R."',
+    'So the Zinnensprung was THEIR dare first. Of course it was.',
+  ],
+  toast_tin: "Ida's tin! From the bottom of the pond.",
+  toast_marmots_all: 'All five marmots! From now on they whistle when you come by.',
   get_jacket: [
     'Norbert disappears into the hut and returns with a red',
     'rain jacket, patched a dozen times. Inside, faded: R.O.',
@@ -685,7 +719,7 @@ const TX_EN = {
   sign_wache:   ['"Observer post ↑ / Osservatorio ↑"', 'Chalked beneath: "The lamp went up with the watch. Bring it back lit."'],
   sign_almweg:  ['"Waterfall route ↓ — for chamois and the stubborn only."', '"Sentiero della cascata — solo per camosci e testardi."'],
   sign_alm:     ['"Gamsblick Alm, est. 1924. This week: chestnut weeks!"', '"Malga Gamsblick — settimane della castagna!"'],
-  sign_hochband:['"Via ferrata \'Rosa\' → · Bivouac · Set required / solo con set!"'],
+  sign_hochband:['"Via ferrata \'Rosa\' → · Bivouac · Set required / solo con set!"', 'Chalked: "No set? The mountain friends keep spares in the depot — up over the tunnel mouth."'],
   sign_grat:    ['"Summit / Cima 20 min →"', 'Below, carved and nearly weathered away: "R + I 1974"'],
   sign_notch:   ['"CAUTION — GAP! / ATTENZIONE!"', 'Smaller, in pencil: "The Zinnensprung. The pond is down there. Allegedly."'],
   sign_flug:    ['"Flight school Gamstal — coming soon / prossimamente."', 'The mountain is not finished here yet.'],
@@ -887,6 +921,7 @@ const TX_EN = {
     jacket:   'The waterfall route — chamois and the stubborn',
     lamp:     'The tunnel is pitch dark — a lamp is said to hang at the observer post above the old position',
     tunnel:   'Through the tunnel of 1916',
+    kit:      'No set, no cable — the mountain friends keep spares in a depot above the tunnel mouth',
     biwak:    'Too dark to climb — bivouac at the high ledge',
     summit:   'The via ferrata "Rosa". First light. The summit.',
     free:     'The weekend is yours — find where Oma\'s five photos were taken. (And: marmots? The Zinnensprung? The flight school?)',
@@ -919,7 +954,7 @@ const TX_EN = {
   st_time: m => `Hiking time: ${m} min`,
   st_pages: (a, b) => `Journal pages: ${a}/7 · Oma's photos: ${b}/5`,
   st_animals: (a, b) => `Marmots: ${a}/5 · Chamois seen: ${b}×`,
-  st_sprung: y => `Zinnensprung: ${y ? 'YES!' : 'not yet…'}`,
+  st_sprung: (y, tin) => `Zinnensprung: ${y ? (tin ? "YES — and Ida's tin found!" : 'YES!') : 'not yet…'}`,
   st_knoedel: y => `Knödel: ${y ? 'the best of your life' : 'missed?!'}`,
   st_flug: (f, g, n) => `Flight school: ${f ? 'STUDENT NO. 1' : g ? `rings ${n}/5` : 'coming soon…'}`,
 };

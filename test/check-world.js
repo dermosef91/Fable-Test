@@ -95,6 +95,16 @@ for (const [x, y] of [[12, 25], [7, 22], [12, 19], [6, 16]]) ok(solid(at(x, y)),
   ok(head, 'lookout ledges have headroom');
 }
 ok(ENTITIES.some(e => e.t === 'gear' && e.gear === 'lamp' && e.r <= 16), 'lamp waits at the observer post (above the tunnel mouth level)');
+// the depot above the tunnel's east mouth
+for (const [x, y] of [[77, 25], [73, 22], [66, 19]]) ok(solid(at(x, y)), `depot ledge/floor at ${x},${y}`);
+ok(!solid(at(66, 17)) && !solid(at(66, 14)) && solid(at(66, 12)), 'depot nook carved with a roof');
+ok(!solid(at(72, 17)) && !solid(at(72, 18)), 'depot nook opens east');
+{
+  let roofOk = true;
+  for (let x = 63; x <= 72; x++) for (let y = 19; y <= 21; y++) if (!solid(at(x, y))) roofOk = false;
+  ok(roofOk, 'tunnel roof stays 3 thick under the depot');
+}
+ok(ENTITIES.some(e => e.t === 'gear' && e.gear === 'kit' && e.r <= 19), 'ferrata set waits up at the depot');
 ok(ENTITIES.filter(e => e.t === 'chestnut' && e.x < 60).length >= 1, 'a chestnut waits west of the Alm — the quest sends you somewhere new');
 // 11. waterfall column intersects both climbs
 const wf = WATERFALL;
@@ -143,6 +153,12 @@ const lookoutHops = [
   [[12, 19], [9, 16]],
 ];
 lookoutHops.forEach(([a, b], i) => ok(reachable(...a, ...b), `lookout hop ${i} reachable`));
+const depotHops = [
+  [[81, 28], [79, 25]],
+  [[77, 25], [74, 22]],
+  [[73, 22], [71, 19]],
+];
+depotHops.forEach(([a, b], i) => ok(reachable(...a, ...b), `depot hop ${i} reachable`));
 
 // 14. pond crossing: bank -> log -> bank
 ok(at(169, 69) === 3 && at(170, 69) === 3, 'pond log present');
