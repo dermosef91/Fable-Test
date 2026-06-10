@@ -80,8 +80,12 @@ function buildWorld() {
   fill(73, 22, 2, 1, 1);
 
   // --- tunnel furniture ----------------------------------------------------
+  fill(34, 26, 3, 2, 1);   // low rubble pile near the west mouth — hop over
   fill(40, 26, 2, 2, 1);   // rubble heap to hop
+  carve(44, 27, 2, 1);     // narrow floor gap — a short jump
+  fill(48, 23, 1, 3, 1);   // fallen timber, squeeze past on the right
   fill(52, 22, 2, 2, 1);   // collapsed lintel to duck past
+  fill(59, 25, 3, 3, 1);   // cave-in mound near the east end — biggest hop
 
   // --- water ---------------------------------------------------------------
   fill(23, 70, 11, 3, 4);  // plunge pool under the falls
@@ -572,6 +576,7 @@ const TX_DE = {
   toast_slip: 'Du rutschst ab! Ohne feste Schuhe kein Halt im Geröll. · Si scivola!',
   toast_fall_water: 'Ohne Jacke drückt dich der Wasserfall einfach hinunter.',
   toast_dark: 'Stockfinster. Ohne Licht traust du dich kaum einen Schritt.',
+  toast_dark_turn: 'Zu dunkel. Du drehst um — ohne Lampe geht es hier nicht weiter.',
   toast_cable: 'Ein Stahlseil. Ohne Klettersteigset bleibt es nur Dekoration.',
   toast_cable_ok: 'HOCH drücken zum Einhängen · SU per agganciarsi',
   toast_cold: 'Dir wird kalt! Such ein Feuer. · Hai freddo!',
@@ -901,6 +906,7 @@ const TX_EN = {
   toast_slip: 'You slip! No grip on scree without proper boots.',
   toast_fall_water: 'Without a jacket, the waterfall simply hammers you down.',
   toast_dark: 'Pitch black. Without a light you hardly dare take a step.',
+  toast_dark_turn: 'Too dark. You turn back — no going further without a lamp.',
   toast_cable: 'A steel cable. Without a ferrata set it stays decoration.',
   toast_cable_ok: 'Press UP to clip in',
   toast_cold: 'You\'re getting cold! Find a fire.',
