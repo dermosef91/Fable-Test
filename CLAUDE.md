@@ -56,3 +56,16 @@ https://dermosef91.github.io/Fable-Test/. There is no other deploy step.
 
 German-first bilingual flavor text, gentle and concrete, real South Tyrol
 texture. No combat — gates are weather, gear and terrain. Keep it that way.
+
+## Characters
+
+`CHARACTERS.md` is the single-source character reference (name, background,
+personality, detailed visual description with hex colours). **Keep it in sync:**
+
+- **Adding** a character → append a new section to `CHARACTERS.md`.
+- **Altering** a character (visuals, dialogue, role) → update the matching
+  section in `CHARACTERS.md` to reflect the change.
+- **Removing** a character → delete its section from `CHARACTERS.md`.
+
+Also update `tools/generate_sprites.py` descriptions when a character's visual
+design changes so the sprite pipeline stays consistent.

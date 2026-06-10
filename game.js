@@ -2354,25 +2354,6 @@ function drawHUD() {
   }
   if (G.knoedel) { panel(gx, gy, 26, 26, 6, true); drawIcon('knoedel', gx + 13, gy + 13, 17); }
 
-  // quest tracker (so nobody is ever lost): diamond, small-caps header, the goal
-  if (G.mode === 'play' && !G.caption && bannerT <= 120 && G.objective) {
-    const qx = 14, qy = (gx > 12 || G.knoedel) ? gy + 40 : gy + 6;
-    cx.save();
-    cx.shadowColor = 'rgba(8,10,18,0.85)'; cx.shadowBlur = 4;
-    cx.strokeStyle = UI_GOLD; cx.lineWidth = 1.4;
-    cx.translate(qx + 5, qy); cx.rotate(Math.PI / 4); cx.strokeRect(-3.2, -3.2, 6.4, 6.4);
-    cx.rotate(-Math.PI / 4); cx.translate(-qx - 5, -qy);
-    setTracking(1.5);
-    cx.fillStyle = UI_GOLD; cx.font = 'bold 12px Georgia, serif'; cx.textAlign = 'left';
-    cx.fillText(TX.obj_prefix.replace(/[:\s]+$/, '').toUpperCase(), qx + 15, qy + 1);
-    setTracking(0);
-    let ot = G.objective;
-    if (G.objKey === 'chestnut' && !G.chestnutsDone) ot += ` (${G.chestnuts}/3)`;
-    cx.fillStyle = 'rgba(243,236,210,0.92)'; cx.font = '11.5px Georgia, serif';
-    cx.fillText('·', qx + 4, qy + 18);
-    wrapText(ot, qx + 13, qy + 18, Math.min(250, W * 0.42), 15);
-    cx.restore();
-  }
 
   // map, mute & fullscreen buttons
   BTNS = [];
