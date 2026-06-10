@@ -22,6 +22,40 @@ function resize() {
 window.addEventListener('resize', resize);
 resize();
 
+// ------------------------------------------------------------ fullscreen --
+const fsEl = document.documentElement;
+const fsSupported = !!(fsEl.requestFullscreen || fsEl.webkitRequestFullscreen);
+const isFullscreen = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+function toggleFullscreen() {
+  try {
+    if (isFullscreen()) {
+      const exit = document.exitFullscreen || document.webkitExitFullscreen;
+      if (exit) exit.call(document);
+    } else {
+      const req = fsEl.requestFullscreen || fsEl.webkitRequestFullscreen;
+      if (!req) return;
+      const p = req.call(fsEl, { navigationUI: 'hide' });
+      if (p && p.catch) p.catch(() => {});
+    }
+  } catch (e) {}
+}
+function onFsChange() {
+  try {
+    if (isFullscreen()) {
+      // side-scroller: on phones, fullscreen is best enjoyed in landscape
+      if (isTouch && screen.orientation && screen.orientation.lock) {
+        const l = screen.orientation.lock('landscape');
+        if (l && l.catch) l.catch(() => {});
+      }
+    } else if (screen.orientation && screen.orientation.unlock) {
+      screen.orientation.unlock();
+    }
+  } catch (e) {}
+  resize();
+}
+document.addEventListener('fullscreenchange', onFsChange);
+document.addEventListener('webkitfullscreenchange', onFsChange);
+
 // ----------------------------------------------------------------- world --
 const grid = buildWorld();
 const tileAt = (tx, ty) => (tx < 0 || tx >= WORLD_W || ty < 0 || ty >= WORLD_H) ? 1 : grid[ty * WORLD_W + tx];
@@ -139,6 +173,7 @@ window.addEventListener('keydown', e => {
     if (k === ' ' || k === 'w' || k === 'arrowup') pendJump = true;
     if (k === 'w' || k === 'arrowup') pendUp = true;
     if (k === 'e' || k === 'enter') pendAct = true;
+    if (k === 'f') toggleFullscreen();
   }
 });
 window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
@@ -169,7 +204,7 @@ function hitBtn(p) {
 }
 function refreshTouch() {
   touchState.left = touchState.right = touchState.up = touchState.down = false;
-  touchState.jump = touchState.act = touchState.map = false;
+  touchState.jump = touchState.act = touchState.map = touchState.fs = false;
   for (const [, p] of touches) {
     const id = hitBtn(p);
     if (id) touchState[id] = true;
@@ -199,7 +234,12 @@ cv.addEventListener('touchmove', e => {
 }, { passive: false });
 const touchEnd = e => {
   e.preventDefault();
-  for (const t of e.changedTouches) touches.delete(t.identifier);
+  for (const t of e.changedTouches) {
+    touches.delete(t.identifier);
+    // fullscreen must be requested from touchend — touchstart is not a
+    // user activation in Chrome, so the request would be rejected there
+    if (hitBtn(pointerXY(t)) === 'fs') toggleFullscreen();
+  }
   refreshTouch();
 };
 cv.addEventListener('touchend', touchEnd, { passive: false });
@@ -209,6 +249,7 @@ cv.addEventListener('mousedown', e => {
   const b = hitBtn({ x: e.clientX * DPR, y: e.clientY * DPR });
   if (b === 'map') pendMap = true;
   if (b === 'mute') toggleMute();
+  if (b === 'fs') toggleFullscreen();
   if (b === 'cont' || b === 'new' || b === 'start') pendTitle = b;
   if (b && (b === 'album' || b === 'albumBack' || b.startsWith('ph'))) pendUI = b;
   tapAt(e);
@@ -1721,10 +1762,11 @@ function drawHUD() {
     cx.restore();
   }
 
-  // map & mute buttons
+  // map, mute & fullscreen buttons
   BTNS = [];
   addBtn('map', W - 49, 60, 20, '🗺');
   addBtn('mute', W - 49, 106, 20, muted ? '🔇' : '🔊');
+  if (fsSupported) addBtn('fs', W - 49, 152, 20, isFullscreen() ? '⤡' : '⤢');
 
   // touch controls
   if (isTouch && (G.mode === 'play' || G.mode === 'dialog')) {
@@ -1797,7 +1839,7 @@ function drawHUD() {
 
 function addBtn(id, x, y, r, label) { BTNS.push({ id, x: x * DPR, y: y * DPR, r: r * DPR, label, lx: x, ly: y, lr: r }); }
 function drawBtn(b) {
-  if (!isTouch && b.id !== 'map' && b.id !== 'mute') return;
+  if (!isTouch && b.id !== 'map' && b.id !== 'mute' && b.id !== 'fs') return;
   if (!b.lr || b.lr < 1) return;
   const on = touchState[b.id];
   cx.fillStyle = on ? 'rgba(255,213,79,0.4)' : 'rgba(20,24,38,0.4)';
@@ -1897,6 +1939,7 @@ function drawMap() {
   BTNS = [];
   addBtn('map', W - 49, 60, 20, '✕');
   drawBtn(BTNS[0]);
+  if (fsSupported) { addBtn('fs', W - 49, 106, 20, isFullscreen() ? '⤡' : '⤢'); drawBtn(BTNS[1]); }
   if (Object.keys(G.photos).length) {
     cx.textBaseline = 'middle';
     cx.fillStyle = 'rgba(20,24,38,0.55)'; roundRect(mx + 10, my + 8, 92, 26, 8); cx.fill();
@@ -2096,6 +2139,7 @@ function drawTitle() {
 
   // menu buttons
   BTNS = [];
+  if (fsSupported) { addBtn('fs', W - 49, 60, 20, isFullscreen() ? '⤡' : '⤢'); drawBtn(BTNS[0]); }
   const bw2 = Math.min(260, W * 0.7);
   const mkRow = (id, label, y) => {
     cx.fillStyle = 'rgba(16,19,34,0.65)'; roundRect(W / 2 - bw2 / 2, y - 17, bw2, 34, 10); cx.fill();
@@ -2110,7 +2154,7 @@ function drawTitle() {
     mkRow('start', '🥾 ' + TX.title_start, H * 0.58);
   }
   cx.fillStyle = 'rgba(243,236,210,0.55)'; cx.font = '12px sans-serif';
-  cx.fillText('← → laufen · Leertaste springen · E benutzen · M Karte', W / 2, H * 0.58 + 92);
+  cx.fillText('← → laufen · Leertaste springen · E benutzen · M Karte · F Vollbild', W / 2, H * 0.58 + 92);
   cx.fillText('Ein Spaziergang, kein Kampf. · Niente combattimenti, solo montagna.', W / 2, H * 0.58 + 112);
   cx.restore();
 
