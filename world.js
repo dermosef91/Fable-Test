@@ -562,9 +562,9 @@ const TX_DE = {
   ending_freeroam: 'Weiter erkunden: Tippen · continua a esplorare',
 
   map_title: 'Wanderkarte Gamstal · Carta escursionistica',
-  map_close: 'M / 🗺 zum Schließen · chiudi',
+  map_close: 'M oder ✕ zum Schließen · chiudi',
   map_here: 'Du bist hier:',
-  album_btn: '📷 Album',
+  album_btn: 'Album',
   album_title: 'Omas Fotos · Le fotografie',
   album_hint: 'Antippen zum Ansehen · tocca per vedere',
   obj_prefix: 'Ziel: ',
@@ -573,7 +573,7 @@ const TX_DE = {
   continue_caption: 'Weiter geht\'s · si continua',
   ctl_hint1: '← → laufen · Leertaste springen · E benutzen · M Karte · F Vollbild',
   ctl_hint2: 'Ein Spaziergang, kein Kampf. · Niente combattimenti, solo montagna.',
-  lang_btn: '🌐 Language: English?',
+  lang_btn: 'Language: English?',
   photos_unlocked: 'In der Blechdose stecken noch fünf Fotos von 1974. Finde die Orte, an denen sie aufgenommen wurden!',
   st_time: m => `Wanderzeit: ${m} min`,
   st_pages: (a, b) => `Tagebuchseiten: ${a}/7 · Omas Fotos: ${b}/5`,
@@ -874,9 +874,9 @@ const TX_EN = {
   ending_freeroam: 'Tap to keep exploring',
 
   map_title: 'Hiking map Gamstal · Wanderkarte',
-  map_close: 'M / 🗺 to close',
+  map_close: 'Press M or ✕ to close',
   map_here: 'You are at:',
-  album_btn: '📷 Album',
+  album_btn: 'Album',
   album_title: 'Oma\'s photos · Omas Fotos',
   album_hint: 'Tap a photo to view it',
   obj_prefix: 'Goal: ',
@@ -885,7 +885,7 @@ const TX_EN = {
   continue_caption: 'Onward · weiter geht\'s',
   ctl_hint1: '← → move · Space jump · E interact · M map · F fullscreen',
   ctl_hint2: 'A hike, not a fight. · Ein Spaziergang, kein Kampf.',
-  lang_btn: '🌐 Sprache: Deutsch?',
+  lang_btn: 'Sprache: Deutsch?',
   photos_unlocked: 'Tucked in the tin box: five more photos from 1974. Find the places where they were taken!',
   st_time: m => `Hiking time: ${m} min`,
   st_pages: (a, b) => `Journal pages: ${a}/7 · Oma's photos: ${b}/5`,
@@ -898,12 +898,12 @@ const TX_EN = {
 let TX = TX_EN; // English is the default; the title screen can switch
 
 // Gear display
-const GEAR_INFO = {
-  boots:  { icon: '🥾', de: 'Wanderschuhe' },
-  jacket: { icon: '🧥', de: 'Regenjacke' },
-  lamp:   { icon: '🔦', de: 'Stirnlampe' },
-  kit:    { icon: '🧗', de: 'Klettersteigset' },
-  glider: { icon: '🪂', de: 'Gleitschirm' },
+const GEAR_INFO = { // icons are drawn by drawIcon(key) in game.js
+  boots:  { de: 'Wanderschuhe', en: 'Hiking boots' },
+  jacket: { de: 'Regenjacke', en: 'Rain jacket' },
+  lamp:   { de: 'Stirnlampe', en: 'Headlamp' },
+  kit:    { de: 'Klettersteigset', en: 'Ferrata set' },
+  glider: { de: 'Gleitschirm', en: 'Paraglider' },
 };
 
 if (typeof module !== 'undefined') {

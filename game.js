@@ -1736,6 +1736,222 @@ function drawLighting(pc) {
   cx.imageSmoothingEnabled = false;
 }
 
+// ============================================================ vector icons =
+// every former emoji, redrawn in the game's own flat style.
+// drawn centered at (x,y) into an s×s box (design space is 16 units).
+function drawIcon(name, x, y, s) {
+  cx.save();
+  cx.translate(x, y);
+  cx.scale(s / 16, s / 16);
+  cx.lineCap = 'round'; cx.lineJoin = 'round';
+  switch (name) {
+    case 'fire': {
+      cx.fillStyle = '#ff9d2e';
+      cx.beginPath(); cx.moveTo(-4, 7); cx.quadraticCurveTo(-7.5, 2, -3.5, -2);
+      cx.quadraticCurveTo(-1, -4.5, 0.5, -8); cx.quadraticCurveTo(1, -3.5, 4, -0.5);
+      cx.quadraticCurveTo(7, 3, 4, 7); cx.closePath(); cx.fill();
+      cx.fillStyle = '#ffd54f';
+      cx.beginPath(); cx.moveTo(-1.8, 7); cx.quadraticCurveTo(-3.2, 3, 0, -0.5);
+      cx.quadraticCurveTo(3, 3, 1.8, 7); cx.closePath(); cx.fill();
+      break;
+    }
+    case 'boots': {
+      cx.fillStyle = '#7a4a26';
+      cx.fillRect(-5, -7, 6, 9);
+      cx.fillRect(-5, -1, 11, 7);
+      cx.fillStyle = '#4a2e16'; cx.fillRect(-6, 4, 12, 3);
+      cx.fillStyle = '#c9a96a'; cx.fillRect(-3.6, -6, 1.4, 6);
+      break;
+    }
+    case 'jacket': {
+      cx.fillStyle = '#c0392b';
+      cx.beginPath(); cx.arc(0, -4, 4.2, Math.PI, 0); cx.fill();    // hood
+      cx.fillRect(-4.2, -4, 8.4, 10);                               // torso
+      cx.fillRect(-7.8, -3.5, 2.6, 7.5); cx.fillRect(5.2, -3.5, 2.6, 7.5); // arms, set off a touch
+      cx.fillStyle = '#8e2a20'; cx.fillRect(-0.8, -4, 1.6, 10);     // zip
+      cx.fillStyle = '#e8b88a'; cx.fillRect(-7.6, 3, 2.2, 1.6); cx.fillRect(5.4, 3, 2.2, 1.6); // cuffs
+      break;
+    }
+    case 'lamp': {
+      cx.fillStyle = '#2c2e33'; cx.fillRect(-8, -1.5, 16, 3);       // strap
+      cx.fillStyle = '#4a4e55'; cx.fillRect(-5, -4.5, 9, 9);
+      cx.fillStyle = '#ffe27a'; cx.beginPath(); cx.arc(1, 0, 3, 0, 7); cx.fill();
+      cx.fillStyle = 'rgba(255,226,122,0.45)';
+      cx.beginPath(); cx.moveTo(3.5, -2.5); cx.lineTo(8, -5.5); cx.lineTo(8, 5.5); cx.lineTo(3.5, 2.5); cx.closePath(); cx.fill();
+      break;
+    }
+    case 'kit': { // carabiner
+      cx.strokeStyle = '#e07b30'; cx.lineWidth = 2.6;
+      cx.beginPath(); cx.ellipse(0, 0, 4.6, 6.8, 0.35, 0, 7); cx.stroke();
+      cx.strokeStyle = '#d4d4d4'; cx.lineWidth = 1.8;
+      cx.beginPath(); cx.moveTo(2.4, -5.2); cx.lineTo(4.6, -0.5); cx.stroke();
+      break;
+    }
+    case 'glider': {
+      cx.fillStyle = '#c0392b';
+      cx.beginPath(); cx.moveTo(-8, -2); cx.quadraticCurveTo(0, -8.5, 8, -2);
+      cx.quadraticCurveTo(0, -4.5, -8, -2); cx.closePath(); cx.fill();
+      cx.strokeStyle = 'rgba(230,235,240,0.9)'; cx.lineWidth = 1;
+      cx.beginPath(); cx.moveTo(-6, -3); cx.lineTo(0, 5.5); cx.moveTo(6, -3); cx.lineTo(0, 5.5); cx.stroke();
+      cx.fillStyle = '#e8b88a'; cx.beginPath(); cx.arc(0, 6, 1.9, 0, 7); cx.fill();
+      break;
+    }
+    case 'knoedel': {
+      cx.fillStyle = '#e3c490'; cx.beginPath(); cx.arc(0, -0.5, 5.8, 0, 7); cx.fill();
+      cx.fillStyle = '#9a7c4f';
+      cx.fillRect(-2.5, -3, 1.6, 1.6); cx.fillRect(1, -1.5, 1.6, 1.6); cx.fillRect(-1, 1, 1.6, 1.6);
+      cx.fillStyle = '#7a5a39'; cx.fillRect(-7, 5.5, 14, 2);
+      break;
+    }
+    case 'book': {
+      cx.fillStyle = '#7a5a39'; // cover, so the pages read on any background
+      cx.beginPath(); cx.moveTo(0, -4); cx.quadraticCurveTo(-5, -8.5, -9.5, -6.5);
+      cx.lineTo(-9.5, 5.5); cx.quadraticCurveTo(-5, 4, 0, 6.5);
+      cx.quadraticCurveTo(5, 4, 9.5, 5.5); cx.lineTo(9.5, -6.5);
+      cx.quadraticCurveTo(5, -8.5, 0, -4); cx.closePath(); cx.fill();
+      cx.fillStyle = '#f3ecd2';
+      cx.beginPath(); cx.moveTo(0, -5); cx.quadraticCurveTo(-4, -7, -8, -5.5);
+      cx.lineTo(-8, 4.5); cx.quadraticCurveTo(-4, 3, 0, 5); cx.closePath(); cx.fill();
+      cx.beginPath(); cx.moveTo(0, -5); cx.quadraticCurveTo(4, -7, 8, -5.5);
+      cx.lineTo(8, 4.5); cx.quadraticCurveTo(4, 3, 0, 5); cx.closePath(); cx.fill();
+      cx.strokeStyle = '#b9ac82'; cx.lineWidth = 1;
+      cx.beginPath(); cx.moveTo(0, -5); cx.lineTo(0, 5); cx.stroke();
+      cx.beginPath(); cx.moveTo(-6, -2.5); cx.lineTo(-2, -2); cx.moveTo(-6, 0.5); cx.lineTo(-2, 1);
+      cx.moveTo(2, -2); cx.lineTo(6, -2.5); cx.moveTo(2, 1); cx.lineTo(6, 0.5); cx.stroke();
+      break;
+    }
+    case 'camera': {
+      cx.fillStyle = '#3d4046';
+      cx.fillRect(-7, -4, 14, 9.5);
+      cx.fillRect(-2.5, -6, 5, 2.5);
+      cx.fillStyle = '#8fb6c9'; cx.beginPath(); cx.arc(0, 0.8, 3, 0, 7); cx.fill();
+      cx.strokeStyle = '#23252a'; cx.lineWidth = 1.2;
+      cx.beginPath(); cx.arc(0, 0.8, 3, 0, 7); cx.stroke();
+      cx.fillStyle = '#d9577a'; cx.fillRect(4, -2.8, 1.8, 1.6);
+      break;
+    }
+    case 'map': {
+      cx.fillStyle = '#ece3c8';
+      cx.beginPath(); cx.moveTo(-7, -4.5); cx.lineTo(-2.3, -6.5); cx.lineTo(2.3, -4.5); cx.lineTo(7, -6.5);
+      cx.lineTo(7, 4.5); cx.lineTo(2.3, 6.5); cx.lineTo(-2.3, 4.5); cx.lineTo(-7, 6.5); cx.closePath(); cx.fill();
+      cx.strokeStyle = '#b9ac82'; cx.lineWidth = 1;
+      cx.beginPath(); cx.moveTo(-2.3, -6.5); cx.lineTo(-2.3, 4.5); cx.moveTo(2.3, -4.5); cx.lineTo(2.3, 6.5); cx.stroke();
+      cx.strokeStyle = '#c0392b'; cx.setLineDash([1.6, 1.6]);
+      cx.beginPath(); cx.moveTo(-5, 3.5); cx.quadraticCurveTo(0, -1, 5, -3); cx.stroke();
+      cx.setLineDash([]);
+      break;
+    }
+    case 'sound': case 'mute': {
+      cx.fillStyle = '#f3ecd2';
+      cx.beginPath(); cx.moveTo(-7, -2.5); cx.lineTo(-3.5, -2.5); cx.lineTo(0.5, -6); cx.lineTo(0.5, 6);
+      cx.lineTo(-3.5, 2.5); cx.lineTo(-7, 2.5); cx.closePath(); cx.fill();
+      if (name === 'sound') {
+        cx.strokeStyle = '#f3ecd2'; cx.lineWidth = 1.4;
+        cx.beginPath(); cx.arc(1.5, 0, 3.4, -0.85, 0.85); cx.stroke();
+        cx.beginPath(); cx.arc(1.5, 0, 5.8, -0.85, 0.85); cx.stroke();
+      } else {
+        cx.strokeStyle = '#e74c3c'; cx.lineWidth = 2;
+        cx.beginPath(); cx.moveTo(-7, -7); cx.lineTo(7, 7); cx.stroke();
+      }
+      break;
+    }
+    case 'tent': {
+      cx.fillStyle = '#27538f';
+      cx.beginPath(); cx.moveTo(-8, 6); cx.lineTo(0, -6); cx.lineTo(8, 6); cx.closePath(); cx.fill();
+      cx.fillStyle = '#0e2138';
+      cx.beginPath(); cx.moveTo(-2.5, 6); cx.lineTo(0, 1); cx.lineTo(2.5, 6); cx.closePath(); cx.fill();
+      break;
+    }
+    case 'globe': {
+      cx.strokeStyle = '#9fc3e0'; cx.lineWidth = 1.5;
+      cx.beginPath(); cx.arc(0, 0, 6.5, 0, 7); cx.stroke();
+      cx.beginPath(); cx.ellipse(0, 0, 3, 6.5, 0, 0, 7); cx.stroke();
+      cx.beginPath(); cx.moveTo(-6.5, 0); cx.lineTo(6.5, 0); cx.stroke();
+      break;
+    }
+    case 'marmot': {
+      cx.fillStyle = '#b08a55';
+      cx.fillRect(-3.5, -2, 7, 9);
+      cx.beginPath(); cx.arc(0, -3.5, 3.6, 0, 7); cx.fill();
+      cx.fillStyle = '#d8c9a8'; cx.fillRect(-1.8, 1, 3.6, 4.5);
+      cx.fillStyle = '#2c2a25'; cx.fillRect(0.8, -4.5, 1.3, 1.3);
+      break;
+    }
+    case 'chestnut': {
+      cx.fillStyle = '#7c4a21';
+      cx.beginPath(); cx.arc(0, 0.5, 5.5, 0, 7); cx.fill();
+      cx.fillStyle = '#5a3315';
+      cx.beginPath(); cx.arc(0, 0.5, 5.5, Math.PI * 1.1, Math.PI * 1.9); cx.fill();
+      cx.fillStyle = '#e8e0cd'; cx.beginPath(); cx.arc(-1.8, 2.2, 1.4, 0, 7); cx.fill();
+      break;
+    }
+    case 'ring': {
+      cx.strokeStyle = 'rgba(255,213,79,0.4)'; cx.lineWidth = 4;
+      cx.beginPath(); cx.ellipse(0, 0, 4.5, 6, 0, 0, 7); cx.stroke();
+      cx.strokeStyle = '#ffd54f'; cx.lineWidth = 2;
+      cx.beginPath(); cx.ellipse(0, 0, 4.5, 6, 0, 0, 7); cx.stroke();
+      break;
+    }
+    case 'drop': {
+      cx.fillStyle = '#5b9fd4';
+      cx.beginPath(); cx.moveTo(0, -7);
+      cx.quadraticCurveTo(5.5, 0.5, 3.5, 4); cx.arc(0, 4, 3.6, -0.3, Math.PI + 0.3);
+      cx.quadraticCurveTo(-5.5, 0.5, 0, -7); cx.closePath(); cx.fill();
+      cx.fillStyle = 'rgba(255,255,255,0.55)';
+      cx.beginPath(); cx.arc(-1.4, 2.8, 1.2, 0, 7); cx.fill();
+      break;
+    }
+    case 'cable': {
+      cx.strokeStyle = '#5f6a72'; cx.lineWidth = 2.2;
+      cx.beginPath(); cx.moveTo(0, -7); cx.lineTo(0, 7); cx.stroke();
+      cx.fillStyle = '#7d8891';
+      cx.fillRect(-3.5, -4.5, 7, 2); cx.fillRect(-3.5, -0.5, 7, 2); cx.fillRect(-3.5, 3.5, 7, 2);
+      break;
+    }
+    case 'cross': {
+      cx.strokeStyle = '#8a6f4d'; cx.lineWidth = 2.2;
+      cx.beginPath(); cx.moveTo(0, -7); cx.lineTo(0, 7); cx.moveTo(-4.5, -2.5); cx.lineTo(4.5, -2.5); cx.stroke();
+      break;
+    }
+    case 'x': {
+      cx.strokeStyle = 'rgba(255,255,255,0.85)'; cx.lineWidth = 2.2;
+      cx.beginPath(); cx.moveTo(-4.5, -4.5); cx.lineTo(4.5, 4.5); cx.moveTo(4.5, -4.5); cx.lineTo(-4.5, 4.5); cx.stroke();
+      break;
+    }
+    case 'expand': case 'shrink': {
+      cx.strokeStyle = 'rgba(255,255,255,0.85)'; cx.lineWidth = 1.8;
+      const out = name === 'expand';
+      for (const [sx2, sy2] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+        const tipX = sx2 * (out ? 6 : 1.8), tipY = sy2 * (out ? 6 : 1.8);   // arrow tip
+        const tailX = sx2 * (out ? 1.8 : 6), tailY = sy2 * (out ? 1.8 : 6); // arrow tail
+        const hd = out ? sx2 * 3 : -sx2 * 3, hv = out ? sy2 * 3 : -sy2 * 3;
+        cx.beginPath();
+        cx.moveTo(tailX, tailY); cx.lineTo(tipX, tipY);
+        cx.moveTo(tipX - hd, tipY); cx.lineTo(tipX, tipY); cx.lineTo(tipX, tipY - hv);
+        cx.stroke();
+      }
+      break;
+    }
+  }
+  cx.restore();
+}
+
+// icon+text stat rows, centered as a group
+function drawIconStats(segs, cxX, y) {
+  cx.font = '12px Georgia, serif';
+  const iw = 13, gap = 4, pad = 13;
+  let total = -pad;
+  for (const [, t] of segs) total += iw + gap + cx.measureText(t).width + pad;
+  let x = cxX - total / 2;
+  cx.textAlign = 'left';
+  for (const [ic, t] of segs) {
+    drawIcon(ic, x + iw / 2, y, iw);
+    cx.fillText(t, x + iw + gap, y);
+    x += iw + gap + cx.measureText(t).width + pad;
+  }
+  cx.textAlign = 'center';
+}
+
 // ===================================================================== HUD =
 function px(n) { return n; } // logical px in zoomed space
 
@@ -1748,8 +1964,8 @@ function drawHUD() {
   // warmth
   const bw = Math.min(150, W * 0.3);
   cx.fillStyle = 'rgba(20,24,38,0.55)'; roundRect(12, 12, bw + 36, 22, 8); cx.fill();
-  cx.font = '13px sans-serif'; cx.textAlign = 'left';
-  cx.fillText('🔥', 19, 24);
+  cx.textAlign = 'left';
+  drawIcon('fire', 26, 23, 15);
   cx.fillStyle = 'rgba(255,255,255,0.25)'; roundRect(40, 17, bw, 12, 5); cx.fill();
   const warm = Math.max(0, player.warmth / player.maxWarmth);
   cx.fillStyle = warm > 0.35 ? '#ff9d2e' : '#e74c3c';
@@ -1757,20 +1973,20 @@ function drawHUD() {
 
   // gear icons
   let gx = 12, gy = 44;
-  cx.font = '15px sans-serif';
   for (const g of ['boots', 'jacket', 'lamp', 'kit', 'glider']) {
     if (G.gear[g]) {
       cx.fillStyle = 'rgba(20,24,38,0.55)'; roundRect(gx, gy, 26, 26, 7); cx.fill();
-      cx.textAlign = 'center'; cx.fillText(GEAR_INFO[g].icon, gx + 13, gy + 14);
+      drawIcon(g, gx + 13, gy + 13, 17);
       gx += 31;
     }
   }
-  if (G.knoedel) { cx.fillStyle = 'rgba(20,24,38,0.55)'; roundRect(gx, gy, 26, 26, 7); cx.fill(); cx.textAlign = 'center'; cx.fillText('🥟', gx + 13, gy + 14); }
+  if (G.knoedel) { cx.fillStyle = 'rgba(20,24,38,0.55)'; roundRect(gx, gy, 26, 26, 7); cx.fill(); drawIcon('knoedel', gx + 13, gy + 13, 17); }
 
   // pages counter
   cx.fillStyle = 'rgba(20,24,38,0.55)'; roundRect(W - 86, 12, 74, 22, 8); cx.fill();
+  drawIcon('book', W - 70, 23, 15);
   cx.fillStyle = '#f3ecd2'; cx.font = '12px sans-serif'; cx.textAlign = 'center';
-  cx.fillText(`📖 ${Object.keys(G.pages).length}/7`, W - 49, 24);
+  cx.fillText(`${Object.keys(G.pages).length}/7`, W - 41, 24);
 
   // persistent objective line (so nobody is ever lost)
   if (G.mode === 'play' && !G.caption && bannerT <= 120 && G.objective) {
@@ -1786,9 +2002,9 @@ function drawHUD() {
 
   // map, mute & fullscreen buttons
   BTNS = [];
-  addBtn('map', W - 49, 60, 20, '🗺');
-  addBtn('mute', W - 49, 106, 20, muted ? '🔇' : '🔊');
-  if (fsSupported) addBtn('fs', W - 49, 152, 20, isFullscreen() ? '⤡' : '⤢');
+  addBtn('map', W - 49, 60, 20, 'i:map');
+  addBtn('mute', W - 49, 106, 20, muted ? 'i:mute' : 'i:sound');
+  if (fsSupported) addBtn('fs', W - 49, 152, 20, isFullscreen() ? 'i:shrink' : 'i:expand');
 
   // touch controls
   if (isTouch && (G.mode === 'play' || G.mode === 'dialog')) {
@@ -1867,8 +2083,12 @@ function drawBtn(b) {
   cx.fillStyle = on ? 'rgba(255,213,79,0.4)' : 'rgba(20,24,38,0.4)';
   cx.beginPath(); cx.arc(b.lx, b.ly, b.lr, 0, 7); cx.fill();
   cx.strokeStyle = 'rgba(255,255,255,0.35)'; cx.lineWidth = 1.5; cx.stroke();
-  cx.fillStyle = 'rgba(255,255,255,0.85)'; cx.font = `bold ${Math.round(b.lr * 0.7)}px sans-serif`; cx.textAlign = 'center';
-  cx.fillText(b.label, b.lx, b.ly + 1);
+  if (b.label && b.label.startsWith('i:')) {
+    drawIcon(b.label.slice(2), b.lx, b.ly, b.lr * 1.25);
+  } else {
+    cx.fillStyle = 'rgba(255,255,255,0.85)'; cx.font = `bold ${Math.round(b.lr * 0.7)}px sans-serif`; cx.textAlign = 'center';
+    cx.fillText(b.label, b.lx, b.ly + 1);
+  }
 }
 
 function roundRect(x, y, w, h, r) {
@@ -1971,15 +2191,14 @@ function drawMap() {
     }
   }
   // landmarks at a fixed, modest size
-  cx.font = '11px sans-serif';
   for (const id in FIRES) {
     const f = FIRES[id];
     const fz = ZONES.find(z => f.x >= z.x && f.x < z.x + z.w && f.r - 1 >= z.y && f.r - 1 < z.y + z.h);
-    if (fz && G.visited[fz.id]) cx.fillText('🔥', ox + f.x * sc, oy + (f.r - 1) * sc);
+    if (fz && G.visited[fz.id]) drawIcon('fire', ox + f.x * sc, oy + (f.r - 1) * sc, 11);
   }
-  if (G.visited.schlucht) cx.fillText('💧', ox + 26 * sc, oy + 52 * sc);
-  if (G.visited.ferrata) cx.fillText('🧗', ox + 95 * sc, oy + 20 * sc);
-  if (G.visited.gipfel) cx.fillText('✝', ox + 161 * sc, oy + 9 * sc);
+  if (G.visited.schlucht) drawIcon('drop', ox + 26 * sc, oy + 52 * sc, 11);
+  if (G.visited.ferrata) drawIcon('cable', ox + 95 * sc, oy + 20 * sc, 11);
+  if (G.visited.gipfel) drawIcon('cross', ox + 161 * sc, oy + 9 * sc, 11);
   // player
   cx.fillStyle = '#c0392b';
   cx.beginPath(); cx.arc(ox + (player.x / TILE) * sc, oy + (player.y / TILE) * sc, 4 + Math.sin(frame * 0.15), 0, 7); cx.fill();
@@ -1993,26 +2212,26 @@ function drawMap() {
   cx.font = `${of2}px Georgia, serif`;
   while (cx.measureText(TX.obj_prefix + G.objective).width > pw - 28 && of2 > 8) { of2--; cx.font = `${of2}px Georgia, serif`; }
   cx.fillText(TX.obj_prefix + G.objective, mx + pw / 2, my + ph - 38);
-  const stats = [`📖 ${Object.keys(G.pages).length}/7`];
-  if (G.flags.finale) stats.push(`📷 ${Object.keys(G.photos).length}/5`);
-  stats.push(`🐹 ${Object.keys(G.marmots).length}/5`);
-  if (!G.chestnutsDone) stats.push(`🌰 ${G.chestnuts}/3`);
-  if (G.gear.glider) stats.push(`◎ ${Object.keys(G.rings).length}/5`);
-  cx.font = '12px Georgia, serif';
-  cx.fillText(stats.join(' · '), mx + pw / 2, my + ph - 18);
+  const stats = [['book', `${Object.keys(G.pages).length}/7`]];
+  if (G.flags.finale) stats.push(['camera', `${Object.keys(G.photos).length}/5`]);
+  stats.push(['marmot', `${Object.keys(G.marmots).length}/5`]);
+  if (!G.chestnutsDone) stats.push(['chestnut', `${G.chestnuts}/3`]);
+  if (G.gear.glider) stats.push(['ring', `${Object.keys(G.rings).length}/5`]);
+  drawIconStats(stats, mx + pw / 2, my + ph - 18);
 
   cx.fillStyle = 'rgba(243,236,210,0.7)'; cx.font = '11px sans-serif';
   cx.fillText(TX.map_close, W / 2, Math.min(H - 10, my + ph + 14));
 
   BTNS = [];
-  addBtn('map', W - 49, 60, 20, '✕');
+  addBtn('map', W - 49, 60, 20, 'i:x');
   drawBtn(BTNS[0]);
-  if (fsSupported) { addBtn('fs', W - 49, 106, 20, isFullscreen() ? '⤡' : '⤢'); drawBtn(BTNS[1]); }
+  if (fsSupported) { addBtn('fs', W - 49, 106, 20, isFullscreen() ? 'i:shrink' : 'i:expand'); drawBtn(BTNS[1]); }
   if (G.flags.finale && Object.keys(G.photos).length) {
     cx.textBaseline = 'middle';
     cx.fillStyle = 'rgba(20,24,38,0.55)'; roundRect(mx + pw - 100, my + 32, 90, 24, 8); cx.fill();
+    drawIcon('camera', mx + pw - 86, my + 44, 13);
     cx.fillStyle = '#f3ecd2'; cx.font = '12px sans-serif'; cx.textAlign = 'center';
-    cx.fillText(TX.album_btn, mx + pw - 55, my + 44);
+    cx.fillText(TX.album_btn, mx + pw - 48, my + 44);
     BTNS.push({ id: 'album', x: (mx + pw - 55) * DPR, y: (my + 44) * DPR, w: 100 * DPR, h: 32 * DPR, lr: 0 });
   }
   cx.restore();
@@ -2133,7 +2352,7 @@ function drawAlbum() {
   }
   cx.fillStyle = 'rgba(243,236,210,0.6)'; cx.font = '12px sans-serif';
   cx.fillText(TX.album_hint, W / 2, H - 22);
-  addBtn('albumBack', W - 49, 60, 20, '✕');
+  addBtn('albumBack', W - 49, 60, 20, 'i:x');
   drawBtn(BTNS[BTNS.length - 1]);
   cx.restore();
 
@@ -2207,22 +2426,23 @@ function drawTitle() {
 
   // menu buttons
   BTNS = [];
-  if (fsSupported) { addBtn('fs', W - 49, 60, 20, isFullscreen() ? '⤡' : '⤢'); drawBtn(BTNS[0]); }
+  if (fsSupported) { addBtn('fs', W - 49, 60, 20, isFullscreen() ? 'i:shrink' : 'i:expand'); drawBtn(BTNS[0]); }
   const bw2 = Math.min(260, W * 0.7);
-  const mkRow = (id, label, y) => {
+  const mkRow = (id, label, y, icon) => {
     cx.fillStyle = 'rgba(16,19,34,0.65)'; roundRect(W / 2 - bw2 / 2, y - 17, bw2, 34, 10); cx.fill();
     cx.strokeStyle = 'rgba(243,236,210,0.4)'; cx.lineWidth = 1; cx.stroke();
-    cx.fillStyle = '#f3ecd2'; cx.font = '14px sans-serif'; cx.fillText(label, W / 2, y + 1);
+    if (icon) drawIcon(icon, W / 2 - bw2 / 2 + 22, y, 16);
+    cx.fillStyle = '#f3ecd2'; cx.font = '14px sans-serif'; cx.fillText(label, W / 2 + (icon ? 8 : 0), y + 1);
     BTNS.push({ id, x: (W / 2) * DPR, y: y * DPR, w: bw2 * DPR, h: 38 * DPR, lr: 0 });
   };
   let rowY = H * 0.56;
   if (hasSave()) {
-    mkRow('cont', '⛺ ' + TX.title_continue, rowY); rowY += 44;
-    mkRow('new', '🥾 ' + TX.title_new, rowY); rowY += 44;
+    mkRow('cont', TX.title_continue, rowY, 'tent'); rowY += 44;
+    mkRow('new', TX.title_new, rowY, 'boots'); rowY += 44;
   } else {
-    mkRow('start', '🥾 ' + TX.title_start, rowY); rowY += 44;
+    mkRow('start', TX.title_start, rowY, 'boots'); rowY += 44;
   }
-  mkRow('lang', TX.lang_btn, rowY); rowY += 44;
+  mkRow('lang', TX.lang_btn, rowY, 'globe'); rowY += 44;
   cx.fillStyle = 'rgba(243,236,210,0.55)'; cx.font = '12px sans-serif';
   cx.fillText(TX.ctl_hint1, W / 2, rowY + 14);
   cx.fillText(TX.ctl_hint2, W / 2, rowY + 34);
