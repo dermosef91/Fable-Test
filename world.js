@@ -446,7 +446,6 @@ const TX_DE = {
   photo_close: 'Tippen · tocca',
 
   // ---- the Gams ----
-  toast_gams: 'Eine Gams! Sie kennt den Weg — Oma hat es geschrieben.',
   gams_rest: ['', 'Die Gams bleibt liegen und schaut dich an. Kein Fluchttier mehr, heute nicht. Ihr habt Zeit.'],
 
   // ---- the finale ----
@@ -616,6 +615,7 @@ const TX_DE = {
   album_hint: 'Antippen zum Ansehen · tocca per vedere',
   obj_prefix: 'Ziel: ',
   newobj_prefix: 'Neues Ziel: ',
+  dlg_next: 'Weiter · continua',
   rested: 'Kurz gerastet. Wärme aufgefüllt, Spielstand gespeichert. · Riposato e salvato.',
   continue_caption: 'Weiter geht\'s · si continua',
   ctl_hint1: '← → laufen · Leertaste springen · E benutzen · M Karte · F Vollbild',
@@ -779,7 +779,6 @@ const TX_EN = {
   photo_hint: 'Someone took a photograph here — the light is exactly right.',
   photo_close: 'Tap to continue',
 
-  toast_gams: 'A chamois! She knows the way — Oma wrote it.',
   gams_rest: ['', 'The chamois stays where she lies and watches you. Not a fleeing animal anymore — not today. You both have time.'],
 
   finale_arrive: [
@@ -945,6 +944,7 @@ const TX_EN = {
   album_hint: 'Tap a photo to view it',
   obj_prefix: 'Goal: ',
   newobj_prefix: 'New goal: ',
+  dlg_next: 'Continue',
   rested: 'You rest a while. Warmth restored, game saved.',
   continue_caption: 'Onward · weiter geht\'s',
   ctl_hint1: '← → move · Space jump · E interact · M map · F fullscreen',
