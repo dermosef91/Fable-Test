@@ -24,7 +24,9 @@ function buildWorld() {
   fill(0, 70, WORLD_W, 10, 1);   // valley floor
   fill(32, 48, 79, 10, 1);       // Alm shelf (x32..110)
   fill(2, 28, 109, 9, 1);        // upper band: Stellung terrace / tunnel floor / Hochband (x2..110)
-  carve(4, 28, 6, 9);            // chimney through the band, above the gorge (x4..9)
+  carve(4, 28, 7, 9);            // chimney through the band, above the gorge (x4..10)
+  fill(10, 28, 1, 1, 1);         // landing lip at the chimney mouth
+  carve(11, 33, 21, 4);          // headroom over the gorge slot — full jumps need sky
   fill(28, 8, 45, 14, 1);        // tunnel ceiling massif (x28..72, passage stays open y22..27)
   fill(96, 12, 15, 16, 1);       // headwall above the Hochband (x96..110)
   fill(96, 12, 94, 7, 1);        // ridge band (x96..189)
@@ -45,21 +47,24 @@ function buildWorld() {
   carve(129, 58, 8, 3); // the saddle terrace (floor y61, slab roof at x129)
 
   // --- gorge ledges (lower climb: valley -> Alm shelf) --------------------
+  // even 3-tile risers all the way up
   fill(3, 66, 4, 1, 1);
   fill(9, 63, 3, 1, 1);
-  fill(14, 59, 3, 1, 1);
-  fill(19, 56, 3, 1, 1);
-  fill(24, 52, 3, 1, 1);   // inside the waterfall
-  fill(29, 50, 2, 1, 1);
+  fill(14, 60, 3, 1, 1);
+  fill(19, 57, 3, 1, 1);
+  fill(24, 54, 3, 1, 1);   // inside the waterfall
+  fill(29, 51, 2, 1, 1);
   fill(25, 65, 3, 1, 1);   // hidden ledge behind the falls (journal page)
 
   // --- gorge ledges (upper climb: Alm shelf -> Stellung terrace) ----------
-  fill(26, 45, 3, 1, 1);   // inside the waterfall
-  fill(20, 42, 3, 1, 1);
-  fill(14, 40, 3, 1, 1);
-  fill(8, 38, 3, 1, 1);
-  fill(4, 34, 2, 1, 1);    // inside the chimney
-  fill(8, 31, 2, 1, 1);    // inside the chimney
+  // a gentle zig-zag: every hop is at most 3 tiles up and a couple across
+  fill(26, 45, 4, 1, 1);   // inside the waterfall, reaching dry air at x29
+  fill(21, 42, 3, 1, 1);
+  fill(15, 40, 3, 1, 1);
+  fill(8, 38, 4, 1, 1);
+  fill(4, 35, 3, 1, 1);    // inside the chimney
+  fill(8, 32, 3, 1, 1);    // inside the chimney
+  fill(4, 29, 3, 1, 1);    // inside the chimney, one easy hop from the lip
 
   // --- tunnel furniture ----------------------------------------------------
   fill(40, 26, 2, 2, 1);   // rubble heap to hop

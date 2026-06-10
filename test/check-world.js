@@ -52,8 +52,9 @@ let clearDrop = true;
 for (let y = 19; y < 70; y++) if (solid(at(172, y)) || at(172, y) === 3) clearDrop = false;
 ok(clearDrop, 'notch drop column clear to the pond (no log in the way)');
 ok(at(172, 70) === 4, 'pond under the notch');
-// 5. gorge chimney carved through the upper band
-ok(!solid(at(6, 30)) && !solid(at(6, 35)), 'chimney open at x6');
+// 5. gorge chimney carved through the upper band, lip at its mouth
+ok(!solid(at(7, 30)) && !solid(at(7, 34)), 'chimney open at x7');
+ok(solid(at(10, 28)) && !solid(at(9, 28)), 'landing lip at the chimney mouth, clear air west of it');
 // 6. scree slope continuous from valley to Alm shelf
 let prevTop = null, slopeOk = true, breachCols = 0;
 for (let x = 111; x <= 152; x++) {
@@ -75,9 +76,9 @@ let valley = true;
 for (let x = 2; x <= 261; x++) { const t = at(x, 70); if (!solid(t) && t !== 4 && t !== 3) valley = false; }
 ok(valley, 'valley floor continuous (ground or water)');
 // 9. lower gorge ledge ladder exists
-for (const [x, y] of [[3, 66], [9, 63], [14, 59], [19, 56], [24, 52], [29, 50]]) ok(solid(at(x, y)), `gorge ledge at ${x},${y}`);
+for (const [x, y] of [[3, 66], [9, 63], [14, 60], [19, 57], [24, 54], [29, 51]]) ok(solid(at(x, y)), `gorge ledge at ${x},${y}`);
 // 10. upper gorge ledge ladder exists
-for (const [x, y] of [[26, 45], [20, 42], [14, 40], [8, 38], [4, 34], [8, 31]]) ok(solid(at(x, y)), `upper ledge at ${x},${y}`);
+for (const [x, y] of [[26, 45], [21, 42], [15, 40], [8, 38], [4, 35], [8, 32], [4, 29]]) ok(solid(at(x, y)), `upper ledge at ${x},${y}`);
 // 11. waterfall column intersects both climbs
 const wf = WATERFALL;
 ok(wf.x <= 25 && wf.x + wf.w >= 27, 'waterfall covers the crossing ledges');
@@ -100,21 +101,22 @@ function reachable(fromX, fromY, toX, toY) {
 const lowerHops = [
   [[5, 70], [4, 66]],    // valley -> A (straight up + a step)
   [[6, 66], [9, 63]],
-  [[11, 63], [14, 59]],
-  [[16, 59], [19, 56]],
-  [[21, 56], [24, 52]],  // into the falls
-  [[26, 52], [29, 50]],
-  [[30, 50], [32, 48]],  // onto the Alm shelf
+  [[11, 63], [14, 60]],
+  [[16, 60], [19, 57]],
+  [[21, 57], [24, 54]],  // into the falls
+  [[26, 54], [29, 51]],
+  [[30, 51], [32, 48]],  // onto the Alm shelf
 ];
 lowerHops.forEach(([a, b], i) => ok(reachable(...a, ...b), `lower gorge hop ${i} reachable`));
 const upperHops = [
   [[32, 48], [28, 45]],  // off the shelf into the falls
-  [[26, 45], [22, 42]],
-  [[20, 42], [16, 40]],
-  [[14, 40], [10, 38]],
-  [[8, 38], [5, 34]],
-  [[4, 34], [8, 31]],    // chimney
-  [[9, 31], [10, 28]],   // top out onto the Stellung
+  [[26, 45], [23, 42]],
+  [[21, 42], [17, 40]],
+  [[15, 40], [11, 38]],
+  [[8, 38], [6, 35]],    // into the chimney
+  [[6, 35], [8, 32]],
+  [[8, 32], [6, 29]],
+  [[6, 29], [10, 28]],   // onto the lip — top out
 ];
 upperHops.forEach(([a, b], i) => ok(reachable(...a, ...b), `upper gorge hop ${i} reachable`));
 
