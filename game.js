@@ -9,76 +9,6 @@ const cv = document.getElementById('game');
 const cx = cv.getContext('2d');
 let VW = 0, VH = 0, ZOOM = 2.4, DPR = 1;
 
-// ------------------------------------------------------- sprite system --
-// Loads pre-generated pixel-art sprite PNGs for characters.
-// Each character has: idle_1, idle_2, walking_1, walking_2, portrait
-// Falls back to procedural drawing if sprites aren't loaded.
-const SPRITES = {};
-
-function loadSprite(charId, spriteId, path) {
-  if (!SPRITES[charId]) SPRITES[charId] = { ready: false, imgs: {} };
-  const img = new Image();
-  img.src = path;
-  img.onload = () => {
-    SPRITES[charId].imgs[spriteId] = img;
-    // Mark ready once all 5 sprites are loaded
-    const keys = Object.keys(SPRITES[charId].imgs);
-    if (keys.length >= 5) SPRITES[charId].ready = true;
-  };
-  img.onerror = () => {
-    console.warn(`Sprite load failed: ${path}`);
-  };
-}
-
-function loadCharacterSprites(charId, dir) {
-  loadSprite(charId, 'idle_1', dir + '/idle_1.png');
-  loadSprite(charId, 'idle_2', dir + '/idle_2.png');
-  loadSprite(charId, 'walking_1', dir + '/walking_1.png');
-  loadSprite(charId, 'walking_2', dir + '/walking_2.png');
-  loadSprite(charId, 'portrait', dir + '/portrait.png');
-}
-
-/**
- * Draw a character sprite at world-position (x, y) where y is the floor line.
- * The sprite is scaled to fit the NPC's bounding box (roughly 28px tall in world space).
- * Returns true if a sprite was drawn, false if fallback is needed.
- */
-function drawCharSprite(charId, x, y, spriteId, flipH) {
-  const ch = SPRITES[charId];
-  if (!ch || !ch.imgs[spriteId]) return false;
-  const img = ch.imgs[spriteId];
-  // NPC body is ~28px tall in world space (hat top to feet), ~16px wide
-  const h = 28, w = 16;
-  cx.save();
-  cx.imageSmoothingEnabled = false; // crisp pixel art
-  if (flipH) {
-    cx.translate(x, y - h);
-    cx.scale(-1, 1);
-    cx.drawImage(img, -w / 2, 0, w, h);
-  } else {
-    cx.drawImage(img, x - w / 2, y - h, w, h);
-  }
-  cx.restore();
-  return true;
-}
-
-/**
- * Draw a character portrait sprite into a dialog box.
- * (x, y) is center, s is the box size. Returns true if drawn.
- */
-function drawSpritePortrait(charId, x, y, s) {
-  const ch = SPRITES[charId];
-  if (!ch || !ch.imgs.portrait) return false;
-  cx.save();
-  cx.imageSmoothingEnabled = false;
-  cx.drawImage(ch.imgs.portrait, x - s / 2, y - s / 2, s, s);
-  cx.restore();
-  return true;
-}
-
-// Load Norbert's sprites
-loadCharacterSprites('norbert', 'sprites/norbert');
-
 function resize() {
   DPR = Math.min(window.devicePixelRatio || 1, 2);
   const w = window.innerWidth, h = window.innerHeight;
@@ -1113,12 +1043,12 @@ function npcTick() {
 // ---- the Gams: appears near your next objective, bounds away when crowded --
 const gams = { x: 0, y: 0, stage: '', fleeT: 0, hidden: false, met: false, restSaid: false };
 function gamsSpot() {
-  if (G.flags.finale) return { x: 184, r: 12, stage: 'rest' };
+  if (G.flags.finale) return { x: 184, r: 9, stage: 'rest' };
   if (!G.gear.boots) return player.x < 118 * TILE ? { x: 108, r: 70, stage: 'boots1' } : null;
   if (!G.chestnutsDone) return { x: 108, r: 48, stage: 'alm' };
-  // once you're up at the Stellung, she waits below the observer-post climb
+  // once you're up at the Stellung, she waits at the base of the observer-post climb
   if (G.gear.jacket && !G.gear.lamp && player.y < 32 * TILE && player.x < 32 * TILE)
-    return { x: 13, r: 25, stage: 'lamp2' };
+    return { x: 16, r: 28, stage: 'lamp2' };
   return null;
 }
 function gamsTick() {
@@ -1762,14 +1692,7 @@ function drawEntity(e) {
         cx.beginPath(); cx.moveTo(x - 3, y - 21); cx.lineTo(x + 3, y - 21); cx.stroke();
         break;
       }
-      // --- Norbert: use sprite if available ---
-      if (e.who === 'norbert' && SPRITES.norbert && SPRITES.norbert.ready) {
-        // Pick animation frame: idle alternates on a slow cycle
-        const idleCycle = Math.floor(frame / 40) % 2; // swap every ~40 frames
-        const spriteId = idleCycle === 0 ? 'idle_1' : 'idle_2';
-        drawCharSprite('norbert', x, y, spriteId, false);
-        break;
-      }
+
       // --- Fallback: procedural NPC drawing (Greta / Norbert without sprites) ---
       const isG = e.who === 'greta';
       const px2 = x, py2 = y;
@@ -2341,8 +2264,7 @@ function portraitKey(name) {
   return null;
 }
 function drawPortrait(who, x, y, s) {
-  // Use sprite portrait if available (e.g. Norbert)
-  if (drawSpritePortrait(who, x, y, s)) return;
+
   // Fallback: procedural portrait
   cx.save();
   cx.translate(x, y); cx.scale(s / 32, s / 32);

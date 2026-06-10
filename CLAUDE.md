@@ -6,8 +6,8 @@ or audio assets** — everything is drawn and synthesized procedurally.
 
 ## Run & test
 
-- Play locally: open `index.html` in a browser (or any static server).
-- Tests: `node test/check-world.js` — 180+ headless world-geometry
+- Play locally: open `index.html` in a browser, or run `npm run dev` (or `npm start`) to serve locally via `http-server` on port 8080.
+- Tests: `npm test` or `node test/check-world.js` — 180+ headless world-geometry
   assertions (floor/headroom under every entity, gear gates sealed except
   the intended route, jump arcs reachable under the real physics).
   Run this after **any** change to `world.js` and before every push.
