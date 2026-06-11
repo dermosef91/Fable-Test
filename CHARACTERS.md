@@ -8,13 +8,13 @@ When adding, changing or removing a character, update this file.
 ## Lukas (Player)
 
 **Background**
-Rosa Oberhofer's grandchild. Arrives at Campingplatz Gamsblick on a Friday night with a tent, no phone signal, and Oma Rosa's 1974 hiking journal. Slowly retraces the route Rosa and her friend Ida pioneered as the first women over the Gamswand north edge.
+Rosa Oberhofer's grandson. Arrives at Campingplatz Gamsblick on a Friday night with a tent, no phone signal, and Oma Rosa's 1974 hiking journal. Slowly retraces the route Rosa and her friend Ida pioneered as the first women over the Gamswand north edge.
 
 **Character**
 Quiet, curious, a little overwhelmed at first. Grows from cautious camper into confident mountaineer over one weekend. Gentle humour; never speaks much — the mountain does the talking.
 
 **Visual description**
-Young hiker, early 20s. Warm skin tone (#e8b88a). Messy hair tucked under a bright orange beanie (#d98032) with a rolled brim. Teal-green jacket (#2e7d6b) that upgrades to a patched red rain jacket (#c0392b) mid-game. Dark slate-blue trousers (#41475c). Tan leather backpack (#a06a2c) with a darker strap. Grey sneakers at the start, switching to brown hiking boots (#7a4a26). Headlamp (#4a4e55) mounts on the beanie when acquired. When gliding, a red-and-cream paraglider canopy arcs overhead.
+Young hiker, early 20s. Warm skin tone (#e8b88a) with dark messy hair (#3a2a1a) peeking out from under a bright orange beanie (#d98032) featuring a ribbed rolled brim (#c87028) and a small white mountain logo. Teal-green jacket (#2e7d6b) with collar, zipper pull (#ccc), and cuff highlights, which upgrades to a patched red rain jacket (#c0392b) mid-game. Dark slate-blue trousers (#41475c) drawn with baggy cuffs and seam lines. Tan leather backpack (#a06a2c) with rolled olive-green sleeping mat (#5a6e4a) on top, buckle details, strap, and a diamond logo. Grey sneakers at the start, switching to brown hiking boots (#7a4a26). Headlamp (#4a4e55) mounts on the beanie when acquired. When gliding, a red-and-cream paraglider canopy arcs overhead.
 
 ---
 

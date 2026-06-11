@@ -96,6 +96,7 @@ engine's `pend*` event queue exists for exactly that.
   **~7 tiles flat**. Anything meant to be unreachable needs **6 up /
   8 across**. `node test/probe-routes.js` (puppeteer) drives every gated
   hop under real physics — run it whenever a gated route changes.
+- **Summit Headroom & Y-Shifting**: The world height is `90` tiles (originally `80`), with all level geometry shifted down by `Y_OFF = 10` tiles. This leaves a 10-tile buffer of open air above the summit. All absolute Y lookups and boundaries in `game.js` and `test/check-world.js` must be dynamically shifted by adding `Y_OFF` to match this layout.
 - **Challenge before reward:** place gear so the player meets its obstacle
   first and backtracks (lamp at the Observer Post after the dark tunnel;
   ferrata set at the Depot after the bare cable). Quest collectibles must
@@ -108,10 +109,12 @@ engine's `pend*` event queue exists for exactly that.
   Darkness is a *soft* gate (drains warmth, passable for the determined).
 - One-way drops and shortcut loops (chimney, Schartl, scree-run) are part
   of the metroidvania feel — add them when a new area would force a slog.
-- **No floating platforms or catwalks.** Exposed climbs are solid massifs:
-  peaks rooted to a base row, and every gap floor between peaks at most
-  3 tiles below an escape wall, so a missed jump lands on rock and can
-  climb back to retry (`check-world.js` asserts this for the ridge).
+- **Vector Asset Design Guidelines:** For structures (like the Alm hut redesign) and visual elements, favor high-quality hand-coded details over simple blocks:
+  - *Dimensionality:* Add steep roofs, eaves/overhangs, and outline strokes (`cx.strokeStyle`) for structural depth.
+  - *Texturing:* Use pattern line-work (e.g. horizontal plank lines, brick overlays, wood grains) rather than flat fills.
+  - *Vibrant Contrast:* Accent earthy or neutral bases with high-contrast color pops (e.g., green shutters, colorful flower boxes) to guide interest.
+  - *Micro-Particles:* Attach ambient details like chimney smoke particle generators or interactive elements (e.g. sitting benches).
+
 
 ## Engine conventions (game.js)
 
@@ -139,16 +142,14 @@ engine's `pend*` event queue exists for exactly that.
   falls between frames.
 - **Movers:** platforms in `MOVERS` are one-way landings; standing players
   are carried via `p.moverRef` (set on landing, cleared on jump/walk-off).
+- **NPC & Animal Rendering**: Characters and animals are drawn procedurally, supporting a horizontal facing direction (`face = 1` or `-1`) via context scaling: `cx.scale(face, 1)`. When in motion (i.e. horizontal velocity `vx` is non-zero), apply a sinusoidal leg/hoof walking swing offset (`swing = Math.sin(...) * scale`) to convey movement naturally.
+- **Organic Tile Rendering:** Solid tiles (rock, scree) use coordinate-seeded pseudo-random hashes `h(seed)` in `drawTiles()` to procedurally draw stable organic edge bumps, grassy humps/blades, and rounded corners, avoiding straight rectangular bounds.
 - **Saves:** bump `SAVE_KEY` only if the save shape breaks compatibility;
   `loadSave` must tolerate missing fields from older saves (`|| {}`,
   inferred `objKey`).
-- **Weather never snaps.** `phaseColors()` eases the sky over ~10 s and
-  `rainLevel` over ~30 s — gear pickups and phase changes must not flip
-  rain/darkness instantly. `snapWeather()` is only for jumps the player
-  can't see: behind a `fade()` (biwak sleep) and on save-load.
-- Rock tiles draw through `rockCuts`/`fillRockShape` (chamfered convex
-  corners + edge nubs for organic silhouettes) — route new terrain through
-  it, and no strata/grid lines on rock faces.
+- No strata/grid lines on rock: BG rock faces are gradient-only, and the
+  `SEAM` overlap in `drawTiles` keeps sub-pixel gridlines from showing
+  between tiles.
 
 ## Tone
 
