@@ -211,6 +211,11 @@ const inp = {
 // touch buttons (screen-space, defined each frame in HUD draw)
 let BTNS = [];
 const touches = new Map();
+// floating analog joystick (device px). `r` is the knob travel radius; it is
+// re-centred under the thumb on touchdown and springs back to rest on release.
+const joy = { active: false, id: null, bx: 0, by: 0, kx: 0, ky: 0, r: 1, restx: 0, resty: 0 };
+function inJoyZone(p) { return p.x < cv.width * 0.55 && p.y > cv.height * 0.32; }
+function clampN(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
 
 function pointerXY(t) { return { x: t.clientX * DPR, y: t.clientY * DPR }; }
 function hitBtn(p) {
@@ -224,9 +229,23 @@ function hitBtn(p) {
 function refreshTouch() {
   touchState.left = touchState.right = touchState.up = touchState.down = false;
   touchState.jump = touchState.act = touchState.map = touchState.fs = false;
-  for (const [, p] of touches) {
-    const id = hitBtn(p);
-    if (id) touchState[id] = true;
+  // analog stick: derive 4-way state from the knob offset, with a deadzone
+  if (joy.active) {
+    const p = touches.get(joy.id);
+    if (p) {
+      let ox = p.x - joy.bx, oy = p.y - joy.by;
+      const m = Math.hypot(ox, oy) || 1;
+      if (m > joy.r) { ox *= joy.r / m; oy *= joy.r / m; }
+      joy.kx = joy.bx + ox; joy.ky = joy.by + oy;
+      const nx = ox / joy.r, ny = oy / joy.r;
+      touchState.left = nx < -0.32; touchState.right = nx > 0.32;
+      touchState.up = ny < -0.42; touchState.down = ny > 0.42;
+    }
+  }
+  for (const [id, p] of touches) {
+    if (id === joy.id) continue;         // the stick touch is not a button
+    const b = hitBtn(p);
+    if (b) touchState[b] = true;
   }
 }
 let isTouch = false;
@@ -238,10 +257,16 @@ cv.addEventListener('touchstart', e => {
     const b = hitBtn(p);
     if (b === 'jump') pendJump = true;
     if (b === 'act') pendAct = true;
-    if (b === 'up') pendUp = true;
     if (b === 'mute') toggleMute();
     if (b === 'cont' || b === 'new' || b === 'start' || b === 'lang') pendTitle = b;
     if (b && (b === 'album' || b === 'albumBack' || b.startsWith('ph'))) pendUI = b;
+    // a free touch in the lower-left grabs the joystick, re-centred under the thumb
+    if (!b && joy.id === null && G.mode === 'play' && inJoyZone(p)) {
+      joy.id = t.identifier; joy.active = true;
+      joy.bx = clampN(p.x, joy.r, cv.width - joy.r);
+      joy.by = clampN(p.y, joy.r, cv.height - joy.r);
+      joy.kx = p.x; joy.ky = p.y;
+    }
   }
   refreshTouch();
   tapAt(e.changedTouches[0]);
@@ -255,6 +280,7 @@ const touchEnd = e => {
   e.preventDefault();
   for (const t of e.changedTouches) {
     touches.delete(t.identifier);
+    if (t.identifier === joy.id) { joy.id = null; joy.active = false; }
     // fullscreen must be requested from touchend — touchstart is not a
     // user activation in Chrome, so the request would be rejected there
     if (hitBtn(pointerXY(t)) === 'fs') toggleFullscreen();
@@ -2208,6 +2234,45 @@ function drawIcon(name, x, y, s) {
       }
       break;
     }
+    case 'jump': { // a hop arc lifting off the ground
+      cx.strokeStyle = 'rgba(243,236,210,0.92)'; cx.lineWidth = 2;
+      cx.beginPath(); cx.moveTo(-6.5, 5); cx.quadraticCurveTo(0, -10, 6.5, 0); cx.stroke();
+      cx.beginPath(); cx.moveTo(6.5, 0); cx.lineTo(3, -0.6); cx.moveTo(6.5, 0); cx.lineTo(6.2, -3.8); cx.stroke();
+      cx.strokeStyle = 'rgba(243,236,210,0.5)'; cx.lineWidth = 1.6;
+      cx.beginPath(); cx.moveTo(-7.5, 6.5); cx.lineTo(7.5, 6.5); cx.stroke();
+      break;
+    }
+    case 'chat': { // speech bubble with a tail and three dots
+      cx.fillStyle = 'rgba(243,236,210,0.92)';
+      roundRect(-7, -6, 14, 10, 3.2); cx.fill();
+      cx.beginPath(); cx.moveTo(-3, 4); cx.lineTo(-5.5, 7.5); cx.lineTo(0, 4); cx.closePath(); cx.fill();
+      cx.fillStyle = '#2a2310';
+      for (const dx of [-3.2, 0, 3.2]) { cx.beginPath(); cx.arc(dx, -1, 1.1, 0, 7); cx.fill(); }
+      break;
+    }
+    case 'hand': { // an open hand reaching up to pick something up
+      cx.fillStyle = 'rgba(255,213,79,0.85)'; cx.beginPath(); cx.arc(0, -6.6, 2, 0, 7); cx.fill();
+      cx.fillStyle = 'rgba(243,236,210,0.92)';
+      roundRect(-4.4, -0.5, 8.8, 6, 1.5); cx.fill();
+      cx.beginPath(); cx.arc(0, 5, 4.4, 0, Math.PI); cx.fill();
+      for (let i = 0; i < 4; i++) { cx.fillRect(-4.4 + i * 2.7, -3.6, 1.8, 4); }
+      break;
+    }
+    case 'look': { // an eye, for reading signs and taking in views
+      cx.strokeStyle = 'rgba(243,236,210,0.92)'; cx.lineWidth = 1.8;
+      cx.beginPath(); cx.moveTo(-7.5, 0); cx.quadraticCurveTo(0, -6.5, 7.5, 0);
+      cx.quadraticCurveTo(0, 6.5, -7.5, 0); cx.closePath(); cx.stroke();
+      cx.fillStyle = 'rgba(243,236,210,0.92)'; cx.beginPath(); cx.arc(0, 0, 2.6, 0, 7); cx.fill();
+      cx.fillStyle = '#2a2310'; cx.beginPath(); cx.arc(0, 0, 1.1, 0, 7); cx.fill();
+      break;
+    }
+    case 'rest': { // a bench to sit and warm up on
+      cx.strokeStyle = 'rgba(243,236,210,0.92)'; cx.lineWidth = 1.8;
+      cx.beginPath(); cx.moveTo(-7, -1.5); cx.lineTo(7, -1.5); cx.stroke();
+      cx.beginPath(); cx.moveTo(-7, 1.5); cx.lineTo(7, 1.5); cx.stroke();
+      cx.beginPath(); cx.moveTo(-5, 1.5); cx.lineTo(-5, 6); cx.moveTo(5, 1.5); cx.lineTo(5, 6); cx.stroke();
+      break;
+    }
   }
   cx.restore();
 }
@@ -2385,20 +2450,17 @@ function drawHUD() {
   addBtn('mute', W - 49, 106, 20, muted ? 'i:mute' : 'i:sound');
   if (fsSupported) addBtn('fs', W - 49, 152, 20, isFullscreen() ? 'i:shrink' : 'i:expand');
 
-  // touch controls
+  // touch controls: analog joystick (left) + adaptive action buttons (right)
   if (isTouch && (G.mode === 'play' || G.mode === 'dialog')) {
-    const r = Math.min(34, W * 0.06 + 18);
-    const by = H - r - 18;
-    addBtn('left', r + 18, by, r, '◀');
-    addBtn('right', r * 3 + 38, by, r, '▶');
-    const onPlank = tileAt(Math.floor((player.x + player.w / 2) / TILE), Math.floor((player.y + player.h + 1) / TILE)) === 3;
-    const showVert = player.climbing || player.swim || overlapTile(5) || onPlank;
-    if (showVert) {
-      addBtn('up', r * 2 + 28, by - r * 2 - 12, r, '▲');
-      addBtn('down', r * 4 + 58, by - r * 2 - 12, r, '▼');
-    }
-    addBtn('jump', W - r - 18, by, r, 'A');
-    addBtn('act', W - r * 3 - 38, by, r, 'E');
+    const { jR, r, jx, by } = touchCtrls(W, H);
+    joy.r = jR * DPR;
+    joy.restx = (28 + jR) * DPR; joy.resty = (H - 28 - jR) * DPR;
+    if (!joy.active) { joy.bx = joy.restx; joy.by = joy.resty; joy.kx = joy.bx; joy.ky = joy.by; }
+    drawJoystick(jR);
+
+    addBtn('jump', jx, by, r, 'i:' + jumpIcon());
+    // secondary button only appears when an interaction is in reach
+    if (nearInteract && G.mode === 'play') addBtn('act', jx - r * 1.78, by - r * 0.62, r * 0.84, 'i:' + actIcon());
   }
   for (const b of BTNS) drawBtn(b);
 
@@ -2490,13 +2552,93 @@ function roundRect(x, y, w, h, r) {
   cx.arcTo(x, y + h, x, y, r); cx.arcTo(x, y, x + w, y, r); cx.closePath();
 }
 
+// shared geometry for the on-screen controls, so the joystick, the action
+// buttons and the dialog box that tucks between them all agree (CSS px)
+function touchCtrls(W, H) {
+  const jR = Math.min(52, W * 0.08 + 32);
+  const r = Math.min(34, W * 0.06 + 20);
+  const jx = W - r - 22, by = H - r - 24;
+  const left = 28 + jR * 2 + 10;                       // right edge of the stick
+  const right = W - (r + 22 + r * 1.78 + r * 0.84) - 10; // left edge of the buttons
+  return { jR, r, jx, by, left, right };
+}
+
+// semi-transparent floating thumbstick — a recessed base ring with directional
+// ticks and a glassy knob that tracks the thumb (drawn in CSS px)
+function drawJoystick(jR) {
+  const bx = joy.bx / DPR, by = joy.by / DPR, kx = joy.kx / DPR, ky = joy.ky / DPR;
+  const knobR = jR * 0.46, live = joy.active;
+  // base well
+  const g = cx.createRadialGradient(bx, by, jR * 0.2, bx, by, jR);
+  g.addColorStop(0, 'rgba(8,10,18,0.16)'); g.addColorStop(1, 'rgba(8,10,18,0.40)');
+  cx.fillStyle = g; cx.beginPath(); cx.arc(bx, by, jR, 0, 7); cx.fill();
+  cx.strokeStyle = live ? 'rgba(224,184,106,0.55)' : 'rgba(224,184,106,0.28)'; cx.lineWidth = 1.5;
+  cx.beginPath(); cx.arc(bx, by, jR, 0, 7); cx.stroke();
+  // four directional ticks, lit on the side the stick is pushed toward
+  for (let i = 0; i < 4; i++) {
+    const a = i * Math.PI / 2;
+    const dx = Math.cos(a), dy = Math.sin(a);
+    const pushed = live && ((i === 0 && touchState.right) || (i === 1 && touchState.down) ||
+      (i === 2 && touchState.left) || (i === 3 && touchState.up));
+    cx.fillStyle = pushed ? 'rgba(224,184,106,0.9)' : 'rgba(243,236,210,0.32)';
+    const tx = bx + dx * (jR - 8), ty = by + dy * (jR - 8);
+    cx.save(); cx.translate(tx, ty); cx.rotate(a);
+    cx.beginPath(); cx.moveTo(2.6, 0); cx.lineTo(-1.4, -2.8); cx.lineTo(-1.4, 2.8); cx.closePath(); cx.fill();
+    cx.restore();
+  }
+  // knob
+  const kg = cx.createRadialGradient(kx, ky - knobR * 0.4, knobR * 0.2, kx, ky, knobR);
+  kg.addColorStop(0, live ? 'rgba(238,206,140,0.6)' : 'rgba(224,184,106,0.34)');
+  kg.addColorStop(1, live ? 'rgba(176,128,58,0.55)' : 'rgba(120,92,46,0.30)');
+  cx.fillStyle = kg; cx.beginPath(); cx.arc(kx, ky, knobR, 0, 7); cx.fill();
+  cx.strokeStyle = live ? UI_GOLD : UI_GOLD_DIM; cx.lineWidth = 1.5;
+  cx.beginPath(); cx.arc(kx, ky, knobR, 0, 7); cx.stroke();
+  cx.fillStyle = 'rgba(255,255,255,0.18)';
+  cx.beginPath(); cx.arc(kx, ky - knobR * 0.32, knobR * 0.52, 0, 7); cx.fill();
+}
+
+// the primary button reads the air: glide when the canopy is (or can be) open
+function jumpIcon() {
+  const p = player;
+  if (G.gear.glider && !p.grounded && !p.swim && (p.gliding || p.vy > 0.35)) return 'glider';
+  return 'jump';
+}
+// the secondary button mirrors whatever the player can do right here
+function actIcon() {
+  const e = nearInteract;
+  if (!e) return 'look';
+  switch (e.t) {
+    case 'npc': case 'cow': case 'dog': return 'chat';
+    case 'gear': case 'page': case 'chestnut': case 'tin': return 'hand';
+    case 'photo': return 'camera';
+    case 'fire': return 'fire';
+    case 'tent': return 'tent';
+    case 'bench': return 'rest';
+    case 'book': return 'book';
+    default: return 'look';
+  }
+}
+
 function drawDialog(W, H) {
   const cur = D.queue[D.line];
   if (!cur) return;
   const journal = D.style === 'journal';
   const pk = journal ? null : portraitKey(cur[0]);
-  const bh = 96, bw = Math.min(W - 28, 680);
-  const bx = (W - bw) / 2, by = H - bh - (isTouch ? 96 : 18);
+  const bh = 96;
+  let bw = Math.min(W - 28, 680);
+  let bcx = W / 2, by = H - bh - (isTouch ? 96 : 18);
+  if (isTouch) {
+    // on touch the box shares the bottom strip with the joystick and action
+    // buttons; when there is room between them, tuck it in there instead of
+    // floating it above the controls
+    const { left, right } = touchCtrls(W, H);
+    if (right - left >= 290) {
+      bw = Math.min(680, right - left);
+      bcx = (left + right) / 2;
+      by = H - bh - 16;
+    }
+  }
+  const bx = bcx - bw / 2;
   if (journal) {
     cx.fillStyle = 'rgba(238,228,198,0.96)'; roundRect(bx, by, bw, bh, 10); cx.fill();
     cx.strokeStyle = 'rgba(122,90,57,0.5)'; cx.lineWidth = 1; cx.stroke();
