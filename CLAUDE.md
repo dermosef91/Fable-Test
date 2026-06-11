@@ -103,6 +103,10 @@ engine's `pend*` event queue exists for exactly that.
   Darkness is a *soft* gate (drains warmth, passable for the determined).
 - One-way drops and shortcut loops (chimney, Schartl, scree-run) are part
   of the metroidvania feel — add them when a new area would force a slog.
+- **No floating platforms or catwalks.** Exposed climbs are solid massifs:
+  peaks rooted to a base row, and every gap floor between peaks at most
+  3 tiles below an escape wall, so a missed jump lands on rock and can
+  climb back to retry (`check-world.js` asserts this for the ridge).
 
 ## Engine conventions (game.js)
 
@@ -133,6 +137,13 @@ engine's `pend*` event queue exists for exactly that.
 - **Saves:** bump `SAVE_KEY` only if the save shape breaks compatibility;
   `loadSave` must tolerate missing fields from older saves (`|| {}`,
   inferred `objKey`).
+- **Weather never snaps.** `phaseColors()` eases the sky over ~10 s and
+  `rainLevel` over ~30 s — gear pickups and phase changes must not flip
+  rain/darkness instantly. `snapWeather()` is only for jumps the player
+  can't see: behind a `fade()` (biwak sleep) and on save-load.
+- Rock tiles draw through `rockCuts`/`fillRockShape` (chamfered convex
+  corners + edge nubs for organic silhouettes) — route new terrain through
+  it, and no strata/grid lines on rock faces.
 
 ## Tone
 

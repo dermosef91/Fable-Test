@@ -1422,14 +1422,7 @@ function drawBgRock() {
     else { gr.addColorStop(0, '#a8a394'); gr.addColorStop(1, '#8d897e'); }
     cx.fillStyle = gr;
     cx.fillRect(x, y, w, h);
-    // strata
-    cx.strokeStyle = 'rgba(0,0,0,0.08)'; cx.lineWidth = 1;
-    for (let i = 1; i < 6; i++) {
-      cx.beginPath();
-      cx.moveTo(x, y + (h * i) / 6 + Math.sin(i * 3.1) * 6);
-      cx.lineTo(x + w, y + (h * i) / 6 - Math.sin(i * 2.3) * 8);
-      cx.stroke();
-    }
+    // (no strata lines — they read as gridlines across the rock)
   }
 }
 
@@ -1443,6 +1436,39 @@ function biomeAt(tx, ty) {
 const GRASS = { ridge: '#9fae7e', high: '#8fa37a', alm: '#6fae57', valley: '#5d9148' };
 const ROCKC = { ridge: '#b8b2a4', high: '#a8a094', alm: '#97907f', valley: '#8c8577' };
 
+// organic rock silhouette: convex corners (air past both sides) get a small,
+// per-tile chamfer so cliffs and platforms don't read as perfect squares.
+// Water counts as cover — no cut corners showing sky through a pond bed.
+function rockCuts(tx, ty) {
+  const cov = t2 => SOLID(t2) || t2 === 4;
+  const su = cov(tileAt(tx, ty - 1)), sd = cov(tileAt(tx, ty + 1));
+  const sl = cov(tileAt(tx - 1, ty)), sr = cov(tileAt(tx + 1, ty));
+  if (su && sd && sl && sr) return null;
+  const cut = n => 3 + ((tx * 31 + ty * 17 + n * 13) % 4); // 3..6 px, deterministic
+  return {
+    tl: !su && !sl ? cut(1) : 0, tr: !su && !sr ? cut(2) : 0,
+    br: !sd && !sr ? cut(3) : 0, bl: !sd && !sl ? cut(4) : 0,
+    sl, sr, sd,
+  };
+}
+function fillRockShape(x, y, tx, ty, c) {
+  if (!c || !(c.tl || c.tr || c.br || c.bl)) { cx.fillRect(x, y, TILE, TILE); }
+  else {
+    cx.beginPath();
+    cx.moveTo(x + c.tl, y);
+    cx.lineTo(x + TILE - c.tr, y); if (c.tr) cx.lineTo(x + TILE, y + c.tr);
+    cx.lineTo(x + TILE, y + TILE - c.br); if (c.br) cx.lineTo(x + TILE - c.br, y + TILE);
+    cx.lineTo(x + c.bl, y + TILE); if (c.bl) cx.lineTo(x, y + TILE - c.bl);
+    cx.lineTo(x, y + c.tl);
+    cx.closePath(); cx.fill();
+  }
+  if (!c) return;
+  // ragged nubs along exposed faces break the remaining straight seams
+  if (!c.sl && (tx * 13 + ty * 29) % 3 === 0) cx.fillRect(x - 1.5, y + 3 + ((tx * 7 + ty * 11) % 8), 1.5, 4);
+  if (!c.sr && (tx * 17 + ty * 23) % 3 === 0) cx.fillRect(x + TILE, y + 2 + ((tx * 5 + ty * 13) % 8), 1.5, 4);
+  if (!c.sd && (tx * 11 + ty * 7) % 4 === 0) cx.fillRect(x + 4 + ((tx * 3 + ty) % 7), y + TILE, 4, 1.5);
+}
+
 function drawTiles() {
   const x0 = Math.max(0, Math.floor(cam.x / TILE) - 1), x1 = Math.min(WORLD_W - 1, Math.ceil((cam.x + VW) / TILE) + 1);
   const y0 = Math.max(0, Math.floor(cam.y / TILE) - 1), y1 = Math.min(WORLD_H - 1, Math.ceil((cam.y + VH) / TILE) + 1);
@@ -1453,8 +1479,9 @@ function drawTiles() {
       const x = tx * TILE - cam.x, y = ty * TILE - cam.y;
       const bio = biomeAt(tx, ty);
       if (t === 1) {
+        const c = rockCuts(tx, ty);
         cx.fillStyle = ROCKC[bio];
-        cx.fillRect(x, y, TILE, TILE);
+        fillRockShape(x, y, tx, ty, c);
         // speckle
         if ((tx * 7 + ty * 13) % 5 === 0) { cx.fillStyle = 'rgba(0,0,0,0.07)'; cx.fillRect(x + (tx % 3) * 4, y + (ty % 3) * 4, 3, 3); }
         // grass cap if air above
@@ -1464,7 +1491,8 @@ function drawTiles() {
           cx.fillRect(x + 2, y - 3, 2, 2); cx.fillRect(x + 9, y - 3, 2, 2);
         }
         if (tileAt(tx, ty + 1) === 0) {
-          cx.fillStyle = 'rgba(0,0,0,0.18)'; cx.fillRect(x, y + TILE - 3, TILE, 3);
+          const ib = c ? c.bl : 0, ir = c ? c.br : 0; // stay inside the cut corners
+          cx.fillStyle = 'rgba(0,0,0,0.18)'; cx.fillRect(x + ib, y + TILE - 3, TILE - ib - ir, 3);
           // hanging fringe under overhangs
           cx.fillStyle = 'rgba(86,118,68,0.8)';
           if ((tx * 13 + ty * 7) % 3 !== 2) {
@@ -1473,7 +1501,7 @@ function drawTiles() {
           }
         }
       } else if (t === 2) {
-        cx.fillStyle = '#b3a88e'; cx.fillRect(x, y, TILE, TILE);
+        cx.fillStyle = '#b3a88e'; fillRockShape(x, y, tx, ty, rockCuts(tx, ty));
         cx.fillStyle = '#998d72';
         cx.fillRect(x + ((tx * 3) % 8), y + ((ty * 5) % 8), 4, 3);
         cx.fillRect(x + ((tx * 5 + 7) % 10), y + ((ty * 3 + 4) % 10), 3, 3);
