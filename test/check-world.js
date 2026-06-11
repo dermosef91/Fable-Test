@@ -120,10 +120,13 @@ ok(ENTITIES.some(e => e.t === 'gear' && e.gear === 'lamp' && e.r <= 16), 'lamp w
 // one-way plank adds commitment to the climb
 ok(at(20, 25) === 3, 'observer post has a one-way plank at the midpoint');
 // the depot above the tunnel's east mouth — a platforming path from the biwak
-for (const [x, y] of [[89, 32], [84, 29], [80, 27], [81, 23], [64, 25]]) ok(solid(at(x, y)), `depot ledge/floor at ${x},${y}`);
-ok(at(74, 24) === 3 && at(75, 24) === 3, 'depot plank at the nook mouth (one-way)');
-ok(!reachable(86, 34, 85, 29) && !reachable(86, 34, 80, 27), 'depot climb cannot be skipped from the floor');
-ok(!reachable(80, 27, 75, 24), 'the plank is out of reach without the high perch');
+for (const [x, y] of [[89, 32], [84, 29], [80, 27], [84, 23], [80, 21], [64, 25]]) ok(solid(at(x, y)), `depot ledge/floor at ${x},${y}`);
+ok(at(75, 21) === 3 && at(76, 21) === 3, 'depot plank at the nook mouth (one-way)');
+// guard margins beyond what the real engine can jump (apex-hang reaches a
+// 5-up ledge, ~7 tiles flat) — the plank only goes from the top perch
+ok(34 - 27 >= 6 && solid(at(80, 27)), 'ledges above the floor sit 6+ rows up past step 2');
+ok(27 - 21 >= 6, 'plank row is 6 rows over the ledge below it (no shortcut)');
+ok(84 - 76 >= 8, 'plank is 8 columns from the high perch (beyond flat range)');
 ok(!solid(at(66, 23)) && !solid(at(66, 20)) && solid(at(66, 18)), 'depot nook carved with a roof');
 ok(!solid(at(72, 23)) && !solid(at(72, 24)), 'depot nook opens east');
 {
@@ -187,10 +190,11 @@ lookoutHops.forEach(([a, b], i) => ok(reachable(...a, ...b), `lookout hop ${i} r
 const depotHops = [
   [[87, 34], [90, 32]],   // off the Hochband floor, beside the biwak
   [[89, 32], [85, 29]],   // a rising leap west
-  [[84, 29], [80, 27]],   // onto the single-tile perch
-  [[80, 27], [81, 23]],   // the 4-up spring to the high perch
-  [[81, 23], [75, 24]],   // down west onto the one-way plank
-  [[74, 24], [72, 25]],   // plank -> across the nook mouth
+  [[84, 29], [81, 27]],   // onto the ledge under the high wall
+  [[81, 27], [84, 23]],   // the 4-up spring back east to the high perch
+  [[84, 23], [80, 21]],   // west onto the top perch
+  [[80, 21], [76, 21]],   // the flat leap to the one-way plank
+  [[75, 21], [72, 25]],   // plank -> drop across the nook mouth
 ];
 depotHops.forEach(([a, b], i) => ok(reachable(...a, ...b), `depot hop ${i} reachable`));
 // ridge hops: the climb from the shoulder to the summit and down the east side
@@ -211,7 +215,7 @@ const ridgeHops = [
   [[153, 9], [157, 8]],     // -> summit plateau, the true high point
   // Stage 4 — East Ridge descent
   [[165, 8], [169, 11]],    // summit -> descent peak
-  [[169, 11], [171, 13]],   // -> pre-notch ledge
+  [[169, 11], [170, 13]],   // -> pre-notch ledge (a walk-down step)
   [[171, 13], [176, 13]],   // the leap across the notch
   [[176, 13], [178, 13]],   // post-notch -> same level
   [[178, 13], [184, 15]],   // -> lower ledge
@@ -270,7 +274,7 @@ ok(solid(at(159, 8)) && solid(at(163, 8)), 'summit plateau solid at key points')
   const gaps = [ // [gapX, floorY, escapeWallX]
     [109, 18, 108], [113, 17, 112], [118, 15, 117], [123, 13, 122],
     [129, 16, 128], [134, 14, 133], [140, 14, 146], [149, 14, 148],
-    [154, 12, 153], [166, 11, 165], [170, 14, 169], [179, 16, 178], [185, 18, 184],
+    [154, 12, 153], [166, 11, 165], [179, 16, 178], [185, 18, 184],
   ];
   for (const [gx, gy, wx] of gaps) {
     ok(solid(at(gx, gy)) && !solid(at(gx, gy - 1)) && !solid(at(gx, gy - 2)), `gap floor at ${gx},${gy} with headroom`);

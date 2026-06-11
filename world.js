@@ -56,7 +56,7 @@ function buildWorld() {
 
   // Stage 4 — The East Ridge: descent toward the notch and the east end
   fill(167, 11, 3, 15, 1);       // peak (x167..169, top y11)
-  fill(171, 13, 1, 13, 1);       // pre-notch ledge (x171 only)
+  fill(170, 13, 2, 13, 1);       // pre-notch ledge (x170..171) — walk down off the peak
   // the notch (x172..175) stays a clean drop to the pond far below
   fill(176, 13, 3, 13, 1);       // post-notch ledge (x176..178)
   fill(181, 15, 4, 11, 1);       // ledge (x181..184, top y15)
@@ -73,7 +73,6 @@ function buildWorld() {
   fill(149, 14, 2, 12, 1);
   fill(154, 12, 3, 14, 1);
   fill(166, 11, 1, 15, 1);
-  fill(170, 14, 1, 12, 1);
   fill(179, 16, 2, 10, 1);
   fill(185, 18, 1, 8, 1);
 
@@ -130,9 +129,12 @@ function buildWorld() {
   carve(63, 19, 10, 6);    // east-facing nook, floor y25, tunnel roof stays 3 thick
   fill(89, 32, 2, 1, 1);   // 1. first step, right beside the biwak
   fill(84, 29, 2, 1, 1);   // 2. a rising leap west toward the face
-  fill(80, 27, 1, 1, 1);   // 3. single-tile perch — precision
-  fill(81, 23, 1, 1, 1);   // 4. high perch — a deliberate 4-up spring
-  fill(74, 24, 2, 1, 3);   // 5. one-way plank at the nook's mouth
+  fill(80, 27, 2, 1, 1);   // 3. ledge under the high wall
+  fill(84, 23, 1, 1, 1);   // 4. high perch — a deliberate 4-up spring back east
+  fill(80, 21, 1, 1, 1);   // 5. top perch, directly over the route
+  fill(75, 21, 2, 1, 3);   // 6. one-way plank at the nook's mouth
+  // the plank only goes from the top perch: 6 rows over the ledge below it
+  // and 8 across from the high perch — real jump physics can't shortcut it
 
   // --- tunnel furniture ----------------------------------------------------
   fill(34, 32, 3, 2, 1);   // low rubble pile near the west mouth — hop over

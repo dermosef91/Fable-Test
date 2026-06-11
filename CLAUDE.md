@@ -91,6 +91,11 @@ engine's `pend*` event queue exists for exactly that.
   4 up is a deliberate set-piece. Full arcs need **~5.5 tiles of headroom**
   — a ceiling 1–2 tiles above head height silently eats jumps (carve sky,
   as over the gorge slot).
+- **Gates need real margins.** The engine out-jumps `reachable()` in
+  `check-world.js`: with apex hang a player reaches a **5-up** ledge and
+  **~7 tiles flat**. Anything meant to be unreachable needs **6 up /
+  8 across**. `node test/probe-routes.js` (puppeteer) drives every gated
+  hop under real physics — run it whenever a gated route changes.
 - **Challenge before reward:** place gear so the player meets its obstacle
   first and backtracks (lamp at the Observer Post after the dark tunnel;
   ferrata set at the Depot after the bare cable). Quest collectibles must
