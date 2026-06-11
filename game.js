@@ -3020,43 +3020,151 @@ function drawPhotoScene(n, ix, iy, iw, ih) {
 }
 
 // ------------------------------------------------------------ title / end --
+// dedicated title backdrop: dusk over the Gamstal — warm light in the saddle,
+// layered ridges, a winding trail, flowering meadow, chapel on the east hill
+function drawTitleBg(W, H) {
+  const hor = H * 0.62, mY = H * 0.74;
+  const sky = cx.createLinearGradient(0, 0, 0, hor);
+  sky.addColorStop(0, '#3b4765'); sky.addColorStop(0.5, '#76869f');
+  sky.addColorStop(0.82, '#d8a87e'); sky.addColorStop(1, '#f0cf9c');
+  cx.fillStyle = sky; cx.fillRect(0, 0, W, hor + 2);
+  // hazy valley floor receding into the light between far ridges and meadow
+  const haze = cx.createLinearGradient(0, hor - 8, 0, mY + 12);
+  haze.addColorStop(0, '#e7c79c'); haze.addColorStop(0.5, '#b6a892'); haze.addColorStop(1, '#6f7e5e');
+  cx.fillStyle = haze; cx.fillRect(0, hor - 8, W, mY - hor + 20);
+  // low sun glowing through the pass
+  const glow = cx.createRadialGradient(W * 0.5, hor * 0.99, 6, W * 0.5, hor * 0.99, W * 0.34);
+  glow.addColorStop(0, 'rgba(255,236,188,0.95)'); glow.addColorStop(0.5, 'rgba(255,224,168,0.4)'); glow.addColorStop(1, 'rgba(255,224,168,0)');
+  cx.fillStyle = glow; cx.fillRect(0, 0, W, mY);
+  // a few birds drifting home
+  cx.strokeStyle = 'rgba(42,50,74,0.6)'; cx.lineWidth = 1.2;
+  for (let i = 0; i < 5; i++) {
+    const bx = W * (0.3 + i * 0.1 + Math.sin(i * 7.3) * 0.04), by = H * (0.14 + Math.sin(i * 3.7) * 0.045), s = 3 + (i % 3);
+    cx.beginPath(); cx.moveTo(bx - s, by); cx.quadraticCurveTo(bx - s * 0.3, by - s * 0.9, bx, by);
+    cx.quadraticCurveTo(bx + s * 0.3, by - s * 0.9, bx + s, by); cx.stroke();
+  }
+  // ridge layers, far to near, with a saddle in the middle for the light
+  const ridge = (pts, color) => {
+    cx.fillStyle = color; cx.beginPath(); cx.moveTo(-4, hor + 4);
+    for (const [t, r] of pts) cx.lineTo(t * W, hor - r * H);
+    cx.lineTo(W + 4, hor + 4); cx.closePath(); cx.fill();
+  };
+  ridge([[0, 0.20], [0.1, 0.27], [0.2, 0.16], [0.3, 0.23], [0.42, 0.10], [0.5, 0.13], [0.6, 0.09], [0.72, 0.22], [0.84, 0.14], [0.95, 0.25], [1, 0.18]], '#93a2bd');
+  ridge([[0, 0.30], [0.12, 0.38], [0.24, 0.20], [0.34, 0.27], [0.45, 0.07], [0.5, 0.05], [0.56, 0.08], [0.68, 0.25], [0.8, 0.33], [0.92, 0.21], [1, 0.29]], '#647596');
+  ridge([[0, 0.16], [0.1, 0.21], [0.22, 0.08], [0.34, 0.02], [0.5, -0.01], [0.66, 0.02], [0.78, 0.09], [0.88, 0.13], [1, 0.10]], '#414f6e');
+  // meadow foreground
+  const mg = cx.createLinearGradient(0, mY - 20, 0, H);
+  mg.addColorStop(0, '#566041'); mg.addColorStop(1, '#2b3422');
+  cx.fillStyle = mg;
+  cx.beginPath(); cx.moveTo(-4, mY + 10);
+  cx.quadraticCurveTo(W * 0.3, mY - 18, W * 0.55, mY - 4);
+  cx.quadraticCurveTo(W * 0.8, mY + 8, W + 4, mY - 8);
+  cx.lineTo(W + 4, H + 4); cx.lineTo(-4, H + 4); cx.closePath(); cx.fill();
+  // the trail, switchbacking up toward the saddle
+  cx.strokeStyle = 'rgba(238,222,182,0.7)'; cx.lineCap = 'round';
+  cx.lineWidth = 13; cx.beginPath(); cx.moveTo(W * 0.45, H + 8); cx.quadraticCurveTo(W * 0.6, H * 0.92, W * 0.5, H * 0.85); cx.stroke();
+  cx.lineWidth = 7; cx.beginPath(); cx.moveTo(W * 0.5, H * 0.85); cx.quadraticCurveTo(W * 0.38, H * 0.79, W * 0.49, H * 0.74); cx.stroke();
+  cx.lineWidth = 3.5; cx.strokeStyle = 'rgba(238,222,182,0.55)';
+  cx.beginPath(); cx.moveTo(W * 0.49, H * 0.74); cx.quadraticCurveTo(W * 0.56, H * 0.69, W * 0.5, hor + 6); cx.stroke();
+  // chapel silhouette on the east shoulder
+  const chx = W * 0.84, chy = hor - H * 0.105;
+  cx.fillStyle = '#323d59';
+  cx.fillRect(chx - 8, chy - 8, 16, 8);
+  cx.beginPath(); cx.moveTo(chx - 10, chy - 8); cx.lineTo(chx, chy - 14); cx.lineTo(chx + 10, chy - 8); cx.closePath(); cx.fill();
+  cx.fillRect(chx + 4, chy - 20, 6, 12);
+  cx.beginPath(); cx.moveTo(chx + 3, chy - 20); cx.lineTo(chx + 7, chy - 27); cx.lineTo(chx + 11, chy - 20); cx.closePath(); cx.fill();
+  cx.strokeStyle = '#323d59'; cx.lineWidth = 1.2;
+  cx.beginPath(); cx.moveTo(chx + 7, chy - 27); cx.lineTo(chx + 7, chy - 31); cx.moveTo(chx + 5, chy - 29.5); cx.lineTo(chx + 9, chy - 29.5); cx.stroke();
+  // larches framing the meadow
+  cx.fillStyle = '#222d1d';
+  for (const [tx2, ts] of [[0.06, 1], [0.115, 0.7], [0.95, 0.85]]) {
+    const x0 = tx2 * W, yb = mY + 14, h2 = H * 0.16 * ts;
+    cx.fillRect(x0 - 1.5, yb - h2 * 0.25, 3, h2 * 0.3);
+    for (let k = 0; k < 3; k++) {
+      const w2 = (16 - k * 4) * ts, yk = yb - h2 * (0.22 + k * 0.26);
+      cx.beginPath(); cx.moveTo(x0 - w2, yk); cx.lineTo(x0, yk - h2 * 0.34); cx.lineTo(x0 + w2, yk); cx.closePath(); cx.fill();
+    }
+  }
+  // flowers in the grass
+  const fcols = ['#e8e2cc', '#d9577a', '#ffd54f', '#9fc3e0'];
+  for (let i = 0; i < 26; i++) {
+    const fx = ((i * 0.79 + 0.13) % 1) * W, fy = mY + 18 + ((i * 0.37) % 1) * (H - mY - 26);
+    cx.strokeStyle = 'rgba(122,140,96,0.8)'; cx.lineWidth = 1;
+    cx.beginPath(); cx.moveTo(fx, fy + 4); cx.lineTo(fx, fy); cx.stroke();
+    cx.fillStyle = fcols[i % 4]; cx.beginPath(); cx.arc(fx, fy - 1, 1.6, 0, 7); cx.fill();
+  }
+  // resting boot and the summit book, bottom left
+  drawIcon('boots', W * 0.1, H * 0.88, Math.min(56, W * 0.12));
+  drawIcon('book', W * 0.19, H * 0.93, Math.min(40, W * 0.085));
+  // gentle vignette so the title and corner buttons read
+  const vg = cx.createLinearGradient(0, 0, 0, H * 0.3);
+  vg.addColorStop(0, 'rgba(18,22,38,0.4)'); vg.addColorStop(1, 'rgba(18,22,38,0)');
+  cx.fillStyle = vg; cx.fillRect(0, 0, W, H * 0.3);
+}
+
 function drawTitle() {
-  const pc = phaseColors();
-  drawSky(pc);
   cx.save();
   cx.setTransform(DPR, 0, 0, DPR, 0, 0);
   const W = cv.width / DPR, H = cv.height / DPR;
-  cx.textAlign = 'center';
-  cx.fillStyle = 'rgba(16,19,34,0.35)'; cx.fillRect(0, 0, W, H);
+  drawTitleBg(W, H);
+  cx.textAlign = 'center'; cx.textBaseline = 'middle';
+  cx.save();
+  cx.shadowColor = 'rgba(20,22,36,0.55)'; cx.shadowBlur = 10; cx.shadowOffsetY = 2;
+  setTracking(Math.min(6, W * 0.012));
   cx.fillStyle = '#f3ecd2';
-  cx.font = `bold ${Math.min(54, W * 0.1)}px Georgia, serif`;
-  cx.fillText(TX.title, W / 2, H * 0.3);
-  cx.font = `italic ${Math.min(16, W * 0.035)}px Georgia, serif`;
-  cx.fillStyle = 'rgba(243,236,210,0.85)';
-  cx.fillText(TX.subtitle, W / 2, H * 0.3 + 34);
+  cx.font = `bold ${Math.min(50, W * 0.095)}px Georgia, serif`;
+  cx.fillText(TX.title, W / 2, H * 0.27);
+  setTracking(0);
+  cx.font = `italic ${Math.min(15, W * 0.033)}px Georgia, serif`;
+  cx.fillStyle = 'rgba(243,236,210,0.9)';
+  cx.fillText(TX.subtitle, W / 2, H * 0.27 + 32);
+  cx.restore();
+  // thin rules flanking the subtitle
+  const sw = Math.min(W * 0.8, cx.measureText(TX.subtitle).width);
+  cx.strokeStyle = 'rgba(243,236,210,0.45)'; cx.lineWidth = 1;
+  cx.beginPath();
+  cx.moveTo(W / 2 - sw / 2 - 44, H * 0.27 + 32); cx.lineTo(W / 2 - sw / 2 - 14, H * 0.27 + 32);
+  cx.moveTo(W / 2 + sw / 2 + 14, H * 0.27 + 32); cx.lineTo(W / 2 + sw / 2 + 44, H * 0.27 + 32);
+  cx.stroke();
 
-  // menu buttons
+  // menu: one clear primary action, a quiet secondary, language as a text link
   BTNS = [];
   if (fsSupported) { addBtn('fs', W - 49, 60, 20, isFullscreen() ? 'i:shrink' : 'i:expand'); drawBtn(BTNS[0]); }
-  const bw2 = Math.min(260, W * 0.7);
-  const mkRow = (id, label, y, icon) => {
-    cx.fillStyle = 'rgba(16,19,34,0.65)'; roundRect(W / 2 - bw2 / 2, y - 17, bw2, 34, 10); cx.fill();
-    cx.strokeStyle = 'rgba(243,236,210,0.4)'; cx.lineWidth = 1; cx.stroke();
-    if (icon) drawIcon(icon, W / 2 - bw2 / 2 + 22, y, 16);
-    cx.fillStyle = '#f3ecd2'; cx.font = '14px sans-serif'; cx.fillText(label, W / 2 + (icon ? 8 : 0), y + 1);
-    BTNS.push({ id, x: (W / 2) * DPR, y: y * DPR, w: bw2 * DPR, h: 38 * DPR, lr: 0 });
+  const bw2 = Math.min(270, W * 0.72);
+  const prim = (id, label, y) => {
+    const x = W / 2 - bw2 / 2;
+    const pg = cx.createLinearGradient(0, y - 20, 0, y + 20);
+    pg.addColorStop(0, '#f0d9a2'); pg.addColorStop(1, '#d8ae6c');
+    cx.fillStyle = pg; roundRect(x, y - 20, bw2, 40, 12); cx.fill();
+    cx.strokeStyle = 'rgba(70,50,18,0.5)'; cx.lineWidth = 1; roundRect(x + 0.5, y - 19.5, bw2 - 1, 39, 12); cx.stroke();
+    cx.fillStyle = '#2a2210'; cx.font = 'bold 15px Georgia, serif'; cx.fillText(label, W / 2, y + 1);
+    BTNS.push({ id, x: (W / 2) * DPR, y: y * DPR, w: bw2 * DPR, h: 44 * DPR, lr: 0 });
   };
-  let rowY = H * 0.56;
+  const seco = (id, label, y) => {
+    cx.fillStyle = 'rgba(14,17,30,0.62)'; roundRect(W / 2 - bw2 / 2, y - 16, bw2, 32, 10); cx.fill();
+    cx.strokeStyle = 'rgba(243,236,210,0.38)'; cx.lineWidth = 1; cx.stroke();
+    cx.fillStyle = 'rgba(243,236,210,0.92)'; cx.font = '13.5px Georgia, serif'; cx.fillText(label, W / 2, y + 1);
+    BTNS.push({ id, x: (W / 2) * DPR, y: y * DPR, w: bw2 * DPR, h: 36 * DPR, lr: 0 });
+  };
+  const tert = (id, label, y) => {
+    cx.fillStyle = 'rgba(243,236,210,0.7)'; cx.font = '12.5px Georgia, serif'; cx.fillText(label, W / 2, y);
+    const lw2 = cx.measureText(label).width;
+    cx.strokeStyle = 'rgba(243,236,210,0.3)'; cx.lineWidth = 1;
+    cx.beginPath(); cx.moveTo(W / 2 - lw2 / 2, y + 8); cx.lineTo(W / 2 + lw2 / 2, y + 8); cx.stroke();
+    BTNS.push({ id, x: (W / 2) * DPR, y: y * DPR, w: (lw2 + 44) * DPR, h: 30 * DPR, lr: 0 });
+  };
+  let rowY = H * 0.52;
   if (hasSave()) {
-    mkRow('cont', TX.title_continue, rowY, 'tent'); rowY += 44;
-    mkRow('new', TX.title_new, rowY, 'boots'); rowY += 44;
+    prim('cont', TX.title_continue, rowY); rowY += 52;
+    seco('new', TX.title_new, rowY); rowY += 42;
   } else {
-    mkRow('start', TX.title_start, rowY, 'boots'); rowY += 44;
+    prim('start', TX.title_start, rowY); rowY += 52;
   }
-  mkRow('lang', TX.lang_btn, rowY, 'globe'); rowY += 44;
-  cx.fillStyle = 'rgba(243,236,210,0.55)'; cx.font = '12px sans-serif';
-  cx.fillText(TX.ctl_hint1, W / 2, rowY + 14);
-  cx.fillText(TX.ctl_hint2, W / 2, rowY + 34);
+  tert('lang', TX.lang_btn, rowY); rowY += 34;
+  cx.fillStyle = 'rgba(243,236,210,0.55)'; cx.font = '11.5px Georgia, serif';
+  const hy = Math.max(rowY + 12, H - 38);
+  cx.fillText(TX.ctl_hint1, W / 2, hy);
+  cx.fillText(TX.ctl_hint2, W / 2, hy + 18);
   cx.restore();
 
   if (pendTitle === 'lang') {
