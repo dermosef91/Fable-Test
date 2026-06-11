@@ -1588,17 +1588,127 @@ function drawEntity(e) {
       break;
     }
     case 'hut': {
-      cx.fillStyle = '#9b9486'; cx.fillRect(x - 26, y - 26, 52, 26); // stone base
-      cx.fillStyle = '#7a5a39'; cx.fillRect(x - 26, y - 34, 52, 9);  // timber
-      cx.fillStyle = '#5e4429';
-      cx.beginPath(); cx.moveTo(x - 32, y - 33); cx.lineTo(x, y - 48); cx.lineTo(x + 32, y - 33); cx.closePath(); cx.fill();
+      // --- Alpine wooden cabin (Gamsblick-Alm) ---
+      const hutW = 56, hutH = 28;
+      const hw = hutW / 2, roofOver = 8;
+
+      // wooden log walls — warm brown base
+      cx.fillStyle = '#a07040';
+      cx.fillRect(x - hw, y - hutH, hutW, hutH);
+      // darker lower foundation strip
+      cx.fillStyle = '#6b4a2c';
+      cx.fillRect(x - hw, y - 4, hutW, 4);
+      // horizontal plank / log lines
+      cx.strokeStyle = 'rgba(60,30,10,0.25)'; cx.lineWidth = 0.7;
+      for (let i = 1; i < 8; i++) {
+        const ly = y - hutH + i * (hutH / 8);
+        cx.beginPath(); cx.moveTo(x - hw, ly); cx.lineTo(x + hw, ly); cx.stroke();
+      }
+      // subtle wood grain highlight
+      cx.strokeStyle = 'rgba(255,220,160,0.12)'; cx.lineWidth = 0.5;
+      for (let i = 0; i < 6; i++) {
+        const ly = y - hutH + i * (hutH / 6) + 2;
+        cx.beginPath(); cx.moveTo(x - hw + 2, ly); cx.lineTo(x + hw - 2, ly); cx.stroke();
+      }
+
+      // --- roof (dark brown, steep pitch) ---
+      const roofPeak = 24;
+      cx.fillStyle = '#5e3a1e';
+      cx.beginPath();
+      cx.moveTo(x - hw - roofOver, y - hutH);
+      cx.lineTo(x, y - hutH - roofPeak);
+      cx.lineTo(x + hw + roofOver, y - hutH);
+      cx.closePath(); cx.fill();
+      // roof shading — lighter left slope
+      cx.fillStyle = 'rgba(255,220,160,0.1)';
+      cx.beginPath();
+      cx.moveTo(x - hw - roofOver, y - hutH);
+      cx.lineTo(x, y - hutH - roofPeak);
+      cx.lineTo(x, y - hutH);
+      cx.closePath(); cx.fill();
+      // roof edge line
+      cx.strokeStyle = '#4a2a12'; cx.lineWidth = 1;
+      cx.beginPath();
+      cx.moveTo(x - hw - roofOver, y - hutH);
+      cx.lineTo(x, y - hutH - roofPeak);
+      cx.lineTo(x + hw + roofOver, y - hutH);
+      cx.stroke();
+
+      // --- gable decoration (inverted-V crossbeam) ---
+      cx.strokeStyle = '#7a5030'; cx.lineWidth = 1.5;
+      const gx = x, gy = y - hutH;
+      cx.beginPath();
+      cx.moveTo(gx - 8, gy - 5); cx.lineTo(gx, gy - 15); cx.lineTo(gx + 8, gy - 5);
+      cx.stroke();
+      // small ridge finial
+      cx.strokeStyle = '#5e3a1e'; cx.lineWidth = 1.2;
+      cx.beginPath(); cx.moveTo(gx, gy - roofPeak); cx.lineTo(gx, gy - roofPeak - 4); cx.stroke();
+
+      // --- chimney (right side) ---
+      cx.fillStyle = '#8a8074';
+      cx.fillRect(x + 14, y - hutH - roofPeak + 4, 7, 16);
+      // chimney cap
+      cx.fillStyle = '#6e645a';
+      cx.fillRect(x + 13, y - hutH - roofPeak + 3, 9, 2);
+      // smoke from chimney
+      if (Math.random() < 0.12) spawnPart({ x: e.x * TILE + 8 + 17, y: e.r * TILE - hutH - roofPeak + 2, vx: 0.15 + Math.random() * 0.1, vy: -0.5 - Math.random() * 0.2, t: 70, c: 'rgba(200,200,210,0.45)', s: 2.5 + Math.random() * 1.5 });
+
+      // --- windows with green shutters ---
+      const winW = 8, winH = 8;
+      // left window
+      const lwx = x - 18, lwy = y - 20;
       cx.fillStyle = G.phase >= 3 ? '#ffd87a' : '#3d3327';
-      cx.fillRect(x - 16, y - 22, 9, 9); cx.fillRect(x + 8, y - 22, 9, 9); // windows
-      cx.fillStyle = '#4a3826'; cx.fillRect(x - 4, y - 18, 9, 18); // door
-      cx.fillStyle = '#fff'; cx.font = '6px sans-serif'; cx.textAlign = 'center';
-      cx.fillText('GAMSBLICK-ALM 1924', x, y - 37);
-      // smoke
-      if (Math.random() < 0.1) spawnPart({ x: e.x * TILE + 8 + 20, y: e.r * TILE - 50, vx: 0.2, vy: -0.4, t: 60, c: 'rgba(200,200,200,0.5)', s: 3 });
+      cx.fillRect(lwx, lwy, winW, winH);
+      // window cross-frame
+      cx.strokeStyle = '#5e3a1e'; cx.lineWidth = 0.8;
+      cx.beginPath(); cx.moveTo(lwx + winW / 2, lwy); cx.lineTo(lwx + winW / 2, lwy + winH); cx.stroke();
+      cx.beginPath(); cx.moveTo(lwx, lwy + winH / 2); cx.lineTo(lwx + winW, lwy + winH / 2); cx.stroke();
+      // left shutters (green)
+      cx.fillStyle = '#4a8a3a';
+      cx.fillRect(lwx - 3, lwy, 3, winH);
+      cx.fillRect(lwx + winW, lwy, 3, winH);
+
+      // right window
+      const rwx = x + 10, rwy = y - 20;
+      cx.fillStyle = G.phase >= 3 ? '#ffd87a' : '#3d3327';
+      cx.fillRect(rwx, rwy, winW, winH);
+      cx.strokeStyle = '#5e3a1e'; cx.lineWidth = 0.8;
+      cx.beginPath(); cx.moveTo(rwx + winW / 2, rwy); cx.lineTo(rwx + winW / 2, rwy + winH); cx.stroke();
+      cx.beginPath(); cx.moveTo(rwx, rwy + winH / 2); cx.lineTo(rwx + winW, rwy + winH / 2); cx.stroke();
+      // right shutters (green)
+      cx.fillStyle = '#4a8a3a';
+      cx.fillRect(rwx - 3, rwy, 3, winH);
+      cx.fillRect(rwx + winW, rwy, 3, winH);
+
+      // --- flower box under right window ---
+      cx.fillStyle = '#6b4a2c';
+      cx.fillRect(rwx - 2, rwy + winH + 1, winW + 4, 3);
+      // little red flowers
+      cx.fillStyle = '#d94060';
+      cx.fillRect(rwx, rwy + winH + 0, 2, 2);
+      cx.fillRect(rwx + 3, rwy + winH - 1, 2, 2);
+      cx.fillRect(rwx + 6, rwy + winH + 0, 2, 2);
+      // green leaves
+      cx.fillStyle = '#3a7a2a';
+      cx.fillRect(rwx + 1, rwy + winH + 1, 1, 1);
+      cx.fillRect(rwx + 5, rwy + winH + 1, 1, 1);
+
+      // --- door (center) ---
+      cx.fillStyle = '#5a3a20';
+      cx.fillRect(x - 4, y - 16, 9, 16);
+      // door frame
+      cx.strokeStyle = '#4a2a12'; cx.lineWidth = 0.8;
+      cx.strokeRect(x - 4, y - 16, 9, 16);
+      // door handle
+      cx.fillStyle = '#c9b46a';
+      cx.fillRect(x + 3, y - 9, 1.5, 2);
+
+      // --- bench on the left side ---
+      cx.fillStyle = '#7a5a39';
+      cx.fillRect(x - hw - 4, y - 6, 12, 2); // seat
+      cx.fillRect(x - hw - 2, y - 4, 2, 4);  // left leg
+      cx.fillRect(x - hw + 4, y - 4, 2, 4);  // right leg
+
       break;
     }
     case 'lookout': {
@@ -1922,7 +2032,7 @@ function drawParts() {
 
 // ---- critters: butterflies on the Alm, birds over the valley, larch needles
 const critters = [];
-const CROW_PERCH = { sign: 24, fence: 14, bench: 20, shelter: 22, hut: 50, chapel: 30, windsock: 28 };
+const CROW_PERCH = { sign: 24, fence: 14, bench: 20, shelter: 22, hut: 54, chapel: 30, windsock: 28 };
 function critterTick() {
   if (G.mode !== 'play' || !curZone) return;
   // a crow, perched somewhere sensible until you come too close
