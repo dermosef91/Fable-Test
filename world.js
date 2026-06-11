@@ -54,7 +54,7 @@ function buildWorld() {
 
   // Stage 4 — The East Ridge: descent toward the notch and the east end
   fill(167, 5, 3, 3, 1);         // ledge (x167..169, y5..7)
-  fill(171, 7, 3, 3, 1);         // pre-notch ledge (x171..173, y7..9)
+  fill(170, 7, 4, 3, 1);         // pre-notch ledge (x170..171 after the notch carve)
   carve(172, 7, 2, 3);           // the notch — a clean drop into the pond far below
   fill(176, 7, 3, 3, 1);         // post-notch ledge (x176..178, y7..9)
   fill(181, 9, 4, 3, 1);         // ledge (x181..184, y9..11)
@@ -117,7 +117,7 @@ function buildWorld() {
   // first step is reachable from the Hochband floor — no skipping ahead.
   carve(52, 13, 21, 6);    // east-facing nook, floor y19, tunnel roof stays 3 thick
   fill(52, 15, 4, 4, 1);   // Ledge C (kit platform)
-  fill(58, 15, 2, 4, 1);   // Ledge B
+  fill(56, 16, 6, 3, 1);   // Ledge B — a long low bench; the nook roof eats higher arcs
   fill(63, 17, 2, 2, 1);   // Ledge A
   fill(78, 26, 2, 1, 1);   // 1. first step off the Hochband
   fill(84, 23, 2, 1, 1);   // 2. a long rising leap toward the headwall

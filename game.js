@@ -1609,14 +1609,7 @@ function drawBgRock(pc) {
     else { gr.addColorStop(0, pc.bgRockColor0); gr.addColorStop(1, pc.bgRockColor1); }
     cx.fillStyle = gr;
     cx.fillRect(x, y, w, h);
-    // strata
-    cx.strokeStyle = 'rgba(0,0,0,0.08)'; cx.lineWidth = 1;
-    for (let i = 1; i < 6; i++) {
-      cx.beginPath();
-      cx.moveTo(x, y + (h * i) / 6 + Math.sin(i * 3.1) * 6);
-      cx.lineTo(x + w, y + (h * i) / 6 - Math.sin(i * 2.3) * 8);
-      cx.stroke();
-    }
+    // (no strata lines — they read as gridlines across the rock)
   }
 }
 

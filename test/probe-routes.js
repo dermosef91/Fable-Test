@@ -6,6 +6,8 @@
 // Found the hard way: the engine out-jumps the reachable() table in
 // check-world.js — apex hang reaches a 5-up ledge and ~7 tiles flat.
 // Anti-skip gates need 6-up / 8-across margins, asserted here for real.
+//
+// All coordinates below are REAL grid rows (world.js values + Y_OFF).
 const puppeteer = (() => { try { return require('puppeteer'); } catch (e) { return require('/tmp/node_modules/puppeteer'); } })();
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
@@ -27,6 +29,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     await page.evaluate((fx, fr, gear) => {
       Object.assign(G.gear, gear || {});
       G.mode = 'play';
+      player.warmth = player.maxWarmth; // pond swims between attempts add up
       placeAt(fx, fr);
       keys['arrowleft'] = keys['arrowright'] = false;
     }, fx, fr, gear);
@@ -62,7 +65,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   async function walk(name, fx, fr, dir, tr, x0, x1, gear) {
     for (const h of [120, 180, 250, 400, 600, 900]) {
       await page.evaluate((fx, fr, gear) => {
-        Object.assign(G.gear, gear || {}); G.mode = 'play'; placeAt(fx, fr);
+        Object.assign(G.gear, gear || {}); G.mode = 'play';
+        player.warmth = player.maxWarmth;
+        placeAt(fx, fr);
         keys['arrowleft'] = keys['arrowright'] = false;
       }, fx, fr, gear);
       await sleep(150);
@@ -76,6 +81,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
         grounded: player.grounded,
       }));
       if (p.grounded && p.fr === tr && p.tx >= x0 && p.tx <= x1) { ok(true, `${name} (walk ${h}ms -> x${p.tx},r${p.fr})`); return true; }
+      console.log(`      [walk ${h}ms ended x${p.tx},r${p.fr},g=${p.grounded}]`);
     }
     ok(false, `${name} — walk-off never landed on r${tr} x${x0}..${x1}`);
     return false;
@@ -91,44 +97,49 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   }
 
   console.log('--- gorge chestnut: one hop off the Alm shelf, NO jacket ---');
-  await hop('shelf -> chestnut ledge (dry of the falls)', 33, 54, -1, 51, 28, 29, { boots: true });
-  await hop('chestnut ledge -> back onto the shelf', 28, 51, 1, 54, 32, 40, { boots: true });
+  await hop('shelf -> chestnut ledge (dry of the falls)', 33, 58, -1, 55, 28, 29, { boots: true });
+  await hop('chestnut ledge -> back onto the shelf', 29, 55, 1, 58, 32, 40, { boots: true });
 
-  console.log('--- depot path: biwak -> ferrata set ---');
-  await hop('1. floor -> first step', 87, 34, 1, 32, 89, 90);
-  await hop('2. step -> rising leap west', 90, 32, -1, 29, 84, 85);
-  await hop('3. -> ledge under the high wall', 84, 29, -1, 27, 80, 81);
-  await hop('4. -> 4-up spring to the high perch', 81, 27, 1, 23, 84, 84);
-  await hop('5. -> top perch', 84, 23, -1, 21, 80, 80);
-  await hop('6. -> one-way plank', 80, 21, -1, 21, 75, 76);
-  await walk('7. plank -> walk off into the nook', 75, 21, -1, 25, 63, 72);
-  await noHop('anti-skip: ledge (6 below) cannot reach the plank', 80, 27, -1, 21, 75, 76);
-  await noHop('anti-skip: high perch (8 across) cannot reach the plank', 84, 23, -1, 21, 75, 76);
+  console.log('--- depot path: Hochband -> ferrata set ---');
+  await hop('1. floor -> first step', 76, 38, 1, 36, 78, 79);
+  await hop('2. -> long rising leap toward the headwall', 79, 36, 1, 33, 84, 85);
+  await hop('3. -> single-tile perch', 84, 33, -1, 31, 81, 81);
+  await hop('4. -> one-way plank at the nook mouth', 81, 31, -1, 29, 75, 76);
+  await hop('5. plank -> across the nook mouth', 75, 29, -1, 29, 65, 72);
+  await hop('6. nook floor -> ledge A', 66, 29, -1, 27, 63, 64);
+  await hop('7. ledge A -> ledge B', 63, 27, -1, 26, 56, 61);
+  await hop('8. ledge B -> the kit platform', 56, 26, -1, 25, 52, 55);
+  await noHop('anti-skip: floor (7 up) cannot reach the perch', 80, 38, 1, 31, 81, 81);
+  await noHop('anti-skip: floor (9 up) cannot reach the plank', 78, 38, -1, 29, 75, 76);
 
-  console.log('--- ridge: shoulder -> summit -> east end (no hoist hops) ---');
+  console.log('--- ridge: shoulder -> summit -> east end ---');
   const R = [
-    ['entry -> first step', 103, 18, 1, 16, 105, 108],
-    ['step -> peak', 107, 16, 1, 14, 110, 112],
-    ['peak -> higher', 111, 14, 1, 12, 115, 117],
-    ['-> high point', 116, 12, 1, 10, 119, 122],
-    ['-> deep saddle', 121, 10, 1, 13, 123, 128],
-    ['saddle -> peak', 127, 13, 1, 11, 131, 133],
-    ['-> sub-peak', 132, 11, 1, 10, 135, 137],
-    ['hoist gap floor -> east peak (fallback w/o hoist)', 144, 14, 1, 11, 146, 148],
-    ['-> fore-summit', 147, 11, 1, 9, 151, 153],
-    ['-> summit plateau', 152, 9, 1, 8, 157, 165],
-    ['summit jump has headroom (jump up, land back)', 160, 8, 1, 8, 157, 165],
-    ['summit -> descent peak', 164, 8, 1, 11, 166, 169],
-    null, // pre-notch is a walk-down, probed separately
-    ['the leap across the notch', 171, 13, 1, 13, 176, 178],
-    ['-> lower ledge', 177, 13, 1, 15, 181, 184],
-    ['-> final ledge', 183, 15, 1, 17, 186, 189],
+    ['entry -> first step', 103, 22, 1, 20, 105, 108],
+    ['step -> ledge', 107, 20, 1, 18, 110, 112],
+    ['ledge -> higher', 111, 18, 1, 16, 115, 117],
+    ['-> knife edge high point', 116, 16, 1, 14, 119, 122],
+    ['-> deep saddle', 121, 14, 1, 17, 126, 128],
+    ['saddle -> ledge', 127, 17, 1, 15, 131, 133],
+    ['-> sub-peak', 132, 15, 1, 13, 135, 137],
+    ['mid-saddle floor -> east ledge (fallback w/o hoist)', 142, 18, 1, 14, 146, 148],
+    ['-> the pinnacle', 147, 14, 1, 12, 150, 153],
+    ['pinnacle -> summit plateau', 152, 12, 1, 13, 157, 165],
+    ['summit jump has headroom (jump up, land back)', 160, 13, 1, 13, 157, 165],
+    ['summit -> descent ledge', 164, 13, 1, 15, 167, 169],
+    null, // pre-notch is a walk-down step, probed separately below
+    ['the Zinnensprung leap across the notch', 171, 17, 1, 17, 176, 178],
+    ['-> lower ledge', 177, 17, 1, 19, 181, 184],
+    ['-> final ledge', 183, 19, 1, 21, 186, 189],
   ];
-  for (const e of R) { if (!e) { await walk('-> pre-notch ledge (walk down)', 168, 11, 1, 13, 170, 171, { kit: true }); continue; } const [n, fx, fr, d, tr, x0, x1] = e; await hop(n, fx, fr, d, tr, x0, x1, { kit: true }); }
+  for (const e of R) {
+    // accept x172: feet on the ledge lip can put the body center over the notch
+    if (!e) { await walk('-> pre-notch ledge (walk down)', 169, 15, 1, 17, 170, 172, { kit: true }); continue; }
+    const [n, fx, fr, d, tr, x0, x1] = e; await hop(n, fx, fr, d, tr, x0, x1, { kit: true });
+  }
 
-  console.log('--- ridge fall recovery: gap floors climb back west ---');
-  await hop('saddle-approach floor -> high point', 123, 13, -1, 10, 119, 122, { kit: true });
-  await hop('gap x113 -> knife-edge peak', 113, 17, -1, 14, 110, 112, { kit: true });
+  console.log('--- ridge fall recovery: solid ground funnels back to the route ---');
+  await hop('solid ground -> up through the re-entry plank', 124, 24, -1, 21, 123, 124, { kit: true });
+  await hop('re-entry plank -> the deep saddle', 124, 21, 1, 17, 126, 128, { kit: true });
 
   console.log(fails === 0 ? '\nALL PROBES PASSED' : `\n${fails} PROBES FAILED`);
   await browser.close();

@@ -115,7 +115,7 @@ ok(ENTITIES.some(e => e.t === 'gear' && e.gear === 'lamp' && e.r <= 10 + Y_OFF),
 // one-way plank adds commitment to the climb
 ok(at(20, 19 + Y_OFF) === 3, 'observer post has a one-way plank at the midpoint');
 // the depot above the tunnel's east mouth — a five-hop climb to the set
-for (const [x, y] of [[78, 26], [84, 23], [81, 21], [63, 17], [58, 15], [54, 15]]) ok(solid(at(x, y + Y_OFF)), `depot ledge/floor at ${x},${y + Y_OFF}`);
+for (const [x, y] of [[78, 26], [84, 23], [81, 21], [63, 17], [58, 16], [54, 15]]) ok(solid(at(x, y + Y_OFF)), `depot ledge/floor at ${x},${y + Y_OFF}`);
 ok(at(75, 19 + Y_OFF) === 3 && at(76, 19 + Y_OFF) === 3, 'depot plank at the nook mouth (one-way)');
 ok(!reachable(80, 28 + Y_OFF, 84, 23 + Y_OFF) && !reachable(80, 28 + Y_OFF, 82, 21 + Y_OFF), 'depot climb cannot be skipped from the floor');
 ok(!solid(at(54, 14 + Y_OFF)) && solid(at(54, 12 + Y_OFF)), 'depot nook carved with a roof');
@@ -186,8 +186,8 @@ const depotHops = [
   [[81, 21], [77, 19]],   // perch -> one-way plank
   [[75, 19], [73, 19]],   // plank -> across the nook mouth
   [[68, 19], [64, 17]],   // nook floor -> Ledge A
-  [[63, 17], [59, 15]],   // Ledge A -> Ledge B
-  [[58, 15], [55, 15]],   // Ledge B -> Ledge C (kit)
+  [[63, 17], [61, 16]],   // Ledge A -> Ledge B (one low step — the roof is close)
+  [[56, 16], [55, 15]],   // Ledge B -> Ledge C (kit)
 ];
 depotHops.forEach(([a, b], i) => ok(reachable(...a, ...b), `depot hop ${i} reachable`));
 // ridge hops: the climb from the shoulder to the summit and down the east side
