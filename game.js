@@ -162,6 +162,7 @@ function loadSave() {
     player.warmth = player.maxWarmth;
     for (const id of d.taken || []) takenIds.add(id);
     respawnAtFire();
+    snapWeather(); // resume under the saved sky, no slow transition
     return true;
   } catch (e) { return false; }
 }
@@ -340,7 +341,7 @@ function ambientTick(pc) {
   if (!muted && (G.mode === 'play' || G.mode === 'dialog' || G.mode === 'map')) {
     const z = curZone;
     if (z && z.dark) { gain = 0.016; freq = 130; }                       // cave rumble
-    else if (pc.rain && !(z && z.covered)) { gain = 0.05; freq = 2600; } // rain hiss
+    else if (pc.rain > 0.05 && !(z && z.covered)) { gain = 0.05 * pc.rain; freq = 2600; } // rain hiss, swelling with the shower
     else if (z && (z.id === 'grat' || z.id === 'gipfel' || z.id === 'ferrata' || z.id === 'hochband'))
       { gain = 0.045 + Math.sin(frame * 0.013) * 0.018; freq = 650 + Math.sin(frame * 0.007) * 180; } // ridge wind
     else if (z && z.id === 'schlucht') { gain = 0.05; freq = 1500; }     // falls roar
@@ -896,7 +897,7 @@ function doInteract(e) {
       if (e.biwak && G.gear.kit && !G.flags.biwakDone) {
         fade(() => {
           G.flags.biwakDone = true; G.lastFire = e.id; player.warmth = player.maxWarmth;
-          setPhase(4); save();
+          setPhase(4); snapWeather(); save(); // the night passes behind the fade
           say(TX.biwak_sleep, () => setObjective('summit'));
         });
       } else restAt(e.id, TX.fire_rest);
@@ -982,12 +983,7 @@ function talkTo(who) {
     else say(t.first.slice(5));
   } else if (who === 'norbert') {
     const t = TX.norbert;
-    if (G.flags.finale) say(t.done);
-    else if (!G.flags.norbertMet) {
-      G.flags.norbertMet = true;
-      say(t.first, () => setObjective('chestnut'));
-    } else if (G.gear.jacket) say(t.after);
-    else if (G.chestnuts >= 3 && !G.chestnutsDone) {
+    const resolve = () => {
       G.chestnutsDone = true;
       say(t.complete, () => {
         G.knoedel = true; player.maxWarmth = 130; player.warmth = 130;
@@ -996,7 +992,16 @@ function talkTo(who) {
           G.gear.jacket = true; setPhase(2); setObjective('jacket'); save();
         });
       });
-    } else say(t.partial);
+    };
+    if (G.flags.finale) say(t.done);
+    else if (!G.flags.norbertMet) {
+      G.flags.norbertMet = true;
+      // pockets already full of chestnuts? straight to the Knödel
+      if (G.chestnuts >= 3 && !G.chestnutsDone) say(t.first, resolve);
+      else say(t.first, () => setObjective('chestnut'));
+    } else if (G.gear.jacket) say(t.after);
+    else if (G.chestnuts >= 3 && !G.chestnutsDone) resolve();
+    else say(t.partial);
   } else if (who === 'vera') {
     const t = TX.vera;
     const n = Object.keys(G.rings).length;
@@ -1246,15 +1251,23 @@ function hexLerp(h1, h2, t) {
 }
 let skyBlend = { top: PHASES[1].skyTop, bot: PHASES[1].skyBot, t: 1, from: 1, to: 1 };
 let phaseLerpT = 1, phasePrev = 1;
+let rainLevel = 0; // 0..1 — rain eases in and out instead of switching on
+function snapWeather() { // jump the sky/rain to the current phase (sleep, load)
+  phasePrev = G.phase; phaseLerpT = 1;
+  rainLevel = PHASES[G.phase] && PHASES[G.phase].rain ? 1 : 0;
+}
 function phaseColors() {
   if (phasePrev !== G.phase) { phaseLerpT = 0; }
-  phaseLerpT = Math.min(1, phaseLerpT + 0.01);
+  phaseLerpT = Math.min(1, phaseLerpT + 0.0018); // a sky takes ~10 s to turn
   const a = PHASES[phasePrev] || PHASES[G.phase], b = PHASES[G.phase];
+  // rain rolls in over ~half a minute, first drops before the full shower
+  const wantRain = b.rain ? 1 : 0;
+  rainLevel += Math.sign(wantRain - rainLevel) * Math.min(0.0006, Math.abs(wantRain - rainLevel));
   const out = {
     top: hexLerp(a.skyTop, b.skyTop, phaseLerpT),
     bot: hexLerp(a.skyBot, b.skyBot, phaseLerpT),
     ambient: lerp(a.ambient, b.ambient, phaseLerpT),
-    rain: b.rain, sun: b.sun,
+    rain: rainLevel, sun: b.sun,
   };
   if (phaseLerpT >= 1) phasePrev = G.phase;
   return out;
@@ -1267,19 +1280,21 @@ function drawSky(pc) {
   gr.addColorStop(0, pc.top); gr.addColorStop(1, pc.bot);
   cx.fillStyle = gr; cx.fillRect(0, 0, VW, VH);
 
-  // stars at night
+  // stars at night — they come out with the dark, not all at once
   if (G.phase === 3) {
+    const nf = phasePrev === 3 ? 1 : phaseLerpT;
     cx.fillStyle = 'rgba(255,255,240,0.8)';
     for (let i = 0; i < 60; i++) {
       const sx = (i * 137.5 + 40) % VW, sy = (i * 89.7) % (VH * 0.7);
       const tw = 0.4 + 0.6 * Math.abs(Math.sin(frame * 0.02 + i));
-      cx.globalAlpha = tw * 0.8;
+      cx.globalAlpha = tw * 0.8 * nf;
       cx.fillRect(sx, sy, 1.5, 1.5);
     }
-    cx.globalAlpha = 1;
     // moon
+    cx.globalAlpha = nf;
     cx.fillStyle = '#f5f1dc'; cx.beginPath(); cx.arc(VW * 0.78, VH * 0.16, 14, 0, 7); cx.fill();
     cx.fillStyle = pc.top; cx.beginPath(); cx.arc(VW * 0.78 - 6, VH * 0.16 - 3, 12, 0, 7); cx.fill();
+    cx.globalAlpha = 1;
   } else if (pc.sun >= 0) {
     const sx = VW * (0.25 + pc.sun * 0.5), sy = VH * (0.14 + (1 - Math.sin(pc.sun * Math.PI)) * 0.2);
     const glow = cx.createRadialGradient(sx, sy, 2, sx, sy, 60);
@@ -2002,9 +2017,9 @@ function drawCritters() {
 // rain
 const drops = [];
 function rainTick(pc) {
-  if (!pc.rain) return;
+  if (pc.rain <= 0.02) return;
   if (curZone && curZone.covered) return;
-  if (drops.length < 90) drops.push({ x: cam.x + Math.random() * VW, y: cam.y - 10, v: 7 + Math.random() * 3 });
+  if (drops.length < 90 * pc.rain) drops.push({ x: cam.x + Math.random() * VW, y: cam.y - 10, v: 7 + Math.random() * 3 });
   for (let i = drops.length - 1; i >= 0; i--) {
     const d = drops[i];
     d.y += d.v; d.x += 1.2;
@@ -2012,8 +2027,8 @@ function rainTick(pc) {
   }
 }
 function drawRain(pc) {
-  if (!pc.rain || (curZone && curZone.covered)) { drops.length = 0; return; }
-  cx.strokeStyle = 'rgba(180,200,225,0.45)'; cx.lineWidth = 1;
+  if (pc.rain <= 0.02 || (curZone && curZone.covered)) { drops.length = 0; return; }
+  cx.strokeStyle = `rgba(180,200,225,${0.45 * Math.min(1, pc.rain * 1.5)})`; cx.lineWidth = 1;
   cx.beginPath();
   for (const d of drops) {
     cx.moveTo(d.x - cam.x, d.y - cam.y);
@@ -2024,7 +2039,7 @@ function drawRain(pc) {
 
 // light shafts slanting through the larches
 function drawLightShafts(pc) {
-  if (pc.rain || G.phase === 3 || !curZone) return;
+  if (pc.rain > 0.25 || G.phase === 3 || !curZone) return;
   if (curZone.id !== 'wald' && curZone.id !== 'camp' && curZone.id !== 'galerie') return;
   const warm = G.phase === 4 ? '255,176,110' : '255,244,200';
   const slope = 0.55;
