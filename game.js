@@ -707,7 +707,7 @@ function physTick() {
     }
 
     // the slip into the Hinteres Tal is glider-only
-    if (!G.gear.glider && p.x + p.w > 189.6 * TILE && p.y < 14 * TILE) {
+    if (!G.gear.glider && p.x + p.w > 189.6 * TILE && p.y < 20 * TILE) {
       p.x = 189.6 * TILE - p.w; p.vx = 0;
       if (gateToastCd <= 0) { toast(TX.gate_flug); gateToastCd = 240; }
     }
@@ -801,7 +801,7 @@ function physTick() {
 
   // splash on entering water
   if (p.swim && !p.wasSwim) { sfx.splash(); vib(25); G.shake = Math.max(G.shake, vyEnter > 6 ? 6 : 2);
-    if (vyEnter > 6 && !G.flags.zinnensprung && zone && zone.id === 'wald' && fallStartY < 20 * TILE) {
+    if (vyEnter > 6 && !G.flags.zinnensprung && zone && zone.id === 'wald' && fallStartY < 26 * TILE) {
       G.flags.zinnensprung = true; toast(TX.toast_sprung); sfx.fanfare();
     }
     for (let i = 0; i < 12; i++) spawnPart({ x: p.x + Math.random() * p.w, y: p.y + p.h / 2, vx: (Math.random() - 0.5) * 2.5, vy: -1 - Math.random() * 2, g: 0.12, t: 26, c: 'rgba(190,225,240,0.8)', s: 2 });
@@ -1091,12 +1091,12 @@ function npcTick() {
 // ---- the Gams: appears near your next objective, bounds away when crowded --
 const gams = { x: 0, y: 0, stage: '', fleeT: 0, hidden: false, met: false, restSaid: false };
 function gamsSpot() {
-  if (G.flags.finale) return { x: 184, r: 9, stage: 'rest' };
-  if (!G.gear.boots) return player.x < 118 * TILE ? { x: 108, r: 70, stage: 'boots1' } : null;
-  if (!G.chestnutsDone) return { x: 108, r: 48, stage: 'alm' };
+  if (G.flags.finale) return { x: 184, r: 15, stage: 'rest' };
+  if (!G.gear.boots) return player.x < 118 * TILE ? { x: 108, r: 76, stage: 'boots1' } : null;
+  if (!G.chestnutsDone) return { x: 108, r: 54, stage: 'alm' };
   // once you're up at the Stellung, she waits at the base of the observer-post climb
-  if (G.gear.jacket && !G.gear.lamp && player.y < 32 * TILE && player.x < 32 * TILE)
-    return { x: 16, r: 28, stage: 'lamp2' };
+  if (G.gear.jacket && !G.gear.lamp && player.y < 38 * TILE && player.x < 32 * TILE)
+    return { x: 16, r: 34, stage: 'lamp2' };
   return null;
 }
 function gamsTick() {
@@ -1420,9 +1420,9 @@ function drawBgRock() {
 
 // biome for grass tint
 function biomeAt(tx, ty) {
-  if (ty <= 19) return 'ridge';
-  if (ty <= 37) return 'high';
-  if (ty <= 58) return 'alm';
+  if (ty <= 25) return 'ridge';
+  if (ty <= 43) return 'high';
+  if (ty <= 64) return 'alm';
   return 'valley';
 }
 const GRASS = { ridge: '#9fae7e', high: '#8fa37a', alm: '#6fae57', valley: '#5d9148' };
