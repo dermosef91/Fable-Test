@@ -29,9 +29,34 @@ function buildWorld() {
   carve(11, 33, 21, 4);          // headroom over the gorge slot — full jumps need sky
   fill(28, 8, 45, 14, 1);        // tunnel ceiling massif (x28..72, passage stays open y22..27)
   fill(96, 12, 15, 16, 1);       // headwall above the Hochband (x96..110)
-  fill(96, 12, 94, 7, 1);        // ridge band (x96..189)
-  carve(171, 12, 3, 7);          // the notch — a clean drop into the pond far below
-  fill(156, 10, 11, 2, 1);       // summit cap (x156..166)
+
+  // --- ridge path: a real climb to the peak --------------------------------
+  // Platforms are THIN (3–4 tiles of rock) so sky shows between the crags.
+  // Stage 1 — The Shoulder: flat entry from the ferrata, then first step up
+  fill(96, 12, 9, 7, 1);         // entry platform (x96..104, floor y12) — thick, bonds to headwall
+  fill(105, 10, 4, 4, 1);        // first step up (x105..108, y10..13)
+
+  // Stage 2 — The Knife Edge: narrow ledges stepping sharply upward
+  fill(110, 8, 3, 4, 1);         // ledge (x110..112, y8..11)
+  fill(115, 6, 3, 3, 1);         // ledge (x115..117, y6..8)
+  fill(119, 4, 4, 3, 1);         // high point (x119..122, y4..6)
+  fill(126, 7, 3, 3, 1);         // deep saddle (x126..128, y7..9) — big drop!
+
+  // Stage 3 — The Summit Block: dramatic peaks and valleys
+  fill(131, 5, 3, 3, 1);         // ledge (x131..133, y5..7)
+  fill(135, 3, 3, 3, 1);         // sub-peak (x135..137, y3..5) — first glimpse of the top
+  fill(140, 6, 4, 3, 1);         // deep saddle (x140..143, y6..8) — plunges back down!
+  fill(146, 4, 3, 3, 1);         // ledge (x146..148, y4..6)
+  fill(150, 2, 4, 3, 1);         // the pinnacle (x150..153, y2..4) — highest point on the ridge!
+  fill(157, 3, 9, 4, 1);         // summit plateau (x157..165, y3..6) — the Gipfel
+
+  // Stage 4 — The East Ridge: descent toward the notch and the east end
+  fill(167, 5, 3, 3, 1);         // ledge (x167..169, y5..7)
+  fill(171, 7, 3, 3, 1);         // pre-notch ledge (x171..173, y7..9)
+  carve(172, 7, 2, 3);           // the notch — a clean drop into the pond far below
+  fill(176, 7, 3, 3, 1);         // post-notch ledge (x176..178, y7..9)
+  fill(181, 9, 4, 3, 1);         // ledge (x181..184, y9..11)
+  fill(186, 11, 4, 3, 1);        // final ledge (x186..189, y11..13)
 
   // scree slope: valley (x152, y~70) climbing west to the Alm (x111, y48)
   for (let x = 111; x <= 152; x++) {
@@ -66,12 +91,17 @@ function buildWorld() {
   fill(8, 32, 3, 1, 1);    // inside the chimney
   fill(4, 29, 3, 1, 1);    // inside the chimney, one easy hop from the lip
 
-  // --- the observer post: a short, airier climb above the Stellung --------
-  // (the lamp waits at the top — most will meet the dark tunnel first)
-  fill(12, 25, 3, 1, 1);
-  fill(7, 22, 3, 1, 1);    // misstep here and the chimney takes you back down
-  fill(12, 19, 3, 1, 1);
-  fill(2, 16, 9, 1, 1);    // the lookout shelf
+  // --- the observer post: a long, airy climb above the Stellung -----------
+  // Eight hops on narrow ledges with real exposure — the lamp is earned.
+  // Misstep anywhere and the chimney swallows you back to the gorge.
+  fill(14, 25, 2, 1, 1);   // 1. narrow first ledge — commits you to the climb
+  fill(9, 23, 2, 1, 1);    // 2. left step — the chimney yawns below
+  fill(14, 21, 2, 1, 1);   // 3. back right — precision landing
+  fill(18, 19, 3, 1, 3);   // 4. one-way plank — no going back this way
+  fill(13, 17, 2, 1, 1);   // 5. narrow ledge, back left
+  fill(7, 15, 2, 1, 1);    // 6. further left, fully exposed over the void
+  fill(12, 13, 2, 1, 1);   // 7. back right, near the top — don't look down
+  fill(2, 10, 9, 1, 1);    // 8. the lookout shelf — you made it
 
   // --- the depot: a balcony nook above the tunnel's east mouth ------------
   // (the ferrata set waits here — the cable below sends you looking)
@@ -80,8 +110,12 @@ function buildWorld() {
   fill(73, 22, 2, 1, 1);
 
   // --- tunnel furniture ----------------------------------------------------
+  fill(34, 26, 3, 2, 1);   // low rubble pile near the west mouth — hop over
   fill(40, 26, 2, 2, 1);   // rubble heap to hop
+  carve(44, 27, 2, 1);     // narrow floor gap — a short jump
+  fill(48, 23, 1, 3, 1);   // fallen timber, squeeze past on the right
   fill(52, 22, 2, 2, 1);   // collapsed lintel to duck past
+  fill(59, 25, 3, 3, 1);   // cave-in mound near the east end — biggest hop
 
   // --- water ---------------------------------------------------------------
   fill(23, 70, 11, 3, 4);  // plunge pool under the falls
@@ -131,12 +165,12 @@ const MOVERS = [
 // First match wins; specific before general.
 // =========================================================================
 const ZONES = [
-  { id: 'wache',    x: 2,   y: 8,  w: 26, h: 9,  en: 'Observer Post',         de: 'Beobachterstand',       it: 'Posto di vedetta',      outdoor: true },
+  { id: 'wache',    x: 2,   y: 2,  w: 26, h: 15, en: 'Observer Post',         de: 'Beobachterstand',       it: 'Posto di vedetta',      outdoor: true },
   { id: 'depot',    x: 62,  y: 11, w: 12, h: 9,  en: 'The Depot',             de: 'Das Materialdepot',     it: 'Il deposito',           outdoor: true },
   { id: 'start',    x: 188, y: 0,  w: 12, h: 14, en: 'Launch Site',           de: 'Startplatz',            it: 'Decollo',               outdoor: true },
   { id: 'hintertal', x: 192, y: 0, w: 72, h: 80, en: 'The Hidden Valley',     de: 'Hinteres Tal',          it: 'Valle nascosta',        outdoor: true },
-  { id: 'gipfel',   x: 150, y: 0,  w: 24, h: 12, en: 'The Summit',            de: 'Gipfel',                it: 'Cima Gamsblick',        outdoor: true },
-  { id: 'grat',     x: 96,  y: 0,  w: 94, h: 12, en: 'Ridge Path',            de: 'Gratweg',               it: 'Via di cresta',         outdoor: true },
+  { id: 'gipfel',   x: 150, y: 0,  w: 24, h: 19, en: 'The Summit',            de: 'Gipfel',                it: 'Cima Gamsblick',        outdoor: true },
+  { id: 'grat',     x: 96,  y: 0,  w: 94, h: 19, en: 'Ridge Path',            de: 'Gratweg',               it: 'Via di cresta',         outdoor: true },
   { id: 'ferrata',  x: 92,  y: 11, w: 6,  h: 18, en: 'Via Ferrata "Rosa"',    de: 'Klettersteig „Rosa“',   it: 'Via ferrata «Rosa»',    outdoor: true },
   { id: 'stellung', x: 2,   y: 17, w: 26, h: 20, en: 'Old Position 1916',     de: 'Alte Stellung 1916',    it: 'Vecchia postazione',    outdoor: true },
   { id: 'stollen',  x: 27,  y: 17, w: 47, h: 13, en: 'The Tunnel',            de: 'Der Stollen',           it: 'La galleria',           dark: true, covered: true },
@@ -226,8 +260,8 @@ const ENTITIES = [
   { t: 'marmot',   x: 24,  r: 28 },
 
   // -- Beobachterstand --------------------------------------------------------------
-  { t: 'lookout',  x: 3,   r: 16 },
-  { t: 'gear',     x: 6,   r: 16, gear: 'lamp', key: 'get_lamp' },
+  { t: 'lookout',  x: 3,   r: 10 },
+  { t: 'gear',     x: 6,   r: 10, gear: 'lamp', key: 'get_lamp' },
 
   // -- Stollen ---------------------------------------------------------------------
   { t: 'relic',    x: 56,  r: 28 },
@@ -244,16 +278,16 @@ const ENTITIES = [
   { t: 'depot',    x: 70,  r: 19 },
 
   // -- Grat & Gipfel ---------------------------------------------------------------------
-  { t: 'sign',     x: 98,  r: 12, key: 'sign_grat' },
-  { t: 'marmot',   x: 120, r: 12 },
-  { t: 'sign',     x: 167, r: 12, key: 'sign_notch' },
-  { t: 'fence',    x: 169, r: 12 },
-  { t: 'fence',    x: 175, r: 12 },
-  { t: 'cross',    x: 161, r: 10 },
-  { t: 'book',     x: 159, r: 10 },
-  { t: 'photo',    x: 180, r: 12, n: 5 },
-  { t: 'bench',    x: 182, r: 12 },
-  { t: 'sign',     x: 186, r: 12, key: 'sign_flug' },
+  { t: 'sign',     x: 100, r: 12, key: 'sign_grat' },
+  { t: 'marmot',   x: 120, r: 4 },
+  { t: 'sign',     x: 168, r: 5, key: 'sign_notch' },
+  { t: 'fence',    x: 171, r: 7 },
+  { t: 'fence',    x: 176, r: 7 },
+  { t: 'cross',    x: 161, r: 3 },
+  { t: 'book',     x: 159, r: 3 },
+  { t: 'photo',    x: 182, r: 9, n: 5 },
+  { t: 'bench',    x: 183, r: 9 },
+  { t: 'sign',     x: 187, r: 11, key: 'sign_flug' },
 
   // -- Hinteres Tal ----------------------------------------------------------------------
   { t: 'windsock', x: 196, r: 12 },
@@ -278,14 +312,14 @@ const TREES = [
 
 const FLOWERS = [ // alpenrose & friends on the Alm, edelweiss up top
   [66, 48, 'rose'], [78, 48, 'rose'], [100, 48, 'rose'], [108, 48, 'rose'],
-  [110, 12, 'gent'], [134, 12, 'gent'], [152, 12, 'gent'],
-  [164, 10, 'edel'], [157, 10, 'edel'],
+  [111, 8, 'gent'], [136, 3, 'gent'], [147, 4, 'gent'],
+  [161, 3, 'edel'], [158, 3, 'edel'],
   [215, 70, 'gent'], [221, 68, 'rose'], [228, 70, 'gent'], [247, 66, 'gent'], [253, 70, 'rose'],
 ];
 
 // Background rock faces (drawn faded, behind the action — they sell the mountain)
 const BG_ROCK = [
-  { x: 96, y: 19, w: 94, h: 51 },             // the great south face under the ridge
+  { x: 96, y: 19, w: 94, h: 51 },             // the great south face under the ridge pillars
   { x: 2,  y: 37, w: 31, h: 33 },             // gorge wall
   { x: 73, y: 0,  w: 23, h: 17 },             // couloir above the Hochband
   { x: 2,  y: 0,  w: 26, h: 28 },             // shoulder above the Stellung
@@ -572,6 +606,7 @@ const TX_DE = {
   toast_slip: 'Du rutschst ab! Ohne feste Schuhe kein Halt im Geröll. · Si scivola!',
   toast_fall_water: 'Ohne Jacke drückt dich der Wasserfall einfach hinunter.',
   toast_dark: 'Stockfinster. Ohne Licht traust du dich kaum einen Schritt.',
+  toast_dark_turn: 'Zu dunkel. Du drehst um — ohne Lampe geht es hier nicht weiter.',
   toast_cable: 'Ein Stahlseil. Ohne Klettersteigset bleibt es nur Dekoration.',
   toast_cable_ok: 'HOCH drücken zum Einhängen · SU per agganciarsi',
   toast_cold: 'Dir wird kalt! Such ein Feuer. · Hai freddo!',
@@ -901,6 +936,7 @@ const TX_EN = {
   toast_slip: 'You slip! No grip on scree without proper boots.',
   toast_fall_water: 'Without a jacket, the waterfall simply hammers you down.',
   toast_dark: 'Pitch black. Without a light you hardly dare take a step.',
+  toast_dark_turn: 'Too dark. You turn back — no going further without a lamp.',
   toast_cable: 'A steel cable. Without a ferrata set it stays decoration.',
   toast_cable_ok: 'Press UP to clip in',
   toast_cold: 'You\'re getting cold! Find a fire.',

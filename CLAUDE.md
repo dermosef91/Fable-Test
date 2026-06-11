@@ -2,17 +2,23 @@
 
 GIPFELBUCH — a story-driven 2D metroidvania set on one mountain in Südtirol
 (plus a hidden glider valley). Plain HTML5 canvas + vanilla JS. **No build
-step, no runtime dependencies, no image or audio assets** — everything is
-drawn and synthesized procedurally. Keep it that way; test-only tooling
-(e.g. puppeteer) is fine but must never be needed to play.
+step, no runtime dependencies** — the engine draws and synthesizes
+everything procedurally at runtime. (A PNG sprite pipeline for characters
+exists under `sprites/` + `tools/generate_sprites.py`, but the engine does
+not load it yet — see Characters below.) Test/dev-only tooling (puppeteer,
+http-server) is fine but must never be needed to play.
 
 ## Run & test
 
-- Play locally: open `index.html` in a browser (or any static server).
-- Tests: `node test/check-world.js` — ~280 headless world-geometry
+- Play locally: open `index.html` in a browser, or `npm run dev`
+  (http-server on port 8080).
+- Tests: `npm test` / `node test/check-world.js` — ~280 headless
+  world-geometry
   assertions (floor/headroom under every entity, gear gates sealed except
   the intended route, jump arcs reachable under the real physics).
   Run after **any** change to `world.js` and before every push.
+- `node test/smoke-render.js` — stubbed-DOM crash test that drives
+  title → play → dialog → map frames; run it after renderer changes.
 - **Geometry changes and their assertions land in the same commit.** If you
   move a ledge, update the ladder/hop lists in `check-world.js` too.
 - For new gates or routes, verify in headless Chrome (puppeteer) like a
@@ -108,3 +114,17 @@ English-first prose with German/Italian color; journal pages read in the
 parchment dialog style. No combat — gates are weather, gear and terrain.
 Rewards are story (a note in a tin, a named route, a marmot that waves),
 never numbers. Keep it that way.
+
+## Characters
+
+`CHARACTERS.md` is the single-source character reference (name, background,
+personality, detailed visual description with hex colours). **Keep it in
+sync** when adding, altering or removing a character, and update
+`tools/generate_sprites.py` when a visual design changes.
+
+Note: the generated PNGs in `sprites/` are **not yet wired into the
+engine** — characters are still drawn procedurally in `game.js`
+(`drawEntity`). If you wire sprites in, do it behind a procedural fallback
+and update the header of this file. `agents.md` predates the English
+localization and the sprite experiment; where it conflicts with this file,
+this file wins.

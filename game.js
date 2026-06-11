@@ -763,7 +763,27 @@ function physTick() {
   // ---- warmth
   if (p.swim) p.warmth -= 0.22;
   if (overlapTile(6)) { p.warmth -= 0.3; if (Math.random() < 0.2) spawnPart({ x: p.x + Math.random() * p.w, y: p.y + Math.random() * p.h, vx: 0, vy: -0.5, t: 16, c: '#8bc34a', s: 1.5 }); }
-  if (dark && !G.gear.lamp) { p.warmth -= 0.1; if (darkToastCd <= 0) { toast(TX.toast_dark); darkToastCd = 240; } }
+  if (dark && !G.gear.lamp) {
+    // hard gate: the player can peek a few tiles into the Stollen mouth but
+    // gets turned around before going deep — the dark is impenetrable.
+    const stol = ZONES.find(z => z.id === 'stollen');
+    if (stol) {
+      const westWall = stol.x * TILE + 4 * TILE;     // 4 tiles past the west mouth
+      const eastWall = (stol.x + stol.w) * TILE - 4 * TILE; // 4 tiles past the east mouth
+      if (p.x + p.w > westWall && p.x < eastWall) {
+        // push the player back out of the deep dark
+        if (p.x + p.w / 2 < (stol.x + stol.w / 2) * TILE) {
+          p.x = westWall - p.w - 1; p.face = -1;  // came from the west → face back
+        } else {
+          p.x = eastWall + 1; p.face = 1;          // came from the east → face back
+        }
+        p.vx = 0;
+        if (darkToastCd <= 0) { toast(TX.toast_dark_turn); darkToastCd = 240; }
+      }
+    }
+    p.warmth -= 0.06;
+    if (darkToastCd <= 0) { toast(TX.toast_dark); darkToastCd = 240; }
+  }
   if (G.phase === 3 && zone && zone.outdoor) p.warmth -= 0.015;
   // near fire: warm up
   let nearFire = false;
@@ -1023,12 +1043,12 @@ function npcTick() {
 // ---- the Gams: appears near your next objective, bounds away when crowded --
 const gams = { x: 0, y: 0, stage: '', fleeT: 0, hidden: false, met: false, restSaid: false };
 function gamsSpot() {
-  if (G.flags.finale) return { x: 184, r: 12, stage: 'rest' };
+  if (G.flags.finale) return { x: 184, r: 9, stage: 'rest' };
   if (!G.gear.boots) return player.x < 118 * TILE ? { x: 108, r: 70, stage: 'boots1' } : null;
   if (!G.chestnutsDone) return { x: 108, r: 48, stage: 'alm' };
-  // once you're up at the Stellung, she waits below the observer-post climb
+  // once you're up at the Stellung, she waits at the base of the observer-post climb
   if (G.gear.jacket && !G.gear.lamp && player.y < 32 * TILE && player.x < 32 * TILE)
-    return { x: 13, r: 25, stage: 'lamp2' };
+    return { x: 16, r: 28, stage: 'lamp2' };
   return null;
 }
 function gamsTick() {
@@ -1672,6 +1692,8 @@ function drawEntity(e) {
         cx.beginPath(); cx.moveTo(x - 3, y - 21); cx.lineTo(x + 3, y - 21); cx.stroke();
         break;
       }
+
+      // --- Fallback: procedural NPC drawing (Greta / Norbert without sprites) ---
       const isG = e.who === 'greta';
       const px2 = x, py2 = y;
       // body
@@ -2242,6 +2264,8 @@ function portraitKey(name) {
   return null;
 }
 function drawPortrait(who, x, y, s) {
+
+  // Fallback: procedural portrait
   cx.save();
   cx.translate(x, y); cx.scale(s / 32, s / 32);
   cx.beginPath(); cx.rect(-16, -16, 32, 32); cx.clip();
@@ -2354,25 +2378,6 @@ function drawHUD() {
   }
   if (G.knoedel) { panel(gx, gy, 26, 26, 6, true); drawIcon('knoedel', gx + 13, gy + 13, 17); }
 
-  // quest tracker (so nobody is ever lost): diamond, small-caps header, the goal
-  if (G.mode === 'play' && !G.caption && bannerT <= 120 && G.objective) {
-    const qx = 14, qy = (gx > 12 || G.knoedel) ? gy + 40 : gy + 6;
-    cx.save();
-    cx.shadowColor = 'rgba(8,10,18,0.85)'; cx.shadowBlur = 4;
-    cx.strokeStyle = UI_GOLD; cx.lineWidth = 1.4;
-    cx.translate(qx + 5, qy); cx.rotate(Math.PI / 4); cx.strokeRect(-3.2, -3.2, 6.4, 6.4);
-    cx.rotate(-Math.PI / 4); cx.translate(-qx - 5, -qy);
-    setTracking(1.5);
-    cx.fillStyle = UI_GOLD; cx.font = 'bold 12px Georgia, serif'; cx.textAlign = 'left';
-    cx.fillText(TX.obj_prefix.replace(/[:\s]+$/, '').toUpperCase(), qx + 15, qy + 1);
-    setTracking(0);
-    let ot = G.objective;
-    if (G.objKey === 'chestnut' && !G.chestnutsDone) ot += ` (${G.chestnuts}/3)`;
-    cx.fillStyle = 'rgba(243,236,210,0.92)'; cx.font = '11.5px Georgia, serif';
-    cx.fillText('·', qx + 4, qy + 18);
-    wrapText(ot, qx + 13, qy + 18, Math.min(250, W * 0.42), 15);
-    cx.restore();
-  }
 
   // map, mute & fullscreen buttons
   BTNS = [];
