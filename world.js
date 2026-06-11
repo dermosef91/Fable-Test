@@ -8,12 +8,14 @@
 const TILE = 16;
 
 const WORLD_W = 264;   // x 0..191 the Gamstal · x 192.. the Hinteres Tal (glider country)
-const WORLD_H = 80;
+const WORLD_H = 90;    // Increased from 80 to 90 to prevent the artificial ceiling at the top
+const Y_OFF = 10;      // Shift offset to push level geometry down
 
 function buildWorld() {
   const g = new Uint8Array(WORLD_W * WORLD_H); // 0 = air
 
   const fill = (x, y, w, h, t) => {
+    y += Y_OFF;
     for (let j = y; j < y + h; j++)
       for (let i = x; i < x + w; i++)
         if (i >= 0 && i < WORLD_W && j >= 0 && j < WORLD_H) g[j * WORLD_W + i] = t;
@@ -34,22 +36,21 @@ function buildWorld() {
   // Platforms are THIN (3–4 tiles of rock) so sky shows between the crags.
   // Stage 1 — The Shoulder: flat entry from the ferrata, then first step up
   fill(96, 12, 9, 7, 1);         // entry platform (x96..104, floor y12) — thick, bonds to headwall
-  fill(105, 10, 4, 4, 1);        // first step up (x105..108, y10..13)
+  fill(105, 10, 4, 4, 1);        // first step up (x105..108, y10..14) (top 10, bottom 14)
 
   // Stage 2 — The Knife Edge: narrow ledges stepping sharply upward
-  fill(110, 8, 3, 4, 1);         // ledge (x110..112, y8..11)
-  fill(115, 6, 3, 3, 1);         // ledge (x115..117, y6..8)
-  fill(119, 4, 4, 3, 1);         // high point (x119..122, y4..6)
-  fill(126, 7, 3, 3, 1);         // deep saddle (x126..128, y7..9) — big drop!
+  fill(110, 8, 3, 6, 1);         // ledge (x110..112, y8..14)
+  fill(115, 6, 3, 8, 1);         // ledge (x115..117, y6..14)
+  fill(119, 4, 4, 10, 1);        // high point (x119..122, y4..14)
+  fill(126, 7, 3, 7, 1);         // deep saddle (x126..128, y7..14) — big drop!
 
-  // Stage 3 — The Summit Block: peaks and valleys, then the true high point
-  fill(131, 5, 3, 3, 1);         // ledge (x131..133, y5..7)
-  fill(135, 4, 3, 3, 1);         // sub-peak (x135..137, y4..6) — first glimpse of the top
-  // the deep saddle is gone — the summit-cross supply hoist drifts across
-  // the gap instead (see MOVERS); time the jump, ride it east
-  fill(146, 5, 3, 3, 1);         // ledge (x146..148, y5..7)
-  fill(151, 3, 3, 3, 1);         // fore-summit (x151..153, y3..5)
-  fill(157, 2, 9, 4, 1);         // summit plateau (x157..165, y2..5) — nothing stands higher
+  // Stage 3 — The Summit Block: dramatic peaks and valleys
+  fill(131, 5, 3, 9, 1);         // ledge (x131..133, y5..14)
+  fill(135, 3, 3, 11, 1);        // sub-peak (x135..137, y3..14) — first glimpse of the top
+  fill(140, 8, 4, 6, 1);         // deep saddle (x140..143, y8..14) — plunges back down!
+  fill(146, 4, 3, 10, 1);        // ledge (x146..148, y4..14)
+  fill(150, 2, 4, 12, 1);        // the pinnacle (x150..153, y2..14) — highest point on the ridge!
+  fill(157, 3, 9, 11, 1);        // summit plateau (x157..165, y3..14) — the Gipfel
 
   // Stage 4 — The East Ridge: descent toward the notch and the east end
   fill(167, 5, 3, 3, 1);         // ledge (x167..169, y5..7)
@@ -59,13 +60,10 @@ function buildWorld() {
   fill(181, 9, 4, 3, 1);         // ledge (x181..184, y9..11)
   fill(186, 11, 4, 3, 1);        // final ledge (x186..189, y11..13)
 
-  // the Bergfreunde catwalk: one-way planks strung under the whole upper
-  // ridge. A missed jump lands here instead of the scree far below — climb
-  // back onto the route at either re-entry ledge (west: knife edge start,
-  // east: the deep saddle). DOWN drops through, as always.
-  fill(111, 14, 46, 1, 3);       // the catwalk (x111..156, one-way)
-  fill(113, 11, 2, 1, 3);        // west re-entry plank: catwalk -> knife edge
-  fill(123, 11, 2, 1, 3);        // east re-entry plank: catwalk -> deep saddle
+  // Solid ground under the upper ridge. A missed jump lands here on the solid
+  // ground — climb back onto the route at the re-entry ledge (the deep saddle).
+  fill(111, 14, 55, 22, 1);
+  fill(123, 11, 2, 1, 3);        // re-entry plank: solid ground -> deep saddle
 
   // scree slope: valley (x152, y~70) climbing west to the Alm (x111, y48)
   for (let x = 111; x <= 152; x++) {
@@ -108,7 +106,7 @@ function buildWorld() {
   fill(11, 23, 2, 1, 1);   // 2. short step left — the chimney yawns below
   fill(17, 21, 2, 1, 1);   // 3. long leap back right — precision landing
   fill(19, 19, 3, 1, 3);   // 4. one-way plank — no going back this way
-  fill(13, 17, 2, 1, 1);   // 5. narrow ledge, back left
+  // 5. moving platform oscillates at y:17 (see MOVERS)
   fill(16, 15, 2, 1, 1);   // 6. up the right edge, fully exposed
   fill(10, 13, 2, 1, 1);   // 7. long leap left, near the top — don't look down
   fill(2, 10, 7, 1, 1);    // 8. the lookout shelf — you made it
@@ -117,7 +115,10 @@ function buildWorld() {
   // (the ferrata set waits here — the cable below sends you looking)
   // Five airy hops up the east face: the set is earned, not found. Only the
   // first step is reachable from the Hochband floor — no skipping ahead.
-  carve(63, 13, 10, 6);    // east-facing nook, floor y19, tunnel roof stays 3 thick
+  carve(52, 13, 21, 6);    // east-facing nook, floor y19, tunnel roof stays 3 thick
+  fill(52, 15, 4, 4, 1);   // Ledge C (kit platform)
+  fill(58, 15, 2, 4, 1);   // Ledge B
+  fill(63, 17, 2, 2, 1);   // Ledge A
   fill(78, 26, 2, 1, 1);   // 1. first step off the Hochband
   fill(84, 23, 2, 1, 1);   // 2. a long rising leap toward the headwall
   fill(81, 21, 1, 1, 1);   // 3. single-tile perch — precision
@@ -180,6 +181,7 @@ const RINGS = [[210, 36], [222, 24], [233, 46], [247, 30], [256, 55]];
 const MOVERS = [
   { x: 13, y: 40, x2: 18, y2: 40, w: 3, period: 300 },
   { x: 138, y: 6, x2: 142, y2: 6, w: 3, period: 260 },
+  { x: 11, y: 17, x2: 14, y2: 17, w: 2, period: 220 },
 ];
 
 // =========================================================================
@@ -188,7 +190,7 @@ const MOVERS = [
 // =========================================================================
 const ZONES = [
   { id: 'wache',    x: 2,   y: 2,  w: 26, h: 15, en: 'Observer Post',         de: 'Beobachterstand',       it: 'Posto di vedetta',      outdoor: true },
-  { id: 'depot',    x: 62,  y: 11, w: 12, h: 9,  en: 'The Depot',             de: 'Das Materialdepot',     it: 'Il deposito',           outdoor: true },
+  { id: 'depot',    x: 52,  y: 11, w: 22, h: 9,  en: 'The Depot',             de: 'Das Materialdepot',     it: 'Il deposito',           outdoor: true },
   { id: 'start',    x: 188, y: 0,  w: 12, h: 14, en: 'Launch Site',           de: 'Startplatz',            it: 'Decollo',               outdoor: true },
   { id: 'hintertal', x: 192, y: 0, w: 72, h: 80, en: 'The Hidden Valley',     de: 'Hinteres Tal',          it: 'Valle nascosta',        outdoor: true },
   { id: 'gipfel',   x: 150, y: 0,  w: 24, h: 19, en: 'The Summit',            de: 'Gipfel',                it: 'Cima Gamsblick',        outdoor: true },
@@ -212,19 +214,64 @@ const PHASES = [
   null,
   { caption: { de: 'Samstag, 6:50 · Sabato', en: 'Saturday, 6:50 am · Samstag' },
     sub: { de: 'Morgennebel im Tal — la nebbia del mattino', en: 'Morning mist in the valley' },
-    skyTop: '#7fb2d9', skyBot: '#f4e3c2', sun: 0.18, ambient: 0.00, rain: false },
+    skyTop: '#7fb2d9', skyBot: '#f4e3c2', sun: 0.18, ambient: 0.00, rain: false,
+    peak0Color: '#bec8d7', peak0Opacity: 0.7,
+    peak1Color: '#96a5b9', peak1Opacity: 0.8,
+    hazeColor: '#d0dbe8', hazeOpacity: 0.5,
+    silColor: '#a8b5c8', silOpacity: 0.85,
+    roofColor: '#92a0b4', roofOpacity: 0.9,
+    cloudColor: '#ffffff', cloudOpacity: 0.5,
+    bgRockColor0: '#a8a394', bgRockColor1: '#8d897e',
+    fc0Color: '#587262', fc0Opacity: 0.5,
+    fc1Color: '#385446', fc1Opacity: 0.72 },
   { caption: { de: 'Samstag Nachmittag · pomeriggio', en: 'Saturday afternoon · pomeriggio' },
     sub: { de: 'Regen zieht auf — arriva la pioggia', en: 'Rain is rolling in' },
-    skyTop: '#6b7d92', skyBot: '#aab4b6', sun: 0.55, ambient: 0.12, rain: true  },
+    skyTop: '#6b7d92', skyBot: '#aab4b6', sun: 0.55, ambient: 0.12, rain: true,
+    peak0Color: '#bec8d7', peak0Opacity: 0.7,
+    peak1Color: '#96a5b9', peak1Opacity: 0.8,
+    hazeColor: '#aab6c6', hazeOpacity: 0.5,
+    silColor: '#a8b5c8', silOpacity: 0.85,
+    roofColor: '#92a0b4', roofOpacity: 0.9,
+    cloudColor: '#7d8694', cloudOpacity: 0.45,
+    bgRockColor0: '#a8a394', bgRockColor1: '#8d897e',
+    fc0Color: '#566866', fc0Opacity: 0.5,
+    fc1Color: '#3a504c', fc1Opacity: 0.72 },
   { caption: { de: 'Samstag Nacht · notte', en: 'Saturday night · notte' },
     sub: { de: 'Der Berg wird still — la montagna tace', en: 'The mountain goes quiet' },
-    skyTop: '#0c1430', skyBot: '#27355c', sun: -1,   ambient: 0.66, rain: true  },
+    skyTop: '#0c1430', skyBot: '#27355c', sun: -1,   ambient: 0.66, rain: true,
+    peak0Color: '#28345a', peak0Opacity: 0.9,
+    peak1Color: '#1c2646', peak1Opacity: 0.95,
+    hazeColor: '#161e3a', hazeOpacity: 0.35,
+    silColor: '#222e52', silOpacity: 0.95,
+    roofColor: '#1a2442', roofOpacity: 0.95,
+    cloudColor: '#7d8694', cloudOpacity: 0.45,
+    bgRockColor0: '#1d2747', bgRockColor1: '#141b33',
+    fc0Color: '#1c2644', fc0Opacity: 0.8,
+    fc1Color: '#121a32', fc1Opacity: 0.92 },
   { caption: { de: 'Sonntag, kurz vor sechs · domenica', en: 'Sunday, just before six · domenica' },
     sub: { de: 'Erstes Licht — la prima luce', en: 'First light' },
-    skyTop: '#3b3a6e', skyBot: '#ffb37d', sun: 0.08, ambient: 0.18, rain: false },
+    skyTop: '#3b3a6e', skyBot: '#ffb37d', sun: 0.08, ambient: 0.18, rain: false,
+    peak0Color: '#966e8c', peak0Opacity: 0.55,
+    peak1Color: '#6e5578', peak1Opacity: 0.7,
+    hazeColor: '#d4968c', hazeOpacity: 0.5,
+    silColor: '#7e6080', silOpacity: 0.7,
+    roofColor: '#684e6c', roofOpacity: 0.75,
+    cloudColor: '#ffffff', cloudOpacity: 0.5,
+    bgRockColor0: '#8a6478', bgRockColor1: '#5e4a62',
+    fc0Color: '#6c5068', fc0Opacity: 0.55,
+    fc1Color: '#463650', fc1Opacity: 0.75 },
   { caption: { de: 'Sonntag Vormittag · domenica', en: 'Sunday morning · domenica' },
     sub: { de: 'Kaiserwetter — che giornata', en: 'Not a cloud that matters' },
-    skyTop: '#6fb0e0', skyBot: '#eaf4ef', sun: 0.40, ambient: 0.00, rain: false },
+    skyTop: '#6fb0e0', skyBot: '#eaf4ef', sun: 0.40, ambient: 0.00, rain: false,
+    peak0Color: '#bec8d7', peak0Opacity: 0.7,
+    peak1Color: '#96a5b9', peak1Opacity: 0.8,
+    hazeColor: '#d0dbe8', hazeOpacity: 0.5,
+    silColor: '#a8b5c8', silOpacity: 0.85,
+    roofColor: '#92a0b4', roofOpacity: 0.9,
+    cloudColor: '#ffffff', cloudOpacity: 0.5,
+    bgRockColor0: '#a8a394', bgRockColor1: '#8d897e',
+    fc0Color: '#587262', fc0Opacity: 0.5,
+    fc1Color: '#385446', fc1Opacity: 0.72 },
 ];
 
 // =========================================================================
@@ -270,8 +317,7 @@ const ENTITIES = [
 
   // -- Wasserfallschlucht -------------------------------------------------------
   { t: 'page',     x: 26,  r: 65, n: 4 }, // behind the falls
-  { t: 'chestnut', x: 20,  r: 57 },       // up the dry half of the gorge climb —
-                                          // Norbert's third chestnut sends you somewhere new
+  { t: 'chestnut', x: 29,  r: 45 },       // on the platform partially covered by the waterfall
 
   // -- Alte Stellung 1916 ---------------------------------------------------------
   { t: 'sign',     x: 11,  r: 28, key: 'sign_wache' },
@@ -296,7 +342,7 @@ const ENTITIES = [
   { t: 'marmot',   x: 92,  r: 28 },
 
   // -- Materialdepot -----------------------------------------------------------------
-  { t: 'gear',     x: 66,  r: 19, gear: 'kit', key: 'get_kit' },
+  { t: 'gear',     x: 54,  r: 15, gear: 'kit', key: 'get_kit' },
   { t: 'depot',    x: 70,  r: 19 },
 
   // -- Grat & Gipfel ---------------------------------------------------------------------
@@ -305,8 +351,8 @@ const ENTITIES = [
   { t: 'sign',     x: 168, r: 5, key: 'sign_notch' },
   { t: 'fence',    x: 171, r: 7 },
   { t: 'fence',    x: 176, r: 7 },
-  { t: 'cross',    x: 161, r: 2 },
-  { t: 'book',     x: 159, r: 2 },
+  { t: 'cross',    x: 161, r: 3 },
+  { t: 'book',     x: 159, r: 3 },
   { t: 'photo',    x: 182, r: 9, n: 5 },
   { t: 'bench',    x: 183, r: 9 },
   { t: 'sign',     x: 187, r: 11, key: 'sign_flug' },
@@ -343,7 +389,6 @@ const FLOWERS = [ // alpenrose & friends on the Alm, edelweiss up top
 const BG_ROCK = [
   { x: 96, y: 19, w: 94, h: 51 },             // the great south face under the ridge pillars
   { x: 2,  y: 37, w: 31, h: 33 },             // gorge wall
-  { x: 73, y: 0,  w: 23, h: 17 },             // couloir above the Hochband
   { x: 2,  y: 0,  w: 26, h: 28 },             // shoulder above the Stellung
   { x: 27, y: 17, w: 47, h: 13, cave: true }, // backwall of the Stollen
 ];
@@ -1029,6 +1074,17 @@ const GEAR_INFO = { // icons are drawn by drawIcon(key) in game.js
   kit:    { de: 'Klettersteigset', en: 'Ferrata set' },
   glider: { de: 'Gleitschirm', en: 'Paraglider' },
 };
+
+// Shift all Y coordinates of static elements by Y_OFF
+WATERFALL.y += Y_OFF;
+for (const t of THERMALS) t.y += Y_OFF;
+for (const r of RINGS) r[1] += Y_OFF;
+for (const m of MOVERS) { m.y += Y_OFF; m.y2 += Y_OFF; }
+for (const z of ZONES) z.y += Y_OFF;
+for (const e of ENTITIES) e.r += Y_OFF;
+for (const t of TREES) t[1] += Y_OFF;
+for (const f of FLOWERS) f[1] += Y_OFF;
+for (const r of BG_ROCK) r.y += Y_OFF;
 
 if (typeof module !== 'undefined') {
   module.exports = { TILE, WORLD_W, WORLD_H, buildWorld, WATERFALL, THERMALS, RINGS, MOVERS, ZONES, PHASES, ENTITIES, TREES, FLOWERS, BG_ROCK, TX_DE, TX_EN, GEAR_INFO };

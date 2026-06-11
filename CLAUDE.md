@@ -91,6 +91,7 @@ engine's `pend*` event queue exists for exactly that.
   4 up is a deliberate set-piece. Full arcs need **~5.5 tiles of headroom**
   — a ceiling 1–2 tiles above head height silently eats jumps (carve sky,
   as over the gorge slot).
+- **Summit Headroom & Y-Shifting**: The world height is `90` tiles (originally `80`), with all level geometry shifted down by `Y_OFF = 10` tiles. This leaves a 10-tile buffer of open air above the summit. All absolute Y lookups and boundaries in `game.js` and `test/check-world.js` must be dynamically shifted by adding `Y_OFF` to match this layout.
 - **Challenge before reward:** place gear so the player meets its obstacle
   first and backtracks (lamp at the Observer Post after the dark tunnel;
   ferrata set at the Depot after the bare cable). Quest collectibles must
@@ -103,6 +104,12 @@ engine's `pend*` event queue exists for exactly that.
   Darkness is a *soft* gate (drains warmth, passable for the determined).
 - One-way drops and shortcut loops (chimney, Schartl, scree-run) are part
   of the metroidvania feel — add them when a new area would force a slog.
+- **Vector Asset Design Guidelines:** For structures (like the Alm hut redesign) and visual elements, favor high-quality hand-coded details over simple blocks:
+  - *Dimensionality:* Add steep roofs, eaves/overhangs, and outline strokes (`cx.strokeStyle`) for structural depth.
+  - *Texturing:* Use pattern line-work (e.g. horizontal plank lines, brick overlays, wood grains) rather than flat fills.
+  - *Vibrant Contrast:* Accent earthy or neutral bases with high-contrast color pops (e.g., green shutters, colorful flower boxes) to guide interest.
+  - *Micro-Particles:* Attach ambient details like chimney smoke particle generators or interactive elements (e.g. sitting benches).
+
 
 ## Engine conventions (game.js)
 
@@ -130,6 +137,8 @@ engine's `pend*` event queue exists for exactly that.
   falls between frames.
 - **Movers:** platforms in `MOVERS` are one-way landings; standing players
   are carried via `p.moverRef` (set on landing, cleared on jump/walk-off).
+- **NPC & Animal Rendering**: Characters and animals are drawn procedurally, supporting a horizontal facing direction (`face = 1` or `-1`) via context scaling: `cx.scale(face, 1)`. When in motion (i.e. horizontal velocity `vx` is non-zero), apply a sinusoidal leg/hoof walking swing offset (`swing = Math.sin(...) * scale`) to convey movement naturally.
+- **Organic Tile Rendering:** Solid tiles (rock, scree) use coordinate-seeded pseudo-random hashes `h(seed)` in `drawTiles()` to procedurally draw stable organic edge bumps, grassy humps/blades, and rounded corners, avoiding straight rectangular bounds.
 - **Saves:** bump `SAVE_KEY` only if the save shape breaks compatibility;
   `loadSave` must tolerate missing fields from older saves (`|| {}`,
   inferred `objKey`).
