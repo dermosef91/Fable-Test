@@ -584,12 +584,14 @@ function physTick() {
     }
     if (jumpEdge) { p.climbing = false; p.vy = -4.5; p.vx = p.face * 1.5; sfx.jump(); }
     p.anim += Math.abs(p.vy) * 0.06;
-  } else if (onCableTile && upEdge) {
+  } else if (onCableTile && (upEdge || (inp.up && p.vy > 0.5 && !p.gliding))) {
+    // a held UP also catches the cable while falling past it — only the
+    // deliberate edge press triggers dialogue, so a fall can't spam it
     if (!G.gear.kit) {
       if (cableToastCd <= 0) { toast(TX.toast_cable); cableToastCd = 180; }
       if (!G.flags.kitHint && player.x < 100 * TILE) { G.flags.kitHint = true; setObjective('kit'); }
     }
-    else if (G.phase === 3 && !G.flags.biwakDone) { say(TX.biwak_blocked); }
+    else if (G.phase === 3 && !G.flags.biwakDone) { if (upEdge) say(TX.biwak_blocked); }
     else { p.climbing = true; p.vx = 0; p.vy = 0; }
   }
 
@@ -701,6 +703,18 @@ function physTick() {
   // ---- integrate Y
   let ny = p.y + p.vy;
   p.grounded = false;
+  // corner forgiveness: clipping a ceiling corner by a few pixels slides the
+  // player sideways instead of killing the jump
+  if (p.vy < 0 && rectVsGrid(p.x, ny, p.w, p.h)) {
+    const pref = p.vx >= 0 ? 1 : -1;
+    outer: for (let m = 1; m <= 4; m++) {
+      for (const d of [pref * m, -pref * m]) {
+        if (!rectVsGrid(p.x + d, ny, p.w, p.h) && !rectVsGrid(p.x + d, p.y, p.w, p.h)) {
+          p.x += d; break outer;
+        }
+      }
+    }
+  }
   if (rectVsGrid(p.x, ny, p.w, p.h)) {
     const dir = Math.sign(p.vy);
     while (!rectVsGrid(p.x, p.y + dir, p.w, p.h)) p.y += dir;
@@ -1147,12 +1161,37 @@ function zoneTick() {
 }
 
 // ================================================================= CAMERA =
-const cam = { x: 0, y: 0 };
+const cam = { x: 0, y: 0, groundY: 0, look: 0 };
 function camTick() {
-  const tx = player.x + player.w / 2 + player.face * 24 - VW / 2;
-  const ty = player.y + player.h / 2 - VH / 2 - 14;
+  const p = player;
+
+  // vertical anchor: the camera follows the last place the player stood,
+  // so ordinary jumps don't bob the horizon. Airborne, the anchor only
+  // moves once the player leaves a window around it.
+  if (p.grounded || p.climbing || p.swim || p.moverRef) {
+    cam.groundY = p.y;
+  } else {
+    const upWin = Math.min(96, VH * 0.34); // taller than a full jump where the screen allows
+    if (p.y < cam.groundY - upWin) cam.groundY = p.y + upWin;
+    if (p.y > cam.groundY) cam.groundY = p.y; // falling below the anchor: follow down
+  }
+
+  // look down: lead the camera when falling fast or gliding, and let a
+  // grounded player peek over an edge by holding DOWN
+  let lookT = 0;
+  if (G.mode === 'play') {
+    if (!p.swim && !p.grounded && p.vy > 3.5) lookT = Math.min(1, (p.vy - 3.5) / 3);
+    if (p.gliding) lookT = Math.max(lookT, 0.55);
+    if (p.grounded && !p.climbing && inp.down) lookT = 1;
+  }
+  cam.look += (lookT * 64 - cam.look) * 0.06;
+
+  const tx = p.x + p.w / 2 + p.face * 24 - VW / 2;
+  const ty = cam.groundY + p.h / 2 - VH / 2 - 14 + cam.look;
   cam.x += (tx - cam.x) * 0.08;
-  cam.y += (ty - cam.y) * 0.1;
+  // catch up faster the further behind the camera is (long drops)
+  const ky = Math.min(0.3, 0.1 + Math.abs(ty - cam.y) * 0.002);
+  cam.y += (ty - cam.y) * ky;
   cam.x = Math.max(0, Math.min(WORLD_W * TILE - VW, cam.x));
   cam.y = Math.max(0, Math.min(WORLD_H * TILE - VH, cam.y));
 }
@@ -2954,18 +2993,23 @@ function drawEnd() {
 }
 
 // ================================================================== LOOP ==
-function tick() {
-  frame++;
+// The simulation advances on a fixed 60 Hz step, decoupled from the display:
+// at 120/144 Hz the game renders every frame but steps at the speed all the
+// physics constants (and the test suite's jump arcs) were tuned for.
+const STEP = 1000 / 60;
+let lastT = 0, acc = 0;
+
+function pollEdges() {
   // edges (event-queued so a fast tap never falls between frames)
   jumpEdge = (inp.jump && !prevJump) || pendJump; prevJump = inp.jump; pendJump = false;
   actEdge = (inp.act && !prevAct) || pendAct; prevAct = inp.act; pendAct = false;
   upEdge = (inp.up && !prevUp) || pendUp; prevUp = inp.up; pendUp = false;
   mapEdge = (inp.map && !prevMap) || pendMap; prevMap = inp.map; pendMap = false;
+}
 
-  if (G.mode === 'title') { render(); requestAnimationFrame(tick); return; }
-  if (G.mode === 'end') { render(); drawEnd(); requestAnimationFrame(tick); anyInputEdge = false; return; }
-  if (G.mode === 'photo') { render(); drawPhoto(); requestAnimationFrame(tick); anyInputEdge = false; return; }
-  if (G.mode === 'album') { render(); drawAlbum(); requestAnimationFrame(tick); anyInputEdge = false; return; }
+function step() {
+  frame++;
+  pollEdges();
 
   if (mapEdge && (G.mode === 'play' || G.mode === 'map')) G.mode = G.mode === 'map' ? 'play' : 'map';
 
@@ -2990,9 +3034,32 @@ function tick() {
   for (const t of G.toasts) t.t--;
   G.toasts = G.toasts.filter(t => t.t > 0);
   if (G.shake > 0) G.shake--;
+  anyInputEdge = false;
+}
+
+function tick(now) {
+  // UI screens poll input per display frame — the world is not simulated
+  if (G.mode === 'title' || G.mode === 'end' || G.mode === 'photo' || G.mode === 'album') {
+    lastT = now; acc = 0;
+    frame++;
+    pollEdges();
+    render();
+    if (G.mode === 'end') drawEnd();
+    else if (G.mode === 'photo') drawPhoto();
+    else if (G.mode === 'album') drawAlbum();
+    if (G.mode !== 'title') anyInputEdge = false;
+    requestAnimationFrame(tick);
+    return;
+  }
+
+  if (!Number.isFinite(now)) now = lastT + STEP;
+  acc += Math.max(0, Math.min(now - (lastT || now), 100)); // clamp away tab-hidden gaps and clock jumps
+  lastT = now;
+  let n = 0;
+  while (acc >= STEP && n < 4) { step(); acc -= STEP; n++; }
+  if (acc >= STEP) acc %= STEP; // can't keep up — drop the backlog
 
   render();
-  anyInputEdge = false;
   requestAnimationFrame(tick);
 }
 
