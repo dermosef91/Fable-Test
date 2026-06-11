@@ -42,13 +42,14 @@ function buildWorld() {
   fill(119, 4, 4, 3, 1);         // high point (x119..122, y4..6)
   fill(126, 7, 3, 3, 1);         // deep saddle (x126..128, y7..9) — big drop!
 
-  // Stage 3 — The Summit Block: dramatic peaks and valleys
+  // Stage 3 — The Summit Block: peaks and valleys, then the true high point
   fill(131, 5, 3, 3, 1);         // ledge (x131..133, y5..7)
-  fill(135, 3, 3, 3, 1);         // sub-peak (x135..137, y3..5) — first glimpse of the top
-  fill(140, 6, 4, 3, 1);         // deep saddle (x140..143, y6..8) — plunges back down!
-  fill(146, 4, 3, 3, 1);         // ledge (x146..148, y4..6)
-  fill(150, 2, 4, 3, 1);         // the pinnacle (x150..153, y2..4) — highest point on the ridge!
-  fill(157, 3, 9, 4, 1);         // summit plateau (x157..165, y3..6) — the Gipfel
+  fill(135, 4, 3, 3, 1);         // sub-peak (x135..137, y4..6) — first glimpse of the top
+  // the deep saddle is gone — the summit-cross supply hoist drifts across
+  // the gap instead (see MOVERS); time the jump, ride it east
+  fill(146, 5, 3, 3, 1);         // ledge (x146..148, y5..7)
+  fill(151, 3, 3, 3, 1);         // fore-summit (x151..153, y3..5)
+  fill(157, 2, 9, 4, 1);         // summit plateau (x157..165, y2..5) — nothing stands higher
 
   // Stage 4 — The East Ridge: descent toward the notch and the east end
   fill(167, 5, 3, 3, 1);         // ledge (x167..169, y5..7)
@@ -57,6 +58,14 @@ function buildWorld() {
   fill(176, 7, 3, 3, 1);         // post-notch ledge (x176..178, y7..9)
   fill(181, 9, 4, 3, 1);         // ledge (x181..184, y9..11)
   fill(186, 11, 4, 3, 1);        // final ledge (x186..189, y11..13)
+
+  // the Bergfreunde catwalk: one-way planks strung under the whole upper
+  // ridge. A missed jump lands here instead of the scree far below — climb
+  // back onto the route at either re-entry ledge (west: knife edge start,
+  // east: the deep saddle). DOWN drops through, as always.
+  fill(111, 14, 46, 1, 3);       // the catwalk (x111..156, one-way)
+  fill(113, 11, 2, 1, 3);        // west re-entry plank: catwalk -> knife edge
+  fill(123, 11, 2, 1, 3);        // east re-entry plank: catwalk -> deep saddle
 
   // scree slope: valley (x152, y~70) climbing west to the Alm (x111, y48)
   for (let x = 111; x <= 152; x++) {
@@ -94,20 +103,25 @@ function buildWorld() {
   // --- the observer post: a long, airy climb above the Stellung -----------
   // Eight hops on narrow ledges with real exposure — the lamp is earned.
   // Misstep anywhere and the chimney swallows you back to the gorge.
+  // No ledge sits in the jump arc above another: every takeoff has open sky.
   fill(14, 25, 2, 1, 1);   // 1. narrow first ledge — commits you to the climb
-  fill(9, 23, 2, 1, 1);    // 2. left step — the chimney yawns below
-  fill(14, 21, 2, 1, 1);   // 3. back right — precision landing
-  fill(18, 19, 3, 1, 3);   // 4. one-way plank — no going back this way
+  fill(11, 23, 2, 1, 1);   // 2. short step left — the chimney yawns below
+  fill(17, 21, 2, 1, 1);   // 3. long leap back right — precision landing
+  fill(19, 19, 3, 1, 3);   // 4. one-way plank — no going back this way
   fill(13, 17, 2, 1, 1);   // 5. narrow ledge, back left
-  fill(7, 15, 2, 1, 1);    // 6. further left, fully exposed over the void
-  fill(12, 13, 2, 1, 1);   // 7. back right, near the top — don't look down
-  fill(2, 10, 9, 1, 1);    // 8. the lookout shelf — you made it
+  fill(16, 15, 2, 1, 1);   // 6. up the right edge, fully exposed
+  fill(10, 13, 2, 1, 1);   // 7. long leap left, near the top — don't look down
+  fill(2, 10, 7, 1, 1);    // 8. the lookout shelf — you made it
 
   // --- the depot: a balcony nook above the tunnel's east mouth ------------
   // (the ferrata set waits here — the cable below sends you looking)
+  // Five airy hops up the east face: the set is earned, not found. Only the
+  // first step is reachable from the Hochband floor — no skipping ahead.
   carve(63, 13, 10, 6);    // east-facing nook, floor y19, tunnel roof stays 3 thick
-  fill(77, 25, 3, 1, 1);   // climb back up from the Hochband
-  fill(73, 22, 2, 1, 1);
+  fill(78, 26, 2, 1, 1);   // 1. first step off the Hochband
+  fill(84, 23, 2, 1, 1);   // 2. a long rising leap toward the headwall
+  fill(81, 21, 1, 1, 1);   // 3. single-tile perch — precision
+  fill(75, 19, 2, 1, 3);   // 4. one-way plank at the nook's mouth
 
   // --- tunnel furniture ----------------------------------------------------
   fill(34, 26, 3, 2, 1);   // low rubble pile near the west mouth — hop over
@@ -125,7 +139,13 @@ function buildWorld() {
   // --- odds and ends -------------------------------------------------------
   fill(188, 69, 1, 1, 1);  // lone boulder, east end
   fill(106, 69, 2, 1, 6);  // nettles in the larch shade
-  fill(95, 13, 1, 15, 5);  // via ferrata cable up the headwall
+  // via ferrata "Rosa": two pitches up the headwall. The two-row gap stops
+  // the climb at the lower anchor — jump toward the wall to catch the upper
+  // cable, or swing off LEFT onto the belay ledge to rest. The ledge sits
+  // clear of the climb corridor (x94 must stay open, the body needs it).
+  fill(95, 21, 1, 7, 5);   // lower pitch (y21..27)
+  fill(91, 21, 3, 1, 1);   // belay ledge (x91..93)
+  fill(95, 12, 1, 7, 5);   // upper pitch (y12..18) — anchored at the ridge lip
   fill(0, 0, 2, WORLD_H, 1);            // west wall
 
   // --- Hinteres Tal (post-finale glider country, x192..) --------------------
@@ -154,10 +174,12 @@ const THERMALS = [
 // The flying course: five rings hung in the air. [tileX, tileY of center]
 const RINGS = [[210, 36], [222, 24], [233, 46], [247, 30], [256, 55]];
 
-// Moving platforms — the hut's old material hoist still runs in the gorge.
+// Moving platforms — the hut's old material hoist still runs in the gorge,
+// and the summit-cross supply hoist bridges the saddle on the upper ridge.
 // Oscillates between (x,y) and (x2,y2); w tiles wide; period in frames.
 const MOVERS = [
   { x: 13, y: 40, x2: 18, y2: 40, w: 3, period: 300 },
+  { x: 138, y: 6, x2: 142, y2: 6, w: 3, period: 260 },
 ];
 
 // =========================================================================
@@ -283,8 +305,8 @@ const ENTITIES = [
   { t: 'sign',     x: 168, r: 5, key: 'sign_notch' },
   { t: 'fence',    x: 171, r: 7 },
   { t: 'fence',    x: 176, r: 7 },
-  { t: 'cross',    x: 161, r: 3 },
-  { t: 'book',     x: 159, r: 3 },
+  { t: 'cross',    x: 161, r: 2 },
+  { t: 'book',     x: 159, r: 2 },
   { t: 'photo',    x: 182, r: 9, n: 5 },
   { t: 'bench',    x: 183, r: 9 },
   { t: 'sign',     x: 187, r: 11, key: 'sign_flug' },
@@ -312,8 +334,8 @@ const TREES = [
 
 const FLOWERS = [ // alpenrose & friends on the Alm, edelweiss up top
   [66, 48, 'rose'], [78, 48, 'rose'], [100, 48, 'rose'], [108, 48, 'rose'],
-  [111, 8, 'gent'], [136, 3, 'gent'], [147, 4, 'gent'],
-  [161, 3, 'edel'], [158, 3, 'edel'],
+  [111, 8, 'gent'], [136, 4, 'gent'], [147, 5, 'gent'],
+  [161, 2, 'edel'], [158, 2, 'edel'],
   [215, 70, 'gent'], [221, 68, 'rose'], [228, 70, 'gent'], [247, 66, 'gent'], [253, 70, 'rose'],
 ];
 
@@ -609,6 +631,7 @@ const TX_DE = {
   toast_dark_turn: 'Zu dunkel. Du drehst um — ohne Lampe geht es hier nicht weiter.',
   toast_cable: 'Ein Stahlseil. Ohne Klettersteigset bleibt es nur Dekoration.',
   toast_cable_ok: 'HOCH drücken zum Einhängen · SU per agganciarsi',
+  toast_cable_top: 'Seilende. SPRING ab! · Fine della fune: salta!',
   toast_cold: 'Dir wird kalt! Such ein Feuer. · Hai freddo!',
   toast_knoedel: 'KNÖDEL! Maximale Wärme erhöht. · Canederli: calore massimo +',
   toast_chestnut: n => `Kastanie! (${n}/3) · Castagna!`,
@@ -939,6 +962,7 @@ const TX_EN = {
   toast_dark_turn: 'Too dark. You turn back — no going further without a lamp.',
   toast_cable: 'A steel cable. Without a ferrata set it stays decoration.',
   toast_cable_ok: 'Press UP to clip in',
+  toast_cable_top: 'End of the cable. JUMP off!',
   toast_cold: 'You\'re getting cold! Find a fire.',
   toast_knoedel: 'KNÖDEL! Maximum warmth increased.',
   toast_chestnut: n => `Chestnut! (${n}/3)`,

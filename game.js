@@ -580,9 +580,14 @@ function physTick() {
       let anyCable = false;
       for (let dx = -1; dx <= 1; dx++) for (let dy2 = 0; dy2 <= 1; dy2++)
         if (tileAt(txc + dx, ty + dy2) === 5) anyCable = true;
-      if (!anyCable) p.vy = 0;
+      if (!anyCable) {
+        p.vy = 0;
+        if (inp.up && cableToastCd <= 0) { toast(TX.toast_cable_top); cableToastCd = 240; }
+      }
     }
-    if (jumpEdge) { p.climbing = false; p.vy = -4.5; p.vx = p.face * 1.5; sfx.jump(); }
+    // jumping off the cable briefly suppresses the glider, so a held jump
+    // can catch the next pitch instead of deploying the canopy
+    if (jumpEdge) { p.climbing = false; p.vy = -4.5; p.vx = p.face * 1.5; p.glideLock = 20; sfx.jump(); }
     p.anim += Math.abs(p.vy) * 0.06;
   } else if (onCableTile && (upEdge || (inp.up && p.vy > 0.5 && !p.gliding))) {
     // a held UP also catches the cable while falling past it — only the
@@ -628,6 +633,8 @@ function physTick() {
     if (jumpEdge) p.jbuf = 8;
     if (p.jbuf > 0 && (p.grounded || p.coyote > 0 || p.swim) && !(p.sliding && !G.gear.boots)) {
       p.vy = p.swim ? -5.6 : -8.4;
+      // jumping off a hoist keeps its drift — the arc matches what you see
+      if (p.moverRef) { p.vx += p.moverRef.dx || 0; p.vy += Math.min(0, p.moverRef.dy || 0); }
       p.grounded = false; p.coyote = 0; p.jbuf = 0; p.moverRef = null;
       sfx.jump();
     }
@@ -646,7 +653,8 @@ function physTick() {
     }
 
     // paraglider: hold jump while falling; down = dive, thermals = lift
-    if (!G.gear.glider || p.grounded || p.swim || !inp.jump) p.gliding = false;
+    if (p.glideLock > 0) p.glideLock--;
+    if (!G.gear.glider || p.grounded || p.swim || !inp.jump || p.glideLock > 0) p.gliding = false;
     else if (!p.gliding && p.vy > 0.4) p.gliding = true;
     if (p.gliding) {
       p.vy = Math.min(p.vy, inp.down ? 2.4 : 1.05);
