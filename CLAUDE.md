@@ -36,6 +36,24 @@ worse than missing ones. Routine work doesn't belong here.
   always the **whole** route end-to-end — a climb verified only partway
   once shipped impossible (the Wasserfallsteig incident).
 
+## Screenshots & playtest bots (headless Chrome)
+
+Sessions are ephemeral — set up once per session (needs a network policy
+that allows npm and Chrome's download host; if blocked, fall back to
+`test/smoke-render.js`):
+
+    cd /tmp && npm init -y && npm i puppeteer
+    npx puppeteer browsers install chrome
+
+Then in Node: `puppeteer.launch({ headless: 'new', args: ['--no-sandbox',
+'--mute-audio'] })`, `page.goto('file:///…/index.html')` (no server
+needed), drive with `page.keyboard` / `page.touchscreen` (use
+`page.emulate` with `hasTouch` for phone shots), and
+`page.screenshot(...)`. Game state lives in plain script globals — set up
+any scene via `page.evaluate(() => { G.gear = {...}; player.x = …; })`.
+Real keyboard presses can fall between frames in headless runs; the
+engine's `pend*` event queue exists for exactly that.
+
 ## Deploy & collaboration
 
 - Merging to `main` runs `.github/workflows/pages.yml`: tests, then a
