@@ -1,7 +1,7 @@
 # CHARACTERS
 
 Quick-reference for every character in Gipfelbuch.
-When adding, changing or removing a character update this file *and* the sprite pipeline.
+When adding, changing or removing a character, update this file.
 
 ---
 

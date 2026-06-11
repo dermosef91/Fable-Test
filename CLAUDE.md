@@ -2,11 +2,10 @@
 
 GIPFELBUCH — a story-driven 2D metroidvania set on one mountain in Südtirol
 (plus a hidden glider valley). Plain HTML5 canvas + vanilla JS. **No build
-step, no runtime dependencies** — the engine draws and synthesizes
-everything procedurally at runtime. (A PNG sprite pipeline for characters
-exists under `sprites/` + `tools/generate_sprites.py`, but the engine does
-not load it yet — see Characters below.) Test/dev-only tooling (puppeteer,
-http-server) is fine but must never be needed to play.
+step, no runtime dependencies, no image or audio assets** — everything is
+drawn and synthesized procedurally. Keep it that way. Test/dev-only tooling
+(puppeteer, http-server) is fine but must never be needed to play.
+This file is the **single source of truth** for working on this repo.
 
 ## Run & test
 
@@ -117,14 +116,8 @@ never numbers. Keep it that way.
 
 ## Characters
 
-`CHARACTERS.md` is the single-source character reference (name, background,
-personality, detailed visual description with hex colours). **Keep it in
-sync** when adding, altering or removing a character, and update
-`tools/generate_sprites.py` when a visual design changes.
-
-Note: the generated PNGs in `sprites/` are **not yet wired into the
-engine** — characters are still drawn procedurally in `game.js`
-(`drawEntity`). If you wire sprites in, do it behind a procedural fallback
-and update the header of this file. `agents.md` predates the English
-localization and the sprite experiment; where it conflicts with this file,
-this file wins.
+`CHARACTERS.md` is the character reference (name, background, personality,
+visual description with the hex colours used by the procedural drawing in
+`drawEntity`/`drawPlayer`). **Keep it in sync** when adding, altering or
+removing a character. Characters are drawn procedurally — a PNG sprite
+experiment was tried and deliberately removed; don't reintroduce assets.
