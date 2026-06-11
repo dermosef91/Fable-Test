@@ -7,6 +7,17 @@ drawn and synthesized procedurally. Keep it that way. Test/dev-only tooling
 (puppeteer, http-server) is fine but must never be needed to play.
 This file is the **single source of truth** for working on this repo.
 
+## Keep this file alive
+
+When a session produces a **major learning** — a shipped bug whose root
+cause a rule would have prevented, a new mechanic/convention, a design
+principle the maintainer states in feedback, a workflow gotcha — update
+CLAUDE.md **in the same PR** and call the change out in the PR
+description so the maintainer can veto it. Write rules, not history
+("full arcs need ~5.5 tiles of headroom", not "once upon a time…"), keep
+it terse, and delete guidance that stopped being true — stale rules are
+worse than missing ones. Routine work doesn't belong here.
+
 ## Run & test
 
 - Play locally: open `index.html` in a browser, or `npm run dev`
