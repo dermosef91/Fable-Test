@@ -126,6 +126,7 @@ ok(!solid(at(72, 17 + Y_OFF)) && !solid(at(72, 18 + Y_OFF)), 'depot nook opens e
   ok(roofOk, 'tunnel roof stays 3 thick under the depot');
 }
 ok(ENTITIES.some(e => e.t === 'gear' && e.gear === 'kit' && e.r <= 19 + Y_OFF), 'ferrata set waits up at the depot');
+ok(ENTITIES.some(e => e.t === 'gear' && e.gear === 'glider' && e.r <= 11 + Y_OFF), 'paraglider waits behind the flug sign');
 ok(ENTITIES.filter(e => e.t === 'chestnut' && e.x < 60).length >= 1, 'a chestnut waits west of the Alm — the quest sends you somewhere new');
 // 11. waterfall column intersects both climbs
 const wf = WATERFALL;

@@ -355,7 +355,8 @@ const ENTITIES = [
   { t: 'book',     x: 159, r: 3 },
   { t: 'photo',    x: 182, r: 9, n: 5 },
   { t: 'bench',    x: 183, r: 9 },
-  { t: 'sign',     x: 187, r: 11, key: 'sign_flug' },
+  { t: 'sign',     x: 186, r: 11, key: 'sign_flug' },
+  { t: 'gear',     x: 188, r: 11, gear: 'glider', key: 'flug_unlock' },
 
   // -- Hinteres Tal ----------------------------------------------------------------------
   { t: 'windsock', x: 196, r: 12 },

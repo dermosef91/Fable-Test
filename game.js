@@ -878,6 +878,7 @@ function findInteract() {
     if (!types.includes(e.t) || e.present === false) continue;
     if (e.t === 'photo' && !G.flags.finale) continue; // the photo hunt unlocks at the summit
     if (e.t === 'tin' && !G.flags.zinnensprung) continue; // the silt keeps its secret until the jump
+    if (e.gear === 'glider' && !G.flags.finale) continue; // the glider is hidden until the summit/finale
     const d = Math.hypot(e.x * TILE + 8 - px, e.r * TILE - 14 - py);
     if (d < best) { best = d; nearInteract = e; }
   }
@@ -907,10 +908,7 @@ function doInteract(e) {
       break;
     }
     case 'sign': {
-      if (e.key === 'sign_flug' && G.flags.finale && !G.gear.glider) {
-        sfx.pick(); vib(40);
-        say(TX.flug_unlock, () => { G.gear.glider = true; save(); });
-      } else say(TX[e.key]);
+      say(TX[e.key]);
       break;
     }
     case 'gear': {
@@ -2141,10 +2139,91 @@ function drawEntity(e) {
       break;
     }
     case 'bunker': {
-      cx.fillStyle = '#8e8d85';
-      cx.beginPath(); cx.moveTo(x - 18, y); cx.lineTo(x - 18, y - 16); cx.quadraticCurveTo(x, y - 30, x + 18, y - 16); cx.lineTo(x + 18, y); cx.closePath(); cx.fill();
-      cx.fillStyle = '#2c2a25'; cx.fillRect(x - 5, y - 14, 10, 14);
-      cx.fillStyle = '#3a3833'; cx.fillRect(x - 13, y - 18, 6, 3); cx.fillRect(x + 7, y - 18, 6, 3); // slits
+      // Dirt/base mound around the bunker
+      cx.fillStyle = '#6e6153';
+      cx.beginPath();
+      cx.ellipse(x, y, 22, 3.5, 0, 0, 7);
+      cx.fill();
+
+      // Main concrete bunker structure (weather-worn dark concrete)
+      cx.fillStyle = '#7a7870';
+      cx.beginPath();
+      cx.moveTo(x - 18, y);
+      cx.lineTo(x - 18, y - 16);
+      cx.quadraticCurveTo(x, y - 30, x + 18, y - 16);
+      cx.lineTo(x + 18, y);
+      cx.closePath(); cx.fill();
+
+      // Shadow side (left/bottom curve shading)
+      cx.fillStyle = '#5c5a53';
+      cx.beginPath();
+      cx.moveTo(x - 18, y);
+      cx.lineTo(x - 18, y - 16);
+      cx.quadraticCurveTo(x - 6, y - 25, x, y - 18);
+      cx.lineTo(x, y);
+      cx.closePath(); cx.fill();
+
+      // Concrete forming board lines (shuttering textures, horizontal)
+      cx.strokeStyle = '#4e4c47'; cx.lineWidth = 0.6;
+      for (let ly = -24; ly <= 0; ly += 4) {
+        cx.beginPath();
+        // project coordinates along the dome curvature
+        const leftX = ly < -16 ? -18 * Math.sqrt(1 - Math.pow((-ly - 16) / 14, 2)) : -18;
+        const rightX = ly < -16 ? 18 * Math.sqrt(1 - Math.pow((-ly - 16) / 14, 2)) : 18;
+        cx.moveTo(x + leftX, y + ly);
+        cx.lineTo(x + rightX, y + ly);
+        cx.stroke();
+      }
+
+      // Concrete outline/border
+      cx.strokeStyle = '#3a3934'; cx.lineWidth = 1;
+      cx.beginPath();
+      cx.moveTo(x - 18, y);
+      cx.lineTo(x - 18, y - 16);
+      cx.quadraticCurveTo(x, y - 30, x + 18, y - 16);
+      cx.lineTo(x + 18, y);
+      cx.closePath(); cx.stroke();
+
+      // Overgrown moss and grass on the roof dome
+      cx.fillStyle = '#6e8550'; // moss green
+      cx.beginPath();
+      cx.moveTo(x - 14, y - 20);
+      cx.quadraticCurveTo(x, y - 32, x + 14, y - 20);
+      cx.quadraticCurveTo(x + 8, y - 22, x, y - 24);
+      cx.quadraticCurveTo(x - 8, y - 22, x - 14, y - 20);
+      cx.closePath(); cx.fill();
+      
+      // Individual blades of wild mountain grass on top
+      cx.fillStyle = '#8fa37a';
+      cx.beginPath();
+      cx.moveTo(x - 4, y - 26); cx.lineTo(x - 6, y - 30); cx.lineTo(x - 2, y - 26);
+      cx.moveTo(x + 2, y - 27); cx.lineTo(x + 1, y - 31); cx.lineTo(x + 4, y - 27);
+      cx.fill();
+
+      // Deep dark recessed doorway
+      cx.fillStyle = '#1c1b18';
+      cx.fillRect(x - 5, y - 14, 10, 14);
+      // Door frame stroke
+      cx.strokeStyle = '#2c2a25'; cx.lineWidth = 0.8;
+      cx.strokeRect(x - 5, y - 14, 10, 14);
+
+      // Gun slits (viewports)
+      cx.fillStyle = '#1a1917'; // inside of slits
+      cx.fillRect(x - 13, y - 18, 6, 3);
+      cx.fillRect(x + 7, y - 18, 6, 3);
+      // Rusty iron plate surrounds for the slits
+      cx.strokeStyle = '#6b4731'; cx.lineWidth = 0.6;
+      cx.strokeRect(x - 13, y - 18, 6, 3);
+      cx.strokeRect(x + 7, y - 18, 6, 3);
+
+      // A small crack in the concrete dome
+      cx.strokeStyle = '#2c2a25'; cx.lineWidth = 0.5;
+      cx.beginPath();
+      cx.moveTo(x - 10, y - 10);
+      cx.lineTo(x - 7, y - 6);
+      cx.lineTo(x - 8, y - 2);
+      cx.stroke();
+
       break;
     }
     case 'shelter': {
@@ -2196,11 +2275,61 @@ function drawEntity(e) {
     }
     case 'gear': {
       if (taken) return;
+      if (e.gear === 'glider' && !G.flags.finale) return;
       const gy = y - 10 + bob;
       cx.fillStyle = 'rgba(255,255,255,0.2)'; cx.beginPath(); cx.arc(x, gy, 10, 0, 7); cx.fill();
       if (e.gear === 'boots') {
-        cx.fillStyle = '#7a4a26'; cx.fillRect(x - 7, gy - 4, 8, 7); cx.fillRect(x - 7, gy + 1, 12, 4);
-        cx.fillStyle = '#4a2e16'; cx.fillRect(x - 7, gy + 4, 12, 2);
+        const bx1 = x - 6;
+        const by1 = gy;
+        
+        // Rugged Vibram sole
+        cx.fillStyle = '#212121';
+        cx.beginPath();
+        cx.moveTo(bx1 - 1, by1 + 5.5);
+        cx.lineTo(bx1 + 10, by1 + 5.5);
+        cx.lineTo(bx1 + 10, by1 + 7);
+        cx.lineTo(bx1 - 1, by1 + 7);
+        cx.closePath(); cx.fill();
+        
+        // Sole tread marks
+        cx.fillStyle = '#0a0a0a';
+        cx.fillRect(bx1, by1 + 6.5, 2, 0.7);
+        cx.fillRect(bx1 + 4, by1 + 6.5, 2, 0.7);
+        cx.fillRect(bx1 + 7, by1 + 6.5, 2, 0.7);
+
+        // Boot body
+        cx.fillStyle = '#7a4a26';
+        cx.beginPath();
+        cx.moveTo(bx1, by1 + 5.5);
+        cx.quadraticCurveTo(bx1 - 1, by1 + 1, bx1, by1 - 3); // heel to collar
+        cx.lineTo(bx1 + 4.5, by1 - 3);                       // collar top
+        cx.quadraticCurveTo(bx1 + 4, by1 + 1, bx1 + 6, by1 + 2); // collar to tongue
+        cx.quadraticCurveTo(bx1 + 10.2, by1 + 2.5, bx1 + 9.8, by1 + 5.5); // toe box
+        cx.closePath(); cx.fill();
+
+        // Boot highlights
+        cx.fillStyle = '#9c6239';
+        cx.beginPath(); cx.arc(bx1 + 8.5, by1 + 4.2, 1.3, 0, 7); cx.fill(); // toe highlights
+        cx.beginPath(); cx.arc(bx1 + 0.8, by1 + 4.5, 1.2, 0, 7); cx.fill(); // heel highlights
+        
+        // Inner collar lining
+        cx.fillStyle = '#4a2e16';
+        cx.fillRect(bx1 + 0.8, by1 - 2.8, 3, 0.8);
+
+        // Red laces
+        cx.strokeStyle = '#c0392b'; cx.lineWidth = 0.8;
+        cx.beginPath();
+        cx.moveTo(bx1 + 3, by1 - 1.5); cx.lineTo(bx1 + 5.2, by1 + 0.5);
+        cx.moveTo(bx1 + 5.2, by1 - 1.5); cx.lineTo(bx1 + 3, by1 + 0.5);
+        cx.moveTo(bx1 + 3, by1 + 0.5); cx.lineTo(bx1 + 6, by1 + 2.5);
+        cx.stroke();
+        
+        // Loops
+        cx.fillStyle = '#c0392b';
+        cx.beginPath();
+        cx.arc(bx1 + 2.5, by1 - 1.5, 0.6, 0, 7);
+        cx.arc(bx1 + 5.7, by1 - 1.5, 0.6, 0, 7);
+        cx.fill();
       } else if (e.gear === 'lamp') {
         cx.fillStyle = '#4a4e55'; cx.fillRect(x - 5, gy - 4, 10, 8);
         cx.fillStyle = '#ffe27a'; cx.beginPath(); cx.arc(x + 3, gy, 3, 0, 7); cx.fill();
@@ -2210,17 +2339,98 @@ function drawEntity(e) {
         cx.beginPath(); cx.arc(x - 3, gy, 4, 0, 7); cx.stroke();
         cx.beginPath(); cx.arc(x + 4, gy + 2, 3.5, 0, 7); cx.stroke();
         cx.strokeStyle = '#c9c9c9'; cx.beginPath(); cx.moveTo(x - 3, gy - 6); cx.lineTo(x + 4, gy - 2); cx.stroke();
+      } else if (e.gear === 'glider') {
+        // Red canopy arc
+        cx.fillStyle = '#c0392b';
+        cx.beginPath();
+        cx.moveTo(x - 8, gy + 2);
+        cx.quadraticCurveTo(x, gy - 9, x + 8, gy + 2);
+        cx.quadraticCurveTo(x, gy - 3, x - 8, gy + 2);
+        cx.closePath(); cx.fill();
+        
+        // Cream stripe
+        cx.fillStyle = '#e8e4d0';
+        cx.beginPath();
+        cx.moveTo(x - 3, gy - 1.5);
+        cx.quadraticCurveTo(x, gy - 5, x + 3, gy - 1.5);
+        cx.quadraticCurveTo(x, gy - 3.5, x - 3, gy - 1.5);
+        cx.closePath(); cx.fill();
+        
+        // Strings/Lines
+        cx.strokeStyle = 'rgba(230,235,240,0.8)'; cx.lineWidth = 0.8;
+        cx.beginPath();
+        cx.moveTo(x - 7, gy + 1); cx.lineTo(x, gy + 5);
+        cx.moveTo(x + 7, gy + 1); cx.lineTo(x, gy + 5);
+        cx.stroke();
+        
+        // Small backpack/pack at the center
+        cx.fillStyle = '#a06a2c'; // leather color
+        cx.fillRect(x - 2.5, gy + 3, 5, 4);
       }
       break;
     }
     case 'page': {
       if (taken || e.hide) return;
-      cx.save(); cx.translate(x, y - 12 + bob); cx.rotate(Math.sin(frame * 0.04 + e.x) * 0.15);
-      cx.fillStyle = '#f3ecd2'; cx.fillRect(-5, -7, 10, 14);
-      cx.strokeStyle = '#b9ac82'; cx.lineWidth = 1;
-      for (let i = -4; i <= 4; i += 3) { cx.beginPath(); cx.moveTo(-3, i); cx.lineTo(3, i); cx.stroke(); }
+      const py = y - 12 + bob;
+      
+      // Glowing aura: pulsing and soft
+      const pulse = Math.sin(frame * 0.08 + e.x) * 1.5;
+      cx.fillStyle = 'rgba(255, 235, 150, 0.12)';
+      cx.beginPath(); cx.arc(x, py, 13 + pulse, 0, 7); cx.fill();
+      cx.fillStyle = 'rgba(255, 250, 210, 0.22)';
+      cx.beginPath(); cx.arc(x, py, 9 + pulse * 0.5, 0, 7); cx.fill();
+      
+      // Floating sparkles
+      cx.fillStyle = '#fff';
+      const sp1 = (frame * 0.03 + e.x) % 6.28;
+      const sp2 = (frame * 0.045 + e.x * 2) % 6.28;
+      cx.fillRect(x + Math.cos(sp1) * 9 - 0.5, py + Math.sin(sp1 * 1.5) * 7 - 0.5, 1, 1);
+      cx.fillRect(x + Math.sin(sp2) * 7 - 0.5, py + Math.cos(sp2 * 2) * 9 - 0.5, 1, 1);
+      
+      cx.save();
+      cx.translate(x, py);
+      cx.rotate(Math.sin(frame * 0.04 + e.x) * 0.15);
+      
+      // Page shadow
+      cx.fillStyle = 'rgba(0, 0, 0, 0.12)';
+      cx.fillRect(-4.5, -6.5, 10, 14);
+
+      // Main paper sheet (warm aged parchment color)
+      cx.fillStyle = '#fdfbf0';
+      cx.fillRect(-5, -7, 10, 14);
+      
+      // Aged paper borders
+      cx.strokeStyle = '#b9ac82'; cx.lineWidth = 0.6;
+      cx.strokeRect(-5, -7, 10, 14);
+
+      // Red notebook margin line
+      cx.strokeStyle = 'rgba(192, 57, 43, 0.35)'; cx.lineWidth = 0.4;
+      cx.beginPath(); cx.moveTo(-3, -7); cx.lineTo(-3, 7); cx.stroke();
+
+      // Written text lines (dark grey/brown pencil text lines)
+      cx.strokeStyle = '#5c5440'; cx.lineWidth = 0.5;
+      for (let i = -5; i <= 5; i += 2.2) {
+        cx.beginPath();
+        cx.moveTo(-2, i);
+        cx.lineTo(3.5, i);
+        cx.stroke();
+      }
+
+      // Small sketch scribble in bottom-left corner
+      cx.strokeStyle = '#7f6b4d'; cx.lineWidth = 0.4;
+      cx.beginPath();
+      cx.moveTo(1.5, 2.5); cx.lineTo(3, 4); cx.lineTo(2, 5);
+      cx.stroke();
+
+      // Curled corner overlay (bottom right)
+      cx.fillStyle = '#dbce9f';
+      cx.beginPath();
+      cx.moveTo(3, 7); cx.lineTo(5, 5); cx.lineTo(5, 7);
+      cx.closePath(); cx.fill();
+      cx.strokeStyle = '#b9ac82'; cx.lineWidth = 0.4;
+      cx.beginPath(); cx.moveTo(3, 7); cx.lineTo(5, 5); cx.stroke();
+
       cx.restore();
-      cx.fillStyle = 'rgba(255,250,210,0.25)'; cx.beginPath(); cx.arc(x, y - 12 + bob, 11, 0, 7); cx.fill();
       break;
     }
     case 'chestnut': {
@@ -3113,11 +3323,54 @@ function drawIcon(name, x, y, s) {
       break;
     }
     case 'boots': {
+      // Rugged black sole
+      cx.fillStyle = '#212121';
+      cx.beginPath();
+      cx.moveTo(-7, 4.5);
+      cx.lineTo(6, 4.5);
+      cx.lineTo(6, 6.5);
+      cx.lineTo(-7, 6.5);
+      cx.closePath(); cx.fill();
+      
+      // Sole heel details
+      cx.fillStyle = '#0a0a0a';
+      cx.fillRect(-5, 6, 2, 0.8);
+      cx.fillRect(0, 6, 2, 0.8);
+      cx.fillRect(3, 6, 2, 0.8);
+
+      // Boot body
       cx.fillStyle = '#7a4a26';
-      cx.fillRect(-5, -7, 6, 9);
-      cx.fillRect(-5, -1, 11, 7);
-      cx.fillStyle = '#4a2e16'; cx.fillRect(-6, 4, 12, 3);
-      cx.fillStyle = '#c9a96a'; cx.fillRect(-3.6, -6, 1.4, 6);
+      cx.beginPath();
+      cx.moveTo(-6, 4.5);
+      cx.quadraticCurveTo(-7, 0, -6, -5); // heel to collar
+      cx.lineTo(-1, -5);                  // collar top
+      cx.quadraticCurveTo(-1.5, 0, 1, 1); // collar to tongue
+      cx.quadraticCurveTo(6.2, 1.5, 5.8, 4.5); // toe box
+      cx.closePath(); cx.fill();
+
+      // Highlights
+      cx.fillStyle = '#9c6239';
+      cx.beginPath(); cx.arc(4.2, 3.2, 1.2, 0, 7); cx.fill();
+      cx.beginPath(); cx.arc(-4.8, 3.5, 1.1, 0, 7); cx.fill();
+      
+      // Collar padding
+      cx.fillStyle = '#4a2e16';
+      cx.fillRect(-5.2, -4.8, 3.8, 1);
+
+      // Red laces
+      cx.strokeStyle = '#c0392b'; cx.lineWidth = 0.8;
+      cx.beginPath();
+      cx.moveTo(-3, -3.2); cx.lineTo(-0.2, -0.8);
+      cx.moveTo(-0.2, -3.2); cx.lineTo(-3, -0.8);
+      cx.moveTo(-3, -0.8); cx.lineTo(1, 1.2);
+      cx.stroke();
+      
+      // Loops
+      cx.fillStyle = '#c0392b';
+      cx.beginPath();
+      cx.arc(-3.5, -3.2, 0.6, 0, 7);
+      cx.arc(0.3, -3.2, 0.6, 0, 7);
+      cx.fill();
       break;
     }
     case 'jacket': {
@@ -3196,6 +3449,15 @@ function drawIcon(name, x, y, s) {
       cx.strokeStyle = '#c0392b'; cx.setLineDash([1.6, 1.6]);
       cx.beginPath(); cx.moveTo(-5, 3.5); cx.quadraticCurveTo(0, -1, 5, -3); cx.stroke();
       cx.setLineDash([]);
+      break;
+    }
+    case 'lock': {
+      cx.strokeStyle = '#5a4a35'; cx.lineWidth = 1.6;
+      cx.beginPath(); cx.arc(0, -1.5, 3.2, Math.PI, 0); cx.lineTo(3.2, 2.5); cx.moveTo(-3.2, -1.5); cx.lineTo(-3.2, 2.5); cx.stroke();
+      cx.fillStyle = '#d0a73b'; cx.strokeStyle = '#5a4a35'; cx.lineWidth = 1.2;
+      roundRect(-4.8, 1, 9.6, 6.5, 1.5); cx.fill(); cx.stroke();
+      cx.fillStyle = '#5a4a35'; cx.beginPath(); cx.arc(0, 3.5, 1, 0, 7); cx.fill();
+      cx.fillRect(-0.5, 4.2, 1, 2.2);
       break;
     }
     case 'sound': case 'mute': {
@@ -4088,6 +4350,190 @@ function wrapText(text, x, y, maxW, lh) {
   cx.fillText(line, x, y);
 }
 
+// ------------------------------------------------------------- map helpers --
+const MAP_EDGES = [
+  ['wache', 'stellung'],
+  ['stellung', 'stollen'],
+  ['stellung', 'schlucht'],
+  ['stollen', 'alm'],
+  ['stollen', 'hochband'],
+  ['hochband', 'ferrata'],
+  ['ferrata', 'grat'],
+  ['ferrata', 'alm'],
+  ['grat', 'gipfel'],
+  ['grat', 'start'],
+  ['start', 'hintertal'],
+  ['alm', 'camp'],
+  ['alm', 'depot'],
+  ['camp', 'galerie'],
+  ['galerie', 'geroell'],
+  ['geroell', 'wald']
+];
+
+function drawMapTree(tx, ty, tscale) {
+  cx.save();
+  cx.translate(tx, ty);
+  cx.scale(tscale, tscale);
+  // Trunk
+  cx.fillStyle = '#5a4a35';
+  cx.fillRect(-0.8, 0, 1.6, 5);
+  // Foliage
+  cx.fillStyle = '#4c6e43';
+  cx.beginPath(); cx.moveTo(0, -6); cx.lineTo(-3.5, -1.5); cx.lineTo(3.5, -1.5); cx.closePath(); cx.fill();
+  cx.beginPath(); cx.moveTo(0, -9); cx.lineTo(-2.8, -4.5); cx.lineTo(2.8, -4.5); cx.closePath(); cx.fill();
+  cx.beginPath(); cx.moveTo(0, -11); cx.lineTo(-2, -7.5); cx.lineTo(2, -7.5); cx.closePath(); cx.fill();
+  cx.restore();
+}
+
+function drawMapPond(x, y, w, h) {
+  cx.save();
+  cx.fillStyle = '#8fb6c9';
+  cx.beginPath();
+  cx.ellipse(x, y, w, h, 0, 0, 7);
+  cx.fill();
+  cx.strokeStyle = '#5a4a35'; cx.lineWidth = 1;
+  cx.stroke();
+  cx.strokeStyle = '#5b9fd4'; cx.lineWidth = 0.8;
+  cx.beginPath();
+  cx.moveTo(x - w * 0.5, y + h * 0.2); cx.lineTo(x + w * 0.3, y + h * 0.2);
+  cx.moveTo(x - w * 0.2, y - h * 0.3); cx.lineTo(x + w * 0.4, y - h * 0.3);
+  cx.stroke();
+  cx.restore();
+}
+
+function drawMapTent(x, y, scale) {
+  cx.save();
+  cx.translate(x, y);
+  cx.scale(scale, scale);
+  cx.strokeStyle = '#5a4a35'; cx.lineWidth = 1.2;
+  cx.fillStyle = '#4c6e43';
+  cx.beginPath();
+  cx.moveTo(-7, 6); cx.lineTo(0, -6); cx.lineTo(7, 6);
+  cx.closePath(); cx.fill(); cx.stroke();
+  cx.fillStyle = '#3d4046';
+  cx.beginPath();
+  cx.moveTo(-2.5, 6); cx.lineTo(0, 1.5); cx.lineTo(2.5, 6);
+  cx.closePath(); cx.fill(); cx.stroke();
+  cx.beginPath();
+  cx.moveTo(-7, 6); cx.lineTo(-9, 8);
+  cx.moveTo(7, 6); cx.lineTo(9, 8);
+  cx.stroke();
+  cx.restore();
+}
+
+function drawMapMountains(x, y, w, h) {
+  cx.save();
+  cx.strokeStyle = '#5a4a35'; cx.lineWidth = 1;
+  // Left mountain
+  cx.fillStyle = '#dce3cb';
+  cx.beginPath();
+  cx.moveTo(x, y + h); cx.lineTo(x + w * 0.4, y); cx.lineTo(x + w * 0.8, y + h);
+  cx.closePath(); cx.fill(); cx.stroke();
+  cx.beginPath();
+  cx.moveTo(x + w * 0.4, y);
+  cx.lineTo(x + w * 0.45, y + h * 0.25);
+  cx.lineTo(x + w * 0.5, y + h * 0.5);
+  cx.lineTo(x + w * 0.6, y + h);
+  cx.stroke();
+  for (let i = 1; i <= 4; i++) {
+    cx.beginPath();
+    cx.moveTo(x + w * 0.4 + (w * 0.4 / 5) * i, y + (h / 5) * i);
+    cx.lineTo(x + w * 0.4 + (w * 0.4 / 5) * i - 3, y + (h / 5) * i + 3);
+    cx.stroke();
+  }
+  // Right mountain
+  cx.fillStyle = '#dce3cb';
+  cx.beginPath();
+  cx.moveTo(x + w * 0.3, y + h); cx.lineTo(x + w * 0.7, y + h * 0.2); cx.lineTo(x + w * 1.1, y + h);
+  cx.closePath(); cx.fill(); cx.stroke();
+  cx.beginPath();
+  cx.moveTo(x + w * 0.7, y + h * 0.2);
+  cx.lineTo(x + w * 0.9, y + h);
+  cx.stroke();
+  for (let i = 1; i <= 4; i++) {
+    cx.beginPath();
+    cx.moveTo(x + w * 0.7 + (w * 0.4 / 5) * i, y + h * 0.2 + (h * 0.8 / 5) * i);
+    cx.lineTo(x + w * 0.7 + (w * 0.4 / 5) * i - 3, y + h * 0.2 + (h * 0.8 / 5) * i + 3);
+    cx.stroke();
+  }
+  cx.restore();
+}
+
+function drawMapEye(x, y, s) {
+  cx.save();
+  cx.translate(x, y);
+  cx.scale(s / 16, s / 16);
+  cx.strokeStyle = '#5a4a35'; cx.lineWidth = 1.8;
+  cx.beginPath();
+  cx.moveTo(-7.5, 0); cx.quadraticCurveTo(0, -6.5, 7.5, 0);
+  cx.quadraticCurveTo(0, 6.5, -7.5, 0);
+  cx.closePath(); cx.stroke();
+  cx.fillStyle = '#5a4a35';
+  cx.beginPath(); cx.arc(0, 0, 2.6, 0, 7); cx.fill();
+  cx.fillStyle = '#dce3cb';
+  cx.beginPath(); cx.arc(0, 0, 1.1, 0, 7); cx.fill();
+  cx.restore();
+}
+
+function drawMapPin(x, y, s) {
+  cx.save();
+  cx.translate(x, y);
+  cx.scale(s / 16, s / 16);
+  cx.fillStyle = 'rgba(0,0,0,0.15)';
+  cx.beginPath(); cx.ellipse(0, 7, 3, 1.5, 0, 0, 7); cx.fill();
+  cx.fillStyle = '#c0392b';
+  cx.beginPath();
+  cx.arc(0, -3, 4.5, -Math.PI * 0.8, -Math.PI * 0.2);
+  cx.quadraticCurveTo(0.5, 2, 0, 7);
+  cx.quadraticCurveTo(-0.5, 2, -4.5, -3);
+  cx.closePath(); cx.fill();
+  cx.strokeStyle = '#7f231a'; cx.lineWidth = 1; cx.stroke();
+  cx.fillStyle = '#f5ebd5';
+  cx.beginPath(); cx.arc(0, -3, 1.8, 0, 7); cx.fill();
+  cx.restore();
+}
+
+function drawMapLeaf(x, y, scale, flip) {
+  cx.save();
+  cx.translate(x, y);
+  cx.scale(flip ? -scale : scale, scale);
+  cx.rotate(-Math.PI * 0.15);
+  cx.fillStyle = '#4c6e43';
+  cx.strokeStyle = '#3d5236'; cx.lineWidth = 0.8;
+  cx.beginPath(); cx.moveTo(-8, 2); cx.quadraticCurveTo(0, 0, 8, -2); cx.stroke();
+  cx.beginPath(); cx.ellipse(4, -2, 4, 1.8, -0.2, 0, 7); cx.fill(); cx.stroke();
+  cx.beginPath(); cx.ellipse(0, 0, 3.5, 1.6, 0.2, 0, 7); cx.fill(); cx.stroke();
+  cx.beginPath(); cx.ellipse(-4, 1.5, 3, 1.4, -0.1, 0, 7); cx.fill(); cx.stroke();
+  cx.restore();
+}
+
+function drawCornerDecorations(x, y, w, h) {
+  cx.save();
+  cx.strokeStyle = '#b9ac82'; cx.lineWidth = 1;
+  const d = 12;
+  // Top Left
+  cx.beginPath();
+  cx.moveTo(x + d, y); cx.quadraticCurveTo(x, y, x, y + d);
+  cx.moveTo(x + d + 4, y + 4); cx.quadraticCurveTo(x + 4, y + 4, x + 4, y + d + 4);
+  cx.stroke();
+  // Top Right
+  cx.beginPath();
+  cx.moveTo(x + w - d, y); cx.quadraticCurveTo(x + w, y, x + w, y + d);
+  cx.moveTo(x + w - d - 4, y + 4); cx.quadraticCurveTo(x + w - 4, y + 4, x + w - 4, y + d + 4);
+  cx.stroke();
+  // Bottom Left
+  cx.beginPath();
+  cx.moveTo(x + d, y + h); cx.quadraticCurveTo(x, y + h, x, y + h - d);
+  cx.moveTo(x + d + 4, y + h - 4); cx.quadraticCurveTo(x + 4, y + h - 4, x + 4, y + h - d - 4);
+  cx.stroke();
+  // Bottom Right
+  cx.beginPath();
+  cx.moveTo(x + w - d, y + h); cx.quadraticCurveTo(x + w, y + h, x + w, y + h - d);
+  cx.moveTo(x + w - d - 4, y + h - 4); cx.quadraticCurveTo(x + w - 4, y + h - 4, x + w - 4, y + h - d - 4);
+  cx.stroke();
+  cx.restore();
+}
+
 // ------------------------------------------------------------- map screen --
 function drawMap() {
   cx.save();
@@ -4099,11 +4545,56 @@ function drawMap() {
   // paper fills the screen sensibly on any orientation
   const pw = Math.min(W - 24, 700), ph = Math.min(H - 48, 480);
   const mx = (W - pw) / 2, my = (H - ph) / 2;
-  cx.fillStyle = '#ece3c8'; roundRect(mx, my, pw, ph, 10); cx.fill();
-  cx.strokeStyle = '#b9ac82'; cx.lineWidth = 2; cx.stroke();
+
+  // Draw paper card shadow
+  cx.fillStyle = 'rgba(10, 12, 24, 0.45)';
+  roundRect(mx + 4, my + 4, pw, ph, 12); cx.fill();
+
+  // Draw main paper card background
+  cx.fillStyle = '#f2edd9';
+  roundRect(mx, my, pw, ph, 12); cx.fill();
+
+  // Draw double borders
+  cx.strokeStyle = '#b9ac82'; cx.lineWidth = 1.2;
+  roundRect(mx + 6, my + 6, pw - 12, ph - 12, 8); cx.stroke();
+  cx.strokeStyle = '#a69970'; cx.lineWidth = 0.6;
+  roundRect(mx + 9, my + 9, pw - 18, ph - 18, 6); cx.stroke();
+
+  // Corner decorations
+  drawCornerDecorations(mx + 9, my + 9, pw - 18, ph - 18);
+
+  // Header Title
+  const centerX = mx + pw / 2;
   cx.fillStyle = '#5a4a35'; cx.textAlign = 'center';
-  cx.font = `bold ${Math.max(12, Math.min(16, pw * 0.032))}px Georgia, serif`;
-  cx.fillText(TX.map_title, mx + pw / 2, my + 20);
+  const parts = TX.map_title.split('·');
+  const mainTitle = parts[0].trim();
+  const subTitleText = parts[1] ? parts[1].trim() : '';
+
+  // Draw main title
+  cx.font = `bold ${Math.max(14, Math.min(18, pw * 0.035))}px Georgia, serif`;
+  const titleY = my + 24;
+  cx.fillText(mainTitle, centerX, titleY);
+
+  // Draw leaf ornaments next to main title
+  const titleW = cx.measureText(mainTitle).width;
+  drawMapLeaf(centerX - titleW / 2 - 20, titleY, 0.9, true);
+  drawMapLeaf(centerX + titleW / 2 + 20, titleY, 0.9, false);
+
+  // Draw subtitle
+  cx.font = 'italic 11px Georgia, serif';
+  const subtitleY = my + 42;
+  const subText = `◆ ${subTitleText} ◆`;
+  cx.fillText(subText, centerX, subtitleY);
+
+  // Draw horizontal lines extending from subtitle
+  const subW = cx.measureText(subText).width;
+  cx.strokeStyle = '#b9ac82'; cx.lineWidth = 1;
+  cx.beginPath();
+  cx.moveTo(mx + 40, subtitleY);
+  cx.lineTo(centerX - subW / 2 - 12, subtitleY);
+  cx.moveTo(centerX + subW / 2 + 12, subtitleY);
+  cx.lineTo(mx + pw - 40, subtitleY);
+  cx.stroke();
 
   // view crops to the explored world, so the map fills in as you wander
   let b = null;
@@ -4118,35 +4609,176 @@ function drawMap() {
   if (!b) b = { x0: 30, y0: 40, x1: 100, y1: 80 };
   b.x0 -= 4; b.y0 -= 4; b.x1 += 4; b.y1 += 4;
   const bw = b.x1 - b.x0, bh = b.y1 - b.y0;
-  const areaY = my + 34, areaH = ph - 110;
+  const areaY = my + 54, areaH = ph - 164; // Adjusted to leave room for header/footer
   const sc = Math.min((pw - 36) / bw, areaH / bh, 4.5);
   const ox = mx + (pw - bw * sc) / 2 - b.x0 * sc;
   const oy = areaY + (areaH - bh * sc) / 2 - b.y0 * sc;
 
+  // Draw Dashed connection paths
+  cx.save();
+  cx.strokeStyle = '#8a6f4d';
+  cx.lineWidth = 2.2;
+  cx.setLineDash([4, 4]);
+  for (const [id1, id2] of MAP_EDGES) {
+    const z1 = ZONES.find(z => z.id === id1);
+    const z2 = ZONES.find(z => z.id === id2);
+    if (z1 && z2 && G.visited[z1.id] && G.visited[z2.id]) {
+      const p1x = ox + (z1.x + z1.w / 2) * sc;
+      const p1y = oy + (z1.y + z1.h / 2) * sc;
+      const p2x = ox + (z2.x + z2.w / 2) * sc;
+      const p2y = oy + (z2.y + z2.h / 2) * sc;
+
+      const midX = (p1x + p2x) / 2;
+      const midY = (p1y + p2y) / 2;
+      const dx = p2x - p1x;
+      const dy = p2y - p1y;
+      const cpX = midX - dy * 0.12;
+      const cpY = midY + dx * 0.12;
+
+      cx.beginPath();
+      cx.moveTo(p1x, p1y);
+      cx.quadraticCurveTo(cpX, cpY, p2x, p2y);
+      cx.stroke();
+    }
+  }
+  cx.restore();
+
+  // Draw zones
   for (const z of ZONES) {
     if (!G.visited[z.id]) continue;
     const zx = ox + z.x * sc, zy = oy + z.y * sc, zw = z.w * sc, zh = z.h * sc;
-    cx.fillStyle = z.dark ? 'rgba(90,74,53,0.45)' : 'rgba(111,174,87,0.32)';
-    roundRect(zx, zy, zw, zh, 4); cx.fill();
-    cx.strokeStyle = 'rgba(90,74,53,0.55)'; cx.lineWidth = 1; cx.stroke();
-    // label only where it actually fits — one line, or two, or not at all
+    const isCurrent = curZone && z.id === curZone.id;
+
+    // Fill color
+    if (isCurrent) {
+      cx.fillStyle = '#fbf6eb'; // highlighted warm cream
+    } else if (z.dark) {
+      cx.fillStyle = '#a6af95'; // slightly darker sage
+    } else {
+      cx.fillStyle = '#d8e2c3'; // sage green
+    }
+
+    // Double-border rounded card
+    const rad = Math.max(4, 10 * sc / 4.5);
+    roundRect(zx, zy, zw, zh, rad); cx.fill();
+
+    cx.strokeStyle = isCurrent ? '#7f1c0d' : '#5a4a35';
+    cx.lineWidth = isCurrent ? 1.8 : 1.2;
+    roundRect(zx, zy, zw, zh, rad); cx.stroke();
+
+    cx.strokeStyle = isCurrent ? 'rgba(127, 28, 13, 0.4)' : 'rgba(90, 74, 53, 0.4)';
+    cx.lineWidth = 0.6;
+    roundRect(zx + 2, zy + 2, zw - 4, zh - 4, Math.max(2, rad - 2)); cx.stroke();
+
+    // Zone Illustrations
+    if (z.id === 'schlucht') {
+      // Winding river
+      cx.strokeStyle = '#5b9fd4'; cx.lineWidth = 3.5;
+      cx.beginPath();
+      cx.moveTo(zx + zw * 0.7, zy + zh * 0.2);
+      cx.bezierCurveTo(zx + zw * 0.3, zy + zh * 0.4, zx + zw * 0.8, zy + zh * 0.7, zx + zw * 0.4, zy + zh * 0.95);
+      cx.stroke();
+      // Trees
+      drawMapTree(zx + zw * 0.25, zy + zh * 0.3, 0.7);
+      drawMapTree(zx + zw * 0.8, zy + zh * 0.8, 0.65);
+    } else if (z.id === 'camp') {
+      // Tent
+      drawMapTent(zx + zw * 0.72, zy + zh * 0.6, 0.8);
+      // Fires
+      drawIcon('fire', zx + zw * 0.3, zy + zh * 0.6, 9);
+      drawIcon('fire', zx + zw * 0.42, zy + zh * 0.6, 9);
+      // Trees
+      drawMapTree(zx + zw * 0.15, zy + zh * 0.7, 0.7);
+      drawMapTree(zx + zw * 0.88, zy + zh * 0.75, 0.7);
+    } else if (z.id === 'alm') {
+      // Mountains
+      drawMapMountains(zx + zw * 0.45, zy + zh * 0.45, zw * 0.45, zh * 0.45);
+      // Trees
+      drawMapTree(zx + zw * 0.18, zy + zh * 0.7, 0.75);
+      drawMapTree(zx + zw * 0.28, zy + zh * 0.75, 0.65);
+    } else if (z.id === 'galerie') {
+      // Trees
+      drawMapTree(zx + zw * 0.35, zy + zh * 0.75, 0.7);
+      drawMapTree(zx + zw * 0.65, zy + zh * 0.8, 0.6);
+    } else if (z.id === 'geroell') {
+      // Mountains
+      drawMapMountains(zx + zw * 0.15, zy + zh * 0.5, zw * 0.35, zh * 0.45);
+      drawMapMountains(zx + zw * 0.55, zy + zh * 0.45, zw * 0.4, zh * 0.5);
+    } else if (z.id === 'wald') {
+      // Pond
+      drawMapPond(zx + zw * 0.6, zy + zh * 0.75, zw * 0.25, zh * 0.18);
+      // Trees
+      drawMapTree(zx + zw * 0.2, zy + zh * 0.55, 0.8);
+      drawMapTree(zx + zw * 0.38, zy + zh * 0.65, 0.95);
+      drawMapTree(zx + zw * 0.85, zy + zh * 0.7, 0.75);
+    } else if (z.id === 'wache') {
+      drawMapEye(zx + zw * 0.5, zy + zh * 0.38, 12);
+      drawMapTree(zx + zw * 0.2, zy + zh * 0.75, 0.7);
+      drawMapTree(zx + zw * 0.8, zy + zh * 0.75, 0.7);
+    } else if (z.id === 'stellung') {
+      drawMapMountains(zx + zw * 0.15, zy + zh * 0.6, zw * 0.35, zh * 0.35);
+    } else if (z.id === 'gipfel') {
+      drawMapMountains(zx + zw * 0.15, zy + zh * 0.45, zw * 0.7, zh * 0.5);
+    } else if (z.id === 'grat') {
+      drawMapMountains(zx + zw * 0.1, zy + zh * 0.5, zw * 0.2, zh * 0.45);
+      drawMapMountains(zx + zw * 0.7, zy + zh * 0.5, zw * 0.2, zh * 0.45);
+    } else if (z.id === 'hintertal') {
+      drawMapPond(zx + zw * 0.5, zy + zh * 0.6, zw * 0.3, zh * 0.2);
+      drawMapTree(zx + zw * 0.2, zy + zh * 0.7, 0.7);
+      drawMapTree(zx + zw * 0.8, zy + zh * 0.7, 0.7);
+      drawMapMountains(zx + zw * 0.1, zy + zh * 0.4, zw * 0.2, zh * 0.3);
+    } else if (z.id === 'depot') {
+      cx.fillStyle = '#7a5a39';
+      cx.fillRect(zx + zw * 0.4, zy + zh * 0.6, 6, 4);
+      cx.strokeStyle = '#5a4a35'; cx.lineWidth = 0.8;
+      cx.strokeRect(zx + zw * 0.4, zy + zh * 0.6, 6, 4);
+    } else if (z.id === 'start') {
+      cx.strokeStyle = '#c0392b'; cx.lineWidth = 1.2;
+      cx.beginPath(); cx.moveTo(zx + zw * 0.5, zy + zh * 0.3); cx.lineTo(zx + zw * 0.5, zy + zh * 0.75); cx.stroke();
+      cx.fillStyle = '#c0392b';
+      cx.beginPath(); cx.moveTo(zx + zw * 0.5, zy + zh * 0.35); cx.lineTo(zx + zw * 0.7, zy + zh * 0.4); cx.lineTo(zx + zw * 0.5, zy + zh * 0.45); cx.closePath(); cx.fill();
+    }
+
+    // Label only where it fits
     const name = LANG === 'en' ? z.en : z.de;
     let lcx = zx + zw / 2, lcy = zy + zh / 2;
-    if (z.id === 'grat') lcx = ox + (z.x + 26) * sc;   // clear of the nested summit
-    if (z.id === 'gipfel') lcy = zy + zh + 9;          // beneath its little box
-    cx.fillStyle = '#5a4a35'; cx.font = '10px Georgia, serif';
-    if (cx.measureText(name).width <= zw - 8 || z.id === 'gipfel') cx.fillText(name, lcx, lcy);
-    else if (zh > 30) {
-      const words = name.split(' ');
-      const half = Math.ceil(words.length / 2);
-      const l1 = words.slice(0, half).join(' '), l2 = words.slice(half).join(' ');
-      if (words.length > 1 && cx.measureText(l1).width <= zw - 6 && cx.measureText(l2).width <= zw - 6) {
-        cx.fillText(l1, lcx, lcy - 6);
-        cx.fillText(l2, lcx, lcy + 6);
+    if (z.id === 'grat') lcx = ox + (z.x + 26) * sc;
+    if (z.id === 'gipfel') lcy = zy + zh + 9;
+
+    // Shift labels up if there are illustrations
+    const hasIllust = ['camp', 'alm', 'geroell', 'wald', 'schlucht', 'galerie', 'wache', 'stellung', 'grat', 'hintertal', 'start', 'depot'].includes(z.id);
+    if (hasIllust && z.id !== 'gipfel') {
+      lcy = zy + Math.max(12, zh * 0.35);
+    }
+
+    cx.textAlign = 'center';
+    if (isCurrent && z.id !== 'gipfel') {
+      cx.font = 'bold 10px Georgia, serif';
+      const nameW = cx.measureText(name).width;
+      const pinW = 10, pinGap = 4;
+      const totalW = pinW + pinGap + nameW;
+      const startX = lcx - totalW / 2;
+      drawMapPin(startX + pinW / 2, lcy, 10);
+      cx.fillStyle = '#7f1c0d';
+      cx.fillText(name, startX + pinW + pinGap + nameW / 2, lcy);
+    } else {
+      cx.fillStyle = '#5a4a35';
+      cx.font = '10px Georgia, serif';
+      if (cx.measureText(name).width <= zw - 8 || z.id === 'gipfel') {
+        cx.fillText(name, lcx, lcy);
+      } else if (zh > 30) {
+        const words = name.split(' ');
+        const half = Math.ceil(words.length / 2);
+        const l1 = words.slice(0, half).join(' '), l2 = words.slice(half).join(' ');
+        if (words.length > 1 && cx.measureText(l1).width <= zw - 6 && cx.measureText(l2).width <= zw - 6) {
+          cx.fillText(l1, lcx, lcy - 6);
+          cx.fillText(l2, lcx, lcy + 6);
+        }
       }
     }
   }
-  // landmarks at a fixed, modest size
+
+  // Landmarks at fixed, modest size
   for (const id in FIRES) {
     const f = FIRES[id];
     const fz = ZONES.find(z => f.x >= z.x && f.x < z.x + z.w && f.r - 1 >= z.y && f.r - 1 < z.y + z.h);
@@ -4155,26 +4787,100 @@ function drawMap() {
   if (G.visited.schlucht) drawIcon('drop', ox + 26 * sc, oy + 52 * sc, 11);
   if (G.visited.ferrata) drawIcon('cable', ox + 95 * sc, oy + 20 * sc, 11);
   if (G.visited.gipfel) drawIcon('cross', ox + 161 * sc, oy + 9 * sc, 11);
-  // player
-  cx.fillStyle = '#c0392b';
-  cx.beginPath(); cx.arc(ox + (player.x / TILE) * sc, oy + (player.y / TILE) * sc, 4 + Math.sin(frame * 0.15), 0, 7); cx.fill();
 
-  // footer: where you are, current goal, the tally
+  // Player pulsing beacon
+  const px_x = ox + (player.x / TILE) * sc;
+  const px_y = oy + (player.y / TILE) * sc;
+  cx.fillStyle = '#c0392b';
+  cx.beginPath(); cx.arc(px_x, px_y, 3.5, 0, 7); cx.fill();
+  cx.strokeStyle = 'rgba(192, 57, 43, 0.4)'; cx.lineWidth = 1.5;
+  cx.beginPath(); cx.arc(px_x, px_y, 6 + Math.sin(frame * 0.15) * 2.5, 0, 7); cx.stroke();
+
+  // Legend Box (bottom-left)
+  const legW = 120, legH = 75;
+  const legX = mx + 20, legY = my + ph - legH - 20;
+  cx.fillStyle = '#f5ebd5';
+  roundRect(legX, legY, legW, legH, 6); cx.fill();
+  cx.strokeStyle = '#b9ac82'; cx.lineWidth = 1;
+  roundRect(legX, legY, legW, legH, 6); cx.stroke();
+  roundRect(legX + 2, legY + 2, legW - 4, legH - 4, 4); cx.stroke();
+
+  cx.textAlign = 'left'; cx.font = '10px Georgia, serif'; cx.fillStyle = '#5a4a35';
+  const startItemY = legY + 15, itemSpacing = 20;
+
+  // Legend Item 1: You are here
+  drawMapPin(legX + 12, startItemY, 9);
+  cx.fillText(LANG === 'en' ? 'You are here' : 'Du bist hier', legX + 26, startItemY);
+
+  // Legend Item 2: Points of interest
+  drawIcon('fire', legX + 12, startItemY + itemSpacing, 9);
+  cx.fillText(LANG === 'en' ? 'Points of interest' : 'Sehenswürdigkeiten', legX + 26, startItemY + itemSpacing);
+
+  // Legend Item 3: Water
+  drawIcon('drop', legX + 12, startItemY + itemSpacing * 2, 9);
+  cx.fillText(LANG === 'en' ? 'Water' : 'Wasser', legX + 26, startItemY + itemSpacing * 2);
+
+  // Compass Rose (bottom-center)
+  const compX = mx + pw / 2, compY = my + ph - 96;
+  cx.save();
+  cx.strokeStyle = '#5a4a35'; cx.lineWidth = 0.8;
+  cx.beginPath();
+  cx.moveTo(compX - 16, compY); cx.lineTo(compX + 16, compY);
+  cx.moveTo(compX, compY - 16); cx.lineTo(compX, compY + 16);
+  cx.stroke();
+
+  cx.fillStyle = '#5a4a35';
+  cx.beginPath(); cx.moveTo(compX, compY - 16); cx.lineTo(compX - 3, compY - 8); cx.lineTo(compX + 3, compY - 8); cx.closePath(); cx.fill();
+  cx.beginPath(); cx.moveTo(compX, compY + 16); cx.lineTo(compX - 2, compY + 8); cx.lineTo(compX + 2, compY + 8); cx.closePath(); cx.fill();
+  cx.beginPath(); cx.moveTo(compX - 16, compY); cx.lineTo(compX - 8, compY - 2); cx.lineTo(compX - 8, compY + 2); cx.closePath(); cx.fill();
+  cx.beginPath(); cx.moveTo(compX + 16, compY); cx.lineTo(compX + 8, compY - 2); cx.lineTo(compX + 8, compY + 2); cx.closePath(); cx.fill();
+
+  cx.fillStyle = '#f2edd9';
+  cx.beginPath(); cx.arc(compX, compY, 7.5, 0, 7); cx.fill();
+  cx.strokeStyle = '#5a4a35'; cx.stroke();
+
+  cx.fillStyle = '#5a4a35'; cx.font = 'bold 9px Georgia, serif'; cx.textAlign = 'center'; cx.textBaseline = 'middle';
+  cx.fillText('N', compX, compY);
+  cx.restore();
+
+  // Bottom Center Status Text
   cx.fillStyle = '#5a4a35'; cx.textAlign = 'center';
   cx.font = 'italic 12px Georgia, serif';
   const here = curZone ? (LANG === 'en' ? curZone.en : curZone.de) : '';
-  cx.fillText(`${TX.map_here} ${here}`, mx + pw / 2, my + ph - 56);
+  cx.fillText(`${TX.map_here} ${here}`, mx + pw / 2, my + ph - 70);
+
   let of2 = 12;
   cx.font = `${of2}px Georgia, serif`;
-  while (cx.measureText(TX.obj_prefix + G.objective).width > pw - 28 && of2 > 8) { of2--; cx.font = `${of2}px Georgia, serif`; }
-  cx.fillText(TX.obj_prefix + G.objective, mx + pw / 2, my + ph - 38);
+  while (cx.measureText(TX.obj_prefix + G.objective).width > pw - 240 && of2 > 8) { of2--; cx.font = `${of2}px Georgia, serif`; }
+  cx.fillText(TX.obj_prefix + G.objective, mx + pw / 2, my + ph - 52);
+
+  // Stats counter (book, lock replacing marmot)
   const stats = [['book', `${Object.keys(G.pages).length}/7`]];
   if (G.flags.finale) stats.push(['camera', `${Object.keys(G.photos).length}/5`]);
-  stats.push(['marmot', `${Object.keys(G.marmots).length}/5`]);
+  stats.push(['lock', `${Object.keys(G.marmots).length}/5`]);
   if (!G.chestnutsDone) stats.push(['chestnut', `${G.chestnuts}/3`]);
   if (G.gear.glider) stats.push(['ring', `${Object.keys(G.rings).length}/5`]);
-  drawIconStats(stats, mx + pw / 2, my + ph - 18);
+  drawIconStats(stats, mx + pw / 2, my + ph - 30);
 
+  // Forest Mound Decoration (bottom-right)
+  const ox_orn = mx + pw - 85, oy_orn = my + ph - 24;
+  cx.fillStyle = '#dce3cb';
+  cx.beginPath();
+  cx.ellipse(ox_orn + 30, oy_orn + 8, 40, 10, 0, 0, 7);
+  cx.fill();
+  cx.strokeStyle = '#5a4a35'; cx.lineWidth = 1;
+  cx.beginPath();
+  cx.ellipse(ox_orn + 30, oy_orn + 8, 40, 10, 0, Math.PI, 0);
+  cx.stroke();
+  cx.fillStyle = '#b9ac82';
+  cx.beginPath();
+  cx.moveTo(ox_orn + 10, oy_orn + 6); cx.lineTo(ox_orn + 18, oy_orn - 2); cx.lineTo(ox_orn + 26, oy_orn + 8);
+  cx.closePath(); cx.fill(); cx.stroke();
+  drawMapTree(ox_orn + 20, oy_orn + 6, 0.7);
+  drawMapTree(ox_orn + 35, oy_orn + 8, 1.0);
+  drawMapTree(ox_orn + 48, oy_orn + 9, 0.8);
+
+  // Close prompt under paper
   cx.fillStyle = 'rgba(243,236,210,0.7)'; cx.font = '11px sans-serif';
   cx.fillText(TX.map_close, W / 2, Math.min(H - 10, my + ph + 14));
 
