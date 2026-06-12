@@ -1,6 +1,6 @@
 /* Headless sanity checks for the world geometry.
    Run: node test/check-world.js */
-const { TILE, WORLD_W, WORLD_H, buildWorld, WATERFALL, THERMALS, RINGS, MOVERS, ZONES, ENTITIES, TREES } = require('../world.js');
+const { TILE, WORLD_W, WORLD_H, buildWorld, WATERFALL, THERMALS, RINGS, MOVERS, CRUMBLE, STONEFALL, ZONES, ENTITIES, TREES } = require('../world.js');
 
 const g = buildWorld();
 const Y_OFF = WORLD_H - 80;
@@ -215,7 +215,33 @@ const ridgeHops = [
   [[154, 7], [157, 9]],    // post-notch peak -> bench peak
   [[160, 9], [162, 11]],   // -> final ledge at the east face
 ];
-ridgeHops.forEach(([a, b], i) => ok(reachable(...a, ...b), `ridge hop ${i} reachable`));
+// a hop endpoint may be supported by rock, a plank, a hoist track or a
+// crumble slab (crumble platforms regrow, so the route is always passable)
+const supportAt = (x, y) =>
+  solid(at(x, y + Y_OFF)) || at(x, y + Y_OFF) === 3 ||
+  MOVERS.some(m => m.y === y + Y_OFF && x >= m.x && x < m.x2 + m.w) ||
+  CRUMBLE.some(c => c.y === y + Y_OFF && x >= c.x && x < c.x + c.w);
+ridgeHops.forEach(([a, b], i) => {
+  ok(reachable(...a, ...b), `ridge hop ${i} reachable`);
+  ok(supportAt(...a) && supportAt(...b), `ridge hop ${i} endpoints supported (${a} -> ${b})`);
+});
+// crumbling slabs on the ridge: where the route expects them, hanging in
+// open air with sky above for the arc, and recoverable ground below
+ok(CRUMBLE.some(c => c.x === 86 && c.y === 8 + Y_OFF && c.w === 3), 'crumble slab spans the knife-edge gap (x86..88, y8)');
+ok(CRUMBLE.some(c => c.x === 107 && c.y === 5 + Y_OFF && c.w === 3), 'crumble slab spans the summit-block gap (x107..109, y5)');
+for (const c of CRUMBLE) {
+  let air = true, sky = true, recover = true;
+  for (let x = c.x; x < c.x + c.w; x++) {
+    if (solid(at(x, c.y))) air = false;
+    for (let dy = 1; dy <= 4; dy++) if (solid(at(x, c.y - dy))) sky = false;
+    let d = 1;
+    while (d <= 9 && !solid(at(x, c.y + d))) d++;
+    if (d > 9) recover = false;
+  }
+  ok(air, `crumble@${c.x},${c.y} hangs in open air (slab replaces rock)`);
+  ok(sky, `crumble@${c.x},${c.y} has 4 rows of open sky above`);
+  ok(recover, `crumble@${c.x},${c.y} falls land on ground within 9 tiles (catch band)`);
+}
 // summit plateau is solid and has headroom
 ok(solid(at(135, 1 + Y_OFF)) && solid(at(139, 1 + Y_OFF)), 'summit plateau solid at key points');
 ok(!solid(at(135, 0 + Y_OFF)) && !solid(at(139, 0 + Y_OFF)), 'summit has headroom');
@@ -253,6 +279,19 @@ ok(solid(at(87, 14 + Y_OFF)) && solid(at(104, 14 + Y_OFF)) && solid(at(121, 14 +
 ok(at(89, 11 + Y_OFF) !== 3 && !solid(at(89, 11 + Y_OFF)), 'catwalk west re-entry plank is removed');
 ok(at(99, 11 + Y_OFF) === 3 && at(100, 11 + Y_OFF) === 3 && !solid(at(99, 10 + Y_OFF)) && !solid(at(100, 10 + Y_OFF)), 'catwalk east re-entry plank under the saddle');
 ok(reachable(100, 14 + Y_OFF, 99, 11 + Y_OFF) && reachable(101, 11 + Y_OFF, 102, 7 + Y_OFF), 'catwalk -> saddle re-entry reachable');
+
+// stonefall band on the depot climb: spawn rows open so stones can fall,
+// the band sweeps the exposed hops but spares the plank (x63..64), the
+// nook and the ferrata cable column (x71), and the floor below is solid
+ok(STONEFALL.some(s => s.x <= 66 && s.x + s.w >= 70 && s.y < 21 + Y_OFF), 'stonefall sweeps the exposed depot hops');
+for (const s of STONEFALL) {
+  let open = true;
+  for (let x = s.x; x < s.x + s.w; x++) if (solid(at(x, s.y))) open = false;
+  ok(open, `stonefall@x${s.x}..${s.x + s.w - 1} spawn row y${s.y} is open air`);
+  ok(s.x > 64, `stonefall@x${s.x} spares the one-way plank haven (x63..64)`);
+  ok(s.x + s.w <= 71, `stonefall@x${s.x} stays off the ferrata cable column (x71)`);
+  ok(solid(at(s.x, s.floor)) && solid(at(s.x + s.w - 1, s.floor)), `stonefall@x${s.x} floor row y${s.floor} is solid`);
+}
 
 // 14. pond crossing: bank -> log -> bank
 ok(at(145, 69 + Y_OFF) === 3 && at(146, 69 + Y_OFF) === 3, 'pond log present');

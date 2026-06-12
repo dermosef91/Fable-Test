@@ -149,6 +149,15 @@ engine's `pend*` event queue exists for exactly that.
   falls between frames.
 - **Movers:** platforms in `MOVERS` are one-way landings; standing players
   are carried via `p.moverRef` (set on landing, cleared on jump/walk-off).
+- **Crumble & stonefall:** `CRUMBLE` rects (world.js) are one-way shale slabs
+  that crack ~1.5 s after first landing and regrow ~4 s later; collision rides
+  the same one-way landing loop as `MOVERS`. Place them only where a fall
+  lands on recoverable ground with a tested way back. `STONEFALL` bands drop
+  telegraphed stones (dust + rattle before the drop); hits stagger
+  (`p.stunT`) and cost warmth — never a respawn. Keep bands off cable columns
+  and plank havens; ledges inside a band intercept stones, so the exposed
+  stances are the ledges themselves. Mirror both in check-world.js (open-air
+  track, sky above, recoverable fall, band placement).
 - **NPC & Animal Rendering**: Characters and animals are drawn procedurally, supporting a horizontal facing direction (`face = 1` or `-1`) via context scaling: `cx.scale(face, 1)`. When in motion (i.e. horizontal velocity `vx` is non-zero), apply a sinusoidal leg/hoof walking swing offset (`swing = Math.sin(...) * scale`) to convey movement naturally.
 - **Organic Tile Rendering:** Solid tiles (rock, scree) use coordinate-seeded pseudo-random hashes `h(seed)` in `drawTiles()` to procedurally draw stable organic edge bumps, grassy humps/blades, and rounded corners, avoiding straight rectangular bounds.
 - **Saves:** bump `SAVE_KEY` only if the save shape breaks compatibility;
