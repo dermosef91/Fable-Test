@@ -107,6 +107,14 @@ engine's `pend*` event queue exists for exactly that.
 - One-way drops and shortcut loops (chimney, Schartl, scree-run) are part
   of the metroidvania feel — add them when a new area would force a slog.
 - **No trapping drops/gaps:** Avoid creating deep gaps where the player can fall and get stuck. Any platforming section must have a maximum drop depth of ~4 tiles to the nearest exit/climbable platform, or have clear re-entry/escape routes (e.g. wooden planks/one-way steps, or walkable horizontal exit tunnels).
+- **Movers must be load-bearing:** if a static ledge can substitute for a
+  moving platform's ride (or sit under its track at jump height), the mover
+  is decoration — remove the ledge, not the mover.
+- **No floating rock:** every ledge/crag bonds to a face or shoulder below
+  (extend the fill down). Only deliberate openings stay pure air, and a drop
+  gap (the Scharte) must line up with its landing (the pond).
+- **The Gipfel is the highest point on the map** — no crag, wall top or
+  massif face may poke above the summit plateau (map-edge walls excepted).
 
 - **Vector Asset Design Guidelines:** For structures (like the Alm hut redesign) and visual elements, favor high-quality hand-coded details over simple blocks:
   - *Dimensionality:* Add steep roofs, eaves/overhangs, and outline strokes (`cx.strokeStyle`) for structural depth.

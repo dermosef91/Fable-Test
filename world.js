@@ -47,18 +47,27 @@ function buildWorld() {
   // Stage 3 — The Summit Block: dramatic peaks and valleys
   // (the x107..109 ledge is a crumbling shale slab — see CRUMBLE below)
   fill(111, 3, 3, 11, 1);        // sub-peak (x111..113, y3..14) — first glimpse of the top
-  fill(116, 8, 4, 6, 1);         // deep saddle (x116..119, y8..14) — plunges back down!
+  // deep gap (x114..121) — nothing at jump height: ride the supply hoist
+  // (see MOVERS), or drop to the solid ground and climb back via the steps
   fill(122, 4, 3, 10, 1);        // ledge (x122..124, y4..14)
-  fill(126, 2, 4, 12, 1);        // the pinnacle (x126..129, y2..14) — highest point on the ridge!
-  fill(133, 3, 9, 11, 1);        // summit plateau (x133..141, y3..14) — the Gipfel
+  fill(126, 2, 4, 12, 1);        // the pinnacle (x126..129, y2..14) — second only to the Gipfel
+  fill(133, 1, 9, 13, 1);        // summit plateau (x133..141, y1..14) — the Gipfel,
+                                 // the highest ground on the whole mountain
 
-  // Stage 4 — The East Ridge: descent toward the notch and the east end
-  fill(143, 5, 3, 3, 1);         // ledge (x143..145, y5..7)
-  fill(147, 7, 3, 3, 1);         // pre-notch ledge (x147..149, y7..9)
-  carve(148, 7, 2, 3);           // the notch — a clean drop into the pond far below
-  fill(152, 7, 3, 3, 1);         // post-notch ledge (x152..154, y7..9)
-  fill(157, 9, 4, 3, 1);         // ledge (x157..160, y9..11)
-  fill(162, 11, 4, 3, 1);        // final ledge (x162..165, y11..13)
+  // Stage 4 — The East Ridge: small peaks stepping down to the east face.
+  // Every crag bonds to the shoulder below — only the Scharte stays open air.
+  fill(142, 6, 1, 8, 1);         // saddle column under the plateau rim (x142, top y6)
+  fill(143, 4, 3, 10, 1);        // first peak east of the Gipfel (x143..145, top y4)
+  fill(146, 7, 2, 7, 1);         // pre-notch rim (x146..147, top y7) — fence at x147
+  // the Scharte (x148..149): a clean drop from the crest into the pond far below
+  fill(150, 7, 5, 7, 1);         // post-notch peak (x150..154, top y7) — fence at x150
+  fill(155, 10, 2, 4, 1);        // saddle (x155..156, top y10)
+  fill(157, 9, 4, 5, 1);         // bench peak (x157..160, top y9)
+  fill(161, 12, 1, 2, 1);        // step (x161, top y12)
+  fill(162, 11, 4, 3, 1);        // final ledge at the east face (x162..165, top y11)
+  // the east shoulder: solid ground under the peaks, split only by the Scharte
+  fill(142, 14, 6, 22, 1);       // west of the drop (x142..147)
+  fill(150, 14, 16, 22, 1);      // east of the drop (x150..165)
 
   // Solid ground under the upper ridge. A missed jump lands here on the solid
   // ground — climb back onto the route at the re-entry ledge (the deep saddle).
@@ -116,10 +125,9 @@ function buildWorld() {
   fill(11, 23, 2, 1, 1);   // 2. short step left — the chimney yawns below
   fill(17, 21, 2, 1, 1);   // 3. long leap back right — precision landing
   fill(19, 19, 3, 1, 3);   // 4. one-way plank — no going back this way
-  // 5. moving platform oscillates at y:17 (see MOVERS)
-  fill(16, 15, 2, 1, 1);   // 6. up the right edge, fully exposed
-  fill(10, 13, 2, 1, 1);   // 7. long leap left, near the top — don't look down
-  fill(2, 10, 7, 1, 1);    // 8. the lookout shelf — you made it
+  fill(16, 15, 2, 1, 1);   // 5. a full-stretch leap up the right edge
+  // 6. moving platform oscillates at y:13 (see MOVERS) — the only bridge left
+  fill(2, 10, 7, 1, 1);    // 7. the lookout shelf — you made it
 
   // --- the depot: a balcony nook above the tunnel's east mouth ------------
   // (the ferrata set waits here — the cable below sends you looking)
@@ -160,7 +168,7 @@ function buildWorld() {
   fill(0, 0, 2, WORLD_H, 1);            // west wall
 
   // --- Hinteres Tal (post-finale glider country, x192..) --------------------
-  fill(166, 0, 2, WORLD_H, 1);   // the massif's east face
+  fill(166, 2, 2, WORLD_H, 1);   // the massif's east face (top y2 — below the Gipfel)
   carve(166, 5, 2, 7);           // the slip behind the Flugschule sign (y5..11)
   fill(168, 12, 6, 1, 1);        // launch ledge / Startplatz
   fill(169, 13, 1, 57, 5);       // fixed cable back up the face (for the way home)
@@ -186,12 +194,14 @@ const THERMALS = [
 const RINGS = [[186, 36], [198, 24], [209, 46], [223, 30], [232, 55]];
 
 // Moving platforms — the hut's old material hoist still runs in the gorge,
-// and the summit-cross supply hoist bridges the saddle on the upper ridge.
+// the summit-cross supply hoist bridges the deep gap on the upper ridge, and
+// the observer hoist is the last step up to the lookout shelf. Each one is
+// load-bearing: no static ledge doubles its track.
 // Oscillates between (x,y) and (x2,y2); w tiles wide; period in frames.
 const MOVERS = [
   { x: 13, y: 40, x2: 18, y2: 40, w: 3, period: 300 },
   { x: 114, y: 6, x2: 118, y2: 6, w: 3, period: 260 },
-  { x: 11, y: 17, x2: 14, y2: 17, w: 2, period: 220 },
+  { x: 9, y: 13, x2: 13, y2: 13, w: 2, period: 220 },
 ];
 
 // Crumbling ledges (brüchiger Fels) — one-way shale slabs on the ridge that
@@ -365,7 +375,7 @@ const ENTITIES = [
 
   // -- Hochband ----------------------------------------------------------------------
   { t: 'sign',     x: 63,  r: 28, key: 'sign_hochband' },
-  { t: 'plaque',   x: 65,  r: 28 },
+  { t: 'plaque',   x: 69,  r: 28 },  // right beside the ferrata cable it honours
   { t: 'fire',     x: 62,  r: 28, id: 'biwak', name: 'Biwak am Hochband', biwak: true },
   { t: 'marmot',   x: 70,  r: 28 },
 
@@ -376,11 +386,11 @@ const ENTITIES = [
   // -- Grat & Gipfel ---------------------------------------------------------------------
   { t: 'sign',     x: 76,  r: 12, key: 'sign_grat' },
   { t: 'marmot',   x: 96,  r: 4 },
-  { t: 'sign',     x: 144, r: 5, key: 'sign_notch' },
+  { t: 'sign',     x: 144, r: 4, key: 'sign_notch' },
   { t: 'fence',    x: 147, r: 7 },
-  { t: 'fence',    x: 152, r: 7 },
-  { t: 'cross',    x: 137, r: 3 },
-  { t: 'book',     x: 135, r: 3 },
+  { t: 'fence',    x: 150, r: 7 },
+  { t: 'cross',    x: 137, r: 1 },
+  { t: 'book',     x: 135, r: 1 },
   { t: 'photo',    x: 158, r: 9, n: 5 },
   { t: 'bench',    x: 159, r: 9 },
   { t: 'sign',     x: 162, r: 11, key: 'sign_flug' },
@@ -410,7 +420,7 @@ const TREES = [
 const FLOWERS = [ // alpenrose & friends on the Alm, edelweiss up top
   [46, 48, 'rose'], [58, 48, 'rose'], [76, 48, 'rose'], [84, 48, 'rose'],
   [92, 6, 'gent'], [112, 4, 'gent'], [123, 5, 'gent'],
-  [137, 2, 'edel'], [134, 2, 'edel'],
+  [137, 1, 'edel'], [134, 1, 'edel'],
   [191, 70, 'gent'], [197, 68, 'rose'], [204, 70, 'gent'], [223, 66, 'gent'], [229, 70, 'rose'],
 ];
 
