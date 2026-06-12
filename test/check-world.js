@@ -56,12 +56,14 @@ for (let x = 30; x <= 59; x++) {
 }
 ok(corridor, 'tunnel corridor passable x30..59');
 ok(roofed, 'tunnel has a ceiling');
-// 4. notch carved (the Zinnensprung) with water far below
-ok(!solid(at(148, 7 + Y_OFF)) && !solid(at(148, 12 + Y_OFF)), 'ridge notch carved at x148');
+// 4. the Scharte (the Zinnensprung): open from the crest straight into the pond
+ok(!solid(at(148, 7 + Y_OFF)) && !solid(at(149, 7 + Y_OFF)), 'Scharte open at the crest (x148..149)');
 let clearDrop = true;
-for (let y = 7 + Y_OFF; y < 70 + Y_OFF; y++) if (solid(at(148, y)) || at(148, y) === 3) clearDrop = false;
-ok(clearDrop, 'notch drop column clear to the pond (no log in the way)');
-ok(at(148, 70 + Y_OFF) === 4, 'pond under the notch');
+for (const dropX of [148, 149])
+  for (let y = 5 + Y_OFF; y < 70 + Y_OFF; y++) if (solid(at(dropX, y)) || at(dropX, y) === 3) clearDrop = false;
+ok(clearDrop, 'Scharte drop column clear to the pond (no log in the way)');
+ok(at(148, 70 + Y_OFF) === 4 && at(149, 70 + Y_OFF) === 4, 'pond directly under the Scharte');
+ok(solid(at(147, 7 + Y_OFF)) && solid(at(150, 7 + Y_OFF)), 'solid rims on both sides of the Scharte');
 // 5. gorge chimney carved through the upper band, lip at its mouth
 ok(!solid(at(7, 30 + Y_OFF)) && !solid(at(7, 34 + Y_OFF)), 'chimney open at x7');
 ok(solid(at(10, 28 + Y_OFF)) && !solid(at(9, 28 + Y_OFF)), 'landing lip at the chimney mouth, clear air west of it');
@@ -98,16 +100,16 @@ for (const [x, y] of [[26, 45], [21, 42], [8, 38], [4, 35], [8, 32], [4, 29]]) o
   ok(clear, 'hoist track is clear of rock');
 }
 // the observer post above the Stellung — a long, airy climb
-for (const [x, y] of [[14, 25], [11, 23], [17, 21], [20, 19], [16, 15], [10, 13], [6, 10]]) ok(solid(at(x, y + Y_OFF)) || at(x, y + Y_OFF) === 3, `lookout ledge at ${x},${y + Y_OFF}`);
+for (const [x, y] of [[14, 25], [11, 23], [17, 21], [20, 19], [16, 15], [6, 10]]) ok(solid(at(x, y + Y_OFF)) || at(x, y + Y_OFF) === 3, `lookout ledge at ${x},${y + Y_OFF}`);
 {
   let head = true;
-  for (const [x, y] of [[14, 24], [11, 22], [17, 20], [20, 18], [16, 13], [10, 12], [6, 9]]) if (solid(at(x, y + Y_OFF)) || solid(at(x, y - 1 + Y_OFF))) head = false;
+  for (const [x, y] of [[14, 24], [11, 22], [17, 20], [20, 18], [16, 13], [6, 9]]) if (solid(at(x, y + Y_OFF)) || solid(at(x, y - 1 + Y_OFF))) head = false;
   ok(head, 'lookout ledges have headroom');
 }
 // no ledge sits in the jump arc directly above another (head-bonk guard)
 {
   let clear = true;
-  for (const [x0, x1, y] of [[14, 15, 25], [11, 12, 23], [17, 18, 21], [16, 17, 14], [10, 11, 13]])
+  for (const [x0, x1, y] of [[14, 15, 25], [11, 12, 23], [17, 18, 21], [16, 17, 14]])
     for (let x = x0; x <= x1; x++) for (let dy = 1; dy <= 4; dy++) if (solid(at(x, y + Y_OFF - dy))) clear = false;
   ok(clear, 'lookout ledges have 4 rows of open sky above');
 }
@@ -173,10 +175,9 @@ const lookoutHops = [
   [[14, 25], [13, 23]],  // short step left
   [[13, 23], [17, 21]],  // long leap back right — precision
   [[19, 21], [19, 19]],  // straight up onto the one-way plank
-  [[19, 19], [15, 17]],  // back left
-  [[15, 17], [16, 14]],  // up the right edge
-  [[16, 14], [12, 13]],  // long leap left near the top
-  [[10, 13], [9, 10]],   // onto the lookout shelf
+  [[19, 19], [17, 15]],  // the full-stretch leap up the right edge
+  [[17, 15], [14, 13]],  // onto the hoist at its east end
+  [[9, 13], [8, 10]],    // off the hoist at its west end, onto the shelf
 ];
 lookoutHops.forEach(([a, b], i) => ok(reachable(...a, ...b), `lookout hop ${i} reachable`));
 const depotHops = [
@@ -205,45 +206,47 @@ const ridgeHops = [
   [[113, 3], [115, 6]],    // -> the supply hoist at its west end
   [[120, 6], [122, 4]],    // off the hoist at its east end
   [[122, 4], [126, 2]],    // -> pinnacle
-  [[129, 2], [133, 3]],    // -> summit plateau, the true high point
-  // Stage 4 — East Ridge descent
-  [[141, 3], [145, 5]],    // summit -> descent ledge
-  [[145, 5], [149, 7]],    // -> pre-notch
-  [[152, 7], [154, 7]],    // post-notch -> same level
-  [[154, 7], [160, 9]],    // -> lower ledge
-  [[160, 9], [165, 11]],   // -> final ledge
+  [[129, 2], [133, 1]],    // -> summit plateau, the true high point
+  // Stage 4 — East Ridge: down over the peaks (climbable in both directions)
+  [[141, 1], [143, 4]],    // summit -> first east peak
+  [[143, 4], [141, 1]],    // ...and the return jump back to the Gipfel
+  [[145, 4], [147, 7]],    // -> pre-notch rim
+  [[147, 7], [150, 7]],    // across the Scharte (or drop in!)
+  [[154, 7], [157, 9]],    // post-notch peak -> bench peak
+  [[160, 9], [162, 11]],   // -> final ledge at the east face
 ];
 ridgeHops.forEach(([a, b], i) => ok(reachable(...a, ...b), `ridge hop ${i} reachable`));
 // summit plateau is solid and has headroom
-ok(solid(at(135, 3 + Y_OFF)) && solid(at(139, 3 + Y_OFF)), 'summit plateau solid at key points');
-ok(!solid(at(135, 2 + Y_OFF)) && !solid(at(139, 2 + Y_OFF)), 'summit has headroom');
-// the Gipfel is the single highest ground in the Gamstal (walls excluded)
+ok(solid(at(135, 1 + Y_OFF)) && solid(at(139, 1 + Y_OFF)), 'summit plateau solid at key points');
+ok(!solid(at(135, 0 + Y_OFF)) && !solid(at(139, 0 + Y_OFF)), 'summit has headroom');
+// the Gipfel is the single highest ground on the whole map (edge walls excluded)
 {
   let minTop = WORLD_H, cols = [];
-  for (let x = 2; x <= 165; x++) {
+  for (let x = 2; x <= 237; x++) {
     let top = WORLD_H;
     for (let y = 0; y < WORLD_H; y++) if (solid(at(x, y))) { top = y; break; }
     if (top < minTop) { minTop = top; cols = [x]; }
     else if (top === minTop) cols.push(x);
   }
-  ok(minTop === 2 + Y_OFF && cols.every(x => x >= 126 && x <= 129),
+  ok(minTop === 1 + Y_OFF && cols.every(x => x >= 133 && x <= 141),
     `summit plateau is the highest ground (row ${minTop} at x${cols[0]}..${cols[cols.length - 1]})`);
 }
-// the summit supply hoist bridges the saddle gap
+// the summit supply hoist bridges the deep gap — and nothing else does
 {
   const m2 = MOVERS[1];
   ok(m2 && m2.y === 6 + Y_OFF && m2.y2 === 6 + Y_OFF && m2.x === 114 && m2.x2 === 118 && m2.w === 3, `summit hoist runs x114..121 at row ${6 + Y_OFF}`);
   let clear = true;
   for (let x = m2.x; x < m2.x2 + m2.w; x++) for (let y = 4 + Y_OFF; y <= 7 + Y_OFF; y++) if (solid(at(x, y))) clear = false;
   ok(clear, 'summit hoist track is clear of rock');
+  ok(!solid(at(117, 8 + Y_OFF)) && !solid(at(118, 11 + Y_OFF)), 'no crag under the summit hoist — the ride is required');
 }
-// the observer hoist
+// the observer hoist — the last step up to the lookout shelf, and the only one
 {
   const m3 = MOVERS[2];
-  ok(m3 && m3.y === 17 + Y_OFF && m3.y2 === 17 + Y_OFF && m3.x === 11 && m3.x2 === 14 && m3.w === 2, `observer hoist runs x11..15 at row ${17 + Y_OFF}`);
+  ok(m3 && m3.y === 13 + Y_OFF && m3.y2 === 13 + Y_OFF && m3.x === 9 && m3.x2 === 13 && m3.w === 2, `observer hoist runs x9..14 at row ${13 + Y_OFF}`);
   let clear = true;
-  for (let x = m3.x; x < m3.x2 + m3.w; x++) for (let y = 15 + Y_OFF; y <= 18 + Y_OFF; y++) if (solid(at(x, y))) clear = false;
-  ok(clear, 'observer hoist track is clear of rock');
+  for (let x = m3.x; x < m3.x2 + m3.w; x++) for (let y = 11 + Y_OFF; y <= 14 + Y_OFF; y++) if (solid(at(x, y))) clear = false;
+  ok(clear, 'observer hoist track is clear of rock (old static step removed)');
 }
 // solid ground under the upper ridge catches falls and funnels back onto the route
 ok(solid(at(87, 14 + Y_OFF)) && solid(at(104, 14 + Y_OFF)) && solid(at(121, 14 + Y_OFF)) && solid(at(132, 14 + Y_OFF)), 'solid ground under the upper ridge at y14');
@@ -254,6 +257,19 @@ ok(reachable(100, 14 + Y_OFF, 99, 11 + Y_OFF) && reachable(101, 11 + Y_OFF, 102,
 // 14. pond crossing: bank -> log -> bank
 ok(at(145, 69 + Y_OFF) === 3 && at(146, 69 + Y_OFF) === 3, 'pond log present');
 ok(solid(at(142, 70 + Y_OFF)) && solid(at(150, 70 + Y_OFF)), 'pond banks solid');
+
+// 14b. east ridge: every peak bonds to the shoulder — no floating rock
+for (const x of [142, 143, 147, 152, 158, 163]) {
+  let top = 0;
+  while (top < WORLD_H && !solid(at(x, top))) top++;
+  let bonded = true;
+  for (let y = top; y <= 35 + Y_OFF; y++) if (!solid(at(x, y))) bonded = false;
+  ok(bonded, `east ridge column x${x} solid from crest (row ${top}) to the shoulder`);
+}
+// the forest below the east shoulder keeps its air (trees, walkable floor)
+ok(!solid(at(145, 45 + Y_OFF)) && !solid(at(158, 50 + Y_OFF)) && !solid(at(163, 60 + Y_OFF)), 'air space below the east shoulder stays open');
+// the saddles between the peaks are climbable — nobody gets trapped
+ok(reachable(142, 6, 143, 4) && reachable(146, 7, 145, 4) && reachable(155, 10, 154, 7) && reachable(161, 12, 162, 11), 'east crest saddles climb back out');
 
 // 15. das Schartl: walkable from the Lärchenschatten (x85) onto the scree,
 //     every step at most 1 tile up / 2 down, with 2+ tiles of headroom
