@@ -4,6 +4,13 @@ This is the result of checking every proposal in the concepts doc against the
 current `world.js`, `game.js` and `test/check-world.js`. Verdicts first, then
 detailed designs for what's in, then the reasoning for what's out.
 
+> **Maintainer decisions (June 2026), shipped on this branch:** stonefall
+> lands first at the **depot climb**, not the scree slope — the scree is too
+> early in the game, and concepts are introduced one at a time. Crumbling
+> ledges go **on the mandatory ridge path** (two former pillars, x86..88 and
+> x107..109), with check-world taught to treat crumble slabs as valid hop
+> support and to assert their fall recovery.
+
 ## 0. Corrections to the concepts doc
 
 The doc was written against a stale checkout:

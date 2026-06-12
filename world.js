@@ -39,13 +39,13 @@ function buildWorld() {
   fill(81, 10, 4, 4, 1);         // first step up (x81..84, y10..14) (top 10, bottom 14)
 
   // Stage 2 — The Knife Edge: narrow ledges stepping sharply upward
-  fill(86, 8, 3, 6, 1);          // ledge (x86..88, y8..14)
+  // (the x86..88 ledge is a crumbling shale slab — see CRUMBLE below)
   fill(91, 6, 3, 8, 1);          // ledge (x91..93, y6..14)
   fill(95, 4, 4, 10, 1);         // high point (x95..98, y4..14)
   fill(102, 7, 3, 7, 1);         // deep saddle (x102..104, y7..14) — big drop!
 
   // Stage 3 — The Summit Block: dramatic peaks and valleys
-  fill(107, 5, 3, 9, 1);         // ledge (x107..109, y5..14)
+  // (the x107..109 ledge is a crumbling shale slab — see CRUMBLE below)
   fill(111, 3, 3, 11, 1);        // sub-peak (x111..113, y3..14) — first glimpse of the top
   fill(116, 8, 4, 6, 1);         // deep saddle (x116..119, y8..14) — plunges back down!
   fill(122, 4, 3, 10, 1);        // ledge (x122..124, y4..14)
@@ -192,6 +192,24 @@ const MOVERS = [
   { x: 13, y: 40, x2: 18, y2: 40, w: 3, period: 300 },
   { x: 114, y: 6, x2: 118, y2: 6, w: 3, period: 260 },
   { x: 11, y: 17, x2: 14, y2: 17, w: 2, period: 220 },
+];
+
+// Crumbling ledges (brüchiger Fels) — one-way shale slabs on the ridge that
+// crack ~1.5 s after the first landing, drop away, and regrow a few seconds
+// later. They replace what used to be solid pillars; a fall lands on the
+// catch band at y14 below, and the re-entry plank route leads back up.
+// {x, y, w} in tiles; runtime state lives in game.js.
+const CRUMBLE = [
+  { x: 86,  y: 8, w: 3 },   // Knife Edge ledge (x86..88)
+  { x: 107, y: 5, w: 3 },   // Summit Block ledge (x107..109)
+];
+
+// Stonefall bands (Steinschlag) — loose rock rattles down these columns at
+// intervals. Dust and a rattle telegraph each stone; stones shatter on the
+// first solid or plank tile. A hit staggers and costs warmth, never more.
+// {x, y: spawn row, w, floor: last row, period: frames between stones}.
+const STONEFALL = [
+  { x: 65, y: 13, w: 6, floor: 28, period: 420 },  // the exposed depot climb
 ];
 
 // =========================================================================
@@ -391,7 +409,7 @@ const TREES = [
 
 const FLOWERS = [ // alpenrose & friends on the Alm, edelweiss up top
   [46, 48, 'rose'], [58, 48, 'rose'], [76, 48, 'rose'], [84, 48, 'rose'],
-  [87, 8, 'gent'], [112, 4, 'gent'], [123, 5, 'gent'],
+  [92, 6, 'gent'], [112, 4, 'gent'], [123, 5, 'gent'],
   [137, 2, 'edel'], [134, 2, 'edel'],
   [191, 70, 'gent'], [197, 68, 'rose'], [204, 70, 'gent'], [223, 66, 'gent'], [229, 70, 'rose'],
 ];
@@ -695,6 +713,8 @@ const TX_DE = {
   toast_page: n => `Tagebuchseite ${n}/7 · Pagina ${n}/7`,
   toast_sprung: 'DER ZINNENSPRUNG! Oma wäre stolz. Und entsetzt. Aber stolz.',
   toast_stumble: 'Autsch. Das war kein Gämsensprung.',
+  toast_steinschlag: 'STEINSCHLAG! Ein Brocken hat dich gestreift. · Caduta sassi!',
+  toast_crumble: 'Der Fels bröckelt unter dir — schnell weiter! · La roccia si sgretola!',
   toast_saved: 'Gespeichert · Salvato',
   cold_respawn: 'Durchgefroren bis auf die Knochen kehrst du zum letzten Feuer zurück.',
 
@@ -1026,6 +1046,8 @@ const TX_EN = {
   toast_page: n => `Journal page ${n}/7`,
   toast_sprung: 'THE ZINNENSPRUNG! Oma would be proud. And appalled. But proud.',
   toast_stumble: 'Ouch. That was no chamois landing.',
+  toast_steinschlag: 'ROCKFALL! A loose stone clips you. · Steinschlag!',
+  toast_crumble: 'The ledge is crumbling — keep moving! · Brüchiger Fels!',
   toast_saved: 'Saved',
   cold_respawn: 'Chilled to the bone, you turn back to the last fire.',
 
@@ -1091,6 +1113,8 @@ WATERFALL.y += Y_OFF;
 for (const t of THERMALS) t.y += Y_OFF;
 for (const r of RINGS) r[1] += Y_OFF;
 for (const m of MOVERS) { m.y += Y_OFF; m.y2 += Y_OFF; }
+for (const c of CRUMBLE) c.y += Y_OFF;
+for (const s of STONEFALL) { s.y += Y_OFF; s.floor += Y_OFF; }
 for (const z of ZONES) z.y += Y_OFF;
 for (const e of ENTITIES) e.r += Y_OFF;
 for (const t of TREES) t[1] += Y_OFF;
@@ -1098,5 +1122,5 @@ for (const f of FLOWERS) f[1] += Y_OFF;
 for (const r of BG_ROCK) r.y += Y_OFF;
 
 if (typeof module !== 'undefined') {
-  module.exports = { TILE, WORLD_W, WORLD_H, buildWorld, WATERFALL, THERMALS, RINGS, MOVERS, ZONES, PHASES, ENTITIES, TREES, FLOWERS, BG_ROCK, TX_DE, TX_EN, GEAR_INFO };
+  module.exports = { TILE, WORLD_W, WORLD_H, buildWorld, WATERFALL, THERMALS, RINGS, MOVERS, CRUMBLE, STONEFALL, ZONES, PHASES, ENTITIES, TREES, FLOWERS, BG_ROCK, TX_DE, TX_EN, GEAR_INFO };
 }

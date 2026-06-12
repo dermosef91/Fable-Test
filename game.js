@@ -115,7 +115,7 @@ const player = {
   face: 1, grounded: false, coyote: 0, jbuf: 0,
   climbing: false, swim: false, anim: 0, idle: 0,
   warmth: 100, maxWarmth: 100,
-  stumbleY: 0, sliding: 0,
+  stumbleY: 0, sliding: 0, stunT: 0,
 };
 
 const spawnE = ENTITIES.find(e => e.t === 'spawn');
@@ -403,6 +403,8 @@ const sfx = {
   splash: () => noiseBurst(0.25, 0.07),
   slip: () => noiseBurst(0.15, 0.05, 1400),
   fire: () => noiseBurst(0.3, 0.03),
+  crack: () => { noiseBurst(0.12, 0.05, 600); blip(180, 0.15, 'square', 0.03, -60); },
+  rumble: () => { noiseBurst(0.35, 0.08); blip(90, 0.3, 'sawtooth', 0.04, -30); },
   fanfare: () => [392, 523, 659, 784, 1047].forEach((f, i) => setTimeout(() => blip(f, 0.35, 'triangle', 0.06), i * 130)),
 };
 
@@ -543,6 +545,162 @@ function drawMovers() {
   }
 }
 
+// ------------------------------------------------------------ crumbling --
+// brüchiger Fels: one-way shale slabs that crack after the first landing,
+// drop away, and regrow. Collision rides the same one-way landing loop as
+// the hoists (see physTick); fuse/regen state lives on the CRUMBLE entries.
+const CRUMBLE_FUSE = 90, CRUMBLE_REGROW = 240;
+for (const c of CRUMBLE) { c.fuse = -1; c.regen = 0; }
+
+function crumbleTick() {
+  for (const c of CRUMBLE) {
+    if (c.regen > 0) {
+      if (--c.regen === 0) {
+        c.fuse = -1; // the mountain settles new shale into the gap
+        for (let i = 0; i < 6; i++) spawnPart({
+          x: (c.x + Math.random() * c.w) * TILE, y: c.y * TILE + 3,
+          vx: (Math.random() - 0.5) * 0.6, vy: -0.4, g: 0.03, t: 22, c: '#b5ada0', s: 1.5,
+        });
+      }
+      continue;
+    }
+    if (c.fuse < 0) continue;
+    c.fuse--;
+    // grit trickles off the underside while the fuse burns
+    if (c.fuse % 5 === 0) spawnPart({
+      x: (c.x + Math.random() * c.w) * TILE, y: c.y * TILE + 5,
+      vx: (Math.random() - 0.5) * 0.5, vy: 0.6, g: 0.06, t: 20, c: '#9b9486', s: 1.5,
+    });
+    if (c.fuse === 30) sfx.crack();
+    if (c.fuse <= 0) { // it lets go
+      c.regen = CRUMBLE_REGROW;
+      sfx.rumble(); vib(35); G.shake = Math.max(G.shake, 3);
+      for (let i = 0; i < 12; i++) spawnPart({
+        x: (c.x + Math.random() * c.w) * TILE, y: c.y * TILE + Math.random() * 5,
+        vx: (Math.random() - 0.5) * 1.2, vy: 0.5 + Math.random() * 1.5, g: 0.12, t: 40,
+        c: i % 3 ? '#a8a094' : '#7d7668', s: 2 + Math.random() * 2,
+      });
+    }
+  }
+}
+
+function drawCrumble() {
+  for (const c of CRUMBLE) {
+    if (c.regen > 0) continue; // gone — the falling chunks already told the story
+    const w = c.w * TILE;
+    let x = c.x * TILE - cam.x, y = c.y * TILE - cam.y;
+    if (x > VW + 40 || x + w < -40) continue;
+    const prog = c.fuse >= 0 ? 1 - c.fuse / CRUMBLE_FUSE : 0;
+    if (prog > 0) { x += (Math.random() - 0.5) * 2 * prog; y += (Math.random() - 0.5) * prog; }
+    const hashVal = Math.abs(Math.sin(c.x * 12.9898 + c.y * 78.233) * 43758.5453) % 1;
+    const h = (s) => (hashVal * 123.456 + s * 23.719) % 1;
+    // layered shale slab with a jagged underside
+    cx.fillStyle = '#a8a094';
+    cx.beginPath();
+    cx.moveTo(x, y);
+    cx.lineTo(x + w, y);
+    cx.lineTo(x + w - 1 - h(1) * 3, y + 5 + h(2) * 3);
+    for (let i = 3; i >= 0; i--)
+      cx.lineTo(x + 2 + i * (w - 6) / 3, y + 7 + h(i + 3) * 4);
+    cx.closePath(); cx.fill();
+    cx.strokeStyle = '#7d7668'; cx.lineWidth = 1; cx.stroke();
+    // strata line-work and a worn top light
+    cx.strokeStyle = 'rgba(90,84,72,0.55)';
+    cx.beginPath();
+    cx.moveTo(x + 2, y + 3.5); cx.lineTo(x + w - 3, y + 3 + h(8) * 2);
+    cx.moveTo(x + 4, y + 6.5); cx.lineTo(x + w - 6, y + 6 + h(9) * 2);
+    cx.stroke();
+    cx.fillStyle = 'rgba(255,255,255,0.18)'; cx.fillRect(x, y, w, 1.2);
+    // cracks spread as the fuse burns
+    if (prog > 0) {
+      cx.strokeStyle = `rgba(45,40,33,${0.4 + 0.5 * prog})`;
+      const n = 1 + Math.floor(prog * 3);
+      cx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const cxx = x + 4 + h(i + 10) * (w - 8);
+        cx.moveTo(cxx, y);
+        cx.lineTo(cxx + (h(i + 14) - 0.5) * 6, y + 4);
+        cx.lineTo(cxx + (h(i + 18) - 0.5) * 9, y + 9);
+      }
+      cx.stroke();
+    }
+  }
+}
+
+// ------------------------------------------------------------- stonefall --
+// Steinschlag: dust and a rattle from above, then a stone bounds down the
+// band and shatters on the first solid or plank tile. A hit staggers
+// (p.stunT) and costs warmth — a scare, never a respawn.
+const stones = [];
+function stonefallTick() {
+  const p = player;
+  for (const s of STONEFALL) {
+    s.timer = (s.timer === undefined ? s.period >> 1 : s.timer) - 1;
+    if (s.timer <= 0) {
+      s.timer = s.period + Math.floor(Math.random() * 120);
+      // only cut loose when somebody is on the face to hear it
+      const ptx = p.x / TILE, pty = p.y / TILE;
+      if (ptx > s.x - 14 && ptx < s.x + s.w + 14 && pty > s.y - 4 && pty < s.floor + 6) {
+        stones.push({
+          x: (s.x + Math.floor(Math.random() * s.w)) * TILE + TILE / 2,
+          y: s.y * TILE, vy: 0, warnT: 55, r: 2.5 + Math.random() * 1.5, spin: Math.random() * 6,
+        });
+      }
+    }
+  }
+  for (let i = stones.length - 1; i >= 0; i--) {
+    const st = stones[i];
+    if (st.warnT > 0) { // the telegraph: trickling dust, a dry rattle
+      st.warnT--;
+      if (st.warnT % 4 === 0) spawnPart({
+        x: st.x + (Math.random() - 0.5) * 8, y: st.y,
+        vx: (Math.random() - 0.5) * 0.4, vy: 0.7, g: 0.05, t: 22, c: '#b9a98c', s: 1.5,
+      });
+      if (st.warnT % 18 === 0) noiseBurst(0.06, 0.03, 900);
+      continue;
+    }
+    st.vy = Math.min(st.vy + 0.32, 5.2);
+    st.y += st.vy;
+    st.spin += 0.35;
+    const t = tileAt(Math.floor(st.x / TILE), Math.floor((st.y + st.r) / TILE));
+    if (SOLID(t) || t === 3) { shatterStone(st); stones.splice(i, 1); continue; }
+    if (p.stunT <= 0 &&
+        st.x > p.x - st.r && st.x < p.x + p.w + st.r &&
+        st.y + st.r > p.y && st.y - st.r < p.y + p.h) {
+      p.warmth -= 8; p.stunT = 25;
+      p.vx += (st.x < p.x + p.w / 2 ? 1 : -1) * 1.2;
+      G.shake = Math.max(G.shake, 6); vib(50); noiseBurst(0.2, 0.07);
+      toast(TX.toast_steinschlag);
+      shatterStone(st); stones.splice(i, 1);
+    }
+  }
+}
+function shatterStone(st) {
+  noiseBurst(0.1, 0.04, 500);
+  for (let k = 0; k < 6; k++) spawnPart({
+    x: st.x, y: st.y, vx: (Math.random() - 0.5) * 2, vy: -Math.random() * 1.5,
+    g: 0.1, t: 22, c: k % 2 ? '#8c8577' : '#6e6759', s: 1.5,
+  });
+}
+function drawStones() {
+  for (const st of stones) {
+    if (st.warnT > 0) continue; // only the dust gives it away
+    const x = st.x - cam.x, y = st.y - cam.y;
+    if (x < -20 || x > VW + 20) continue;
+    cx.save();
+    cx.translate(x, y); cx.rotate(st.spin);
+    cx.fillStyle = '#7d7668';
+    cx.beginPath();
+    cx.moveTo(-st.r, -st.r * 0.6); cx.lineTo(st.r * 0.2, -st.r);
+    cx.lineTo(st.r, -st.r * 0.1); cx.lineTo(st.r * 0.5, st.r);
+    cx.lineTo(-st.r * 0.7, st.r * 0.8);
+    cx.closePath(); cx.fill();
+    cx.fillStyle = 'rgba(255,255,255,0.2)';
+    cx.fillRect(-st.r * 0.5, -st.r * 0.6, st.r, st.r * 0.4);
+    cx.restore();
+  }
+}
+
 // ------------------------------------------------------------- particles --
 const parts = [];
 function spawnPart(p) { if (parts.length < 380) parts.push(p); }
@@ -643,18 +801,22 @@ function physTick() {
   const onScree = p.grounded && under.includes(2) && !under.includes(1) ? true : (p.grounded && under.includes(2) && under.every(t => t === 2 || t === 0));
   const onOneway = under.includes(3);
 
+  // a stonefall hit staggers: controls drop out for a moment
+  const stunned = p.stunT > 0;
+  if (stunned) p.stunT--;
+
   if (!p.climbing) {
     // horizontal: quick on the ground, floatier in the air, snappy turns
     const mx = p.swim ? 1.4 : 2.6;
     let acc = p.swim ? 0.3 : p.grounded ? 0.55 : 0.38;
-    const want = (inp.right ? 1 : 0) - (inp.left ? 1 : 0);
+    const want = stunned ? 0 : (inp.right ? 1 : 0) - (inp.left ? 1 : 0);
     if (want !== 0 && p.grounded && Math.sign(p.vx) === -want && Math.abs(p.vx) > 1.4) {
       acc = 0.95; // skid
       if (frame % 3 === 0) spawnPart({ x: p.x + (want > 0 ? 0 : p.w), y: p.y + p.h, vx: -want * 1.2, vy: -0.6, g: 0.07, t: 16, c: '#c9bb9d', s: 2 });
     }
-    if (inp.left)  { p.vx = Math.max(p.vx - acc, -mx); p.face = -1; }
-    if (inp.right) { p.vx = Math.min(p.vx + acc, mx); p.face = 1; }
-    if (!inp.left && !inp.right) p.vx *= p.grounded ? 0.72 : 0.94;
+    if (want < 0) { p.vx = Math.max(p.vx - acc, -mx); p.face = -1; }
+    if (want > 0) { p.vx = Math.min(p.vx + acc, mx); p.face = 1; }
+    if (want === 0) p.vx *= p.grounded ? 0.72 : 0.94;
 
     // scree slide (the boots gate)
     p.sliding = 0;
@@ -668,7 +830,7 @@ function physTick() {
     }
 
     // jump (from ground, coyote, or straight out of the water)
-    if (jumpEdge) p.jbuf = 8;
+    if (jumpEdge && !stunned) p.jbuf = 8;
     if (p.jbuf > 0 && (p.grounded || p.coyote > 0 || p.swim) && !(p.sliding && !G.gear.boots)) {
       p.vy = p.swim ? -5.6 : -8.4;
       // jumping off a hoist keeps its drift — the arc matches what you see
@@ -788,6 +950,20 @@ function physTick() {
             p.y + p.h <= top + 0.01 + p.vy + Math.abs(m.dy || 0) + 2 && ny + p.h >= top) {
           p.y = top - p.h; landIfFalling(); p.grounded = true; p.vy = 0;
           p.moverRef = m; landed = true; break;
+        }
+      }
+      // ...and the crumble slabs, which start their fuse on first contact
+      if (!landed) for (const c of CRUMBLE) {
+        if (c.regen > 0) continue;
+        const top = c.y * TILE;
+        if (p.x + p.w > c.x * TILE && p.x < (c.x + c.w) * TILE &&
+            p.y + p.h <= top + 0.01 + p.vy && ny + p.h >= top) {
+          p.y = top - p.h; landIfFalling(); p.grounded = true; p.vy = 0; landed = true;
+          if (c.fuse < 0) {
+            c.fuse = CRUMBLE_FUSE; sfx.crack(); vib(20);
+            if (!G.flags.crumbleMet) { G.flags.crumbleMet = true; toast(TX.toast_crumble); }
+          }
+          break;
         }
       }
       if (!landed) p.y = ny;
@@ -6028,6 +6204,8 @@ function step() {
   if (G.mode === 'play') {
     G.playMin += 1 / 3600;
     moversTick();
+    crumbleTick();
+    stonefallTick();
     physTick();
     findInteract();
     if (actEdge && nearInteract) doInteract(nearInteract);
@@ -6118,6 +6296,8 @@ function render() {
   for (const f of FLOWERS) drawFlower(f[0], f[1], f[2]);
   drawTiles();
   drawMovers();
+  drawCrumble();
+  drawStones();
   drawThermals();
   for (const e of ENTITIES) drawEntity(e);
   drawRings();
