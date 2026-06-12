@@ -210,6 +210,7 @@ const inp = {
 
 // touch buttons (screen-space, defined each frame in HUD draw)
 let BTNS = [];
+let mpos = { x: -1000, y: -1000 };
 const touches = new Map();
 // floating analog joystick (device px). `r` is the knob travel radius; it is
 // re-centred under the thumb on touchdown and springs back to rest on release.
@@ -300,6 +301,15 @@ cv.addEventListener('mousedown', e => {
   tapAt(e);
 });
 window.addEventListener('contextmenu', e => e.preventDefault());
+cv.addEventListener('mousemove', e => {
+  if (isTouch) return;
+  const rect = cv.getBoundingClientRect();
+  mpos.x = (e.clientX - rect.left) * (cv.width / rect.width);
+  mpos.y = (e.clientY - rect.top) * (cv.height / rect.height);
+});
+cv.addEventListener('mouseleave', () => {
+  mpos = { x: -1000, y: -1000 };
+});
 
 function tapAt(t) {
   // taps advance dialog / title / end screens even off-button
@@ -540,7 +550,9 @@ function updParts() {
   for (let i = parts.length - 1; i >= 0; i--) {
     const p = parts[i];
     p.x += p.vx; p.y += p.vy; p.vy += p.g || 0; p.t--;
-    if (p.t <= 0) parts.splice(i, 1);
+    if (p.t <= 0 || (p.bubble && tileAt(Math.floor(p.x / TILE), Math.floor(p.y / TILE)) !== 4)) {
+      parts.splice(i, 1);
+    }
   }
 }
 
@@ -1133,13 +1145,13 @@ function npcTick() {
   // Greta: mornings by the fire, gone at night, strolls with Strolch after the storm
   const g = NPCS.greta;
   if (ph >= 4) {
-    g.x = 100 + Math.sin(frame * 0.004) * 11;
+    g.x = 76 + Math.sin(frame * 0.004) * 11;
     if (g.prevX !== undefined) {
       const dx = g.x - g.prevX;
       if (Math.abs(dx) > 0.0001) g.face = dx > 0 ? 1 : -1;
     }
   } else {
-    const gretaBaseX = ph === 3 ? 73 : 74;
+    const gretaBaseX = ph === 3 ? 53 : 54;
     updateWander(g, gretaBaseX, 1.5, 0.02, 180, 450);
   }
 
@@ -1163,20 +1175,20 @@ function npcTick() {
   const n = NPCS.norbert;
   n.present = ph !== 3;
   if (n.present) {
-    const norbertBaseX = ph >= 5 ? 79 : ph === 4 ? 93 : 90;
+    const norbertBaseX = ph >= 5 ? 59 : ph === 4 ? 73 : 70;
     updateWander(n, norbertBaseX, 1.5, 0.018, 200, 500);
   }
 
   // the cow drifts, unbothered
   const cow = NPCS.cow;
   if (cow) {
-    updateWander(cow, 72, 4.5, 0.008, 400, 900);
+    updateWander(cow, 52, 4.5, 0.008, 400, 900);
   }
 
   // Vera: flight school
   const v = NPCS.vera;
   if (v) {
-    updateWander(v, 201, 2.0, 0.02, 220, 550);
+    updateWander(v, 177, 2.0, 0.02, 220, 550);
   }
 
   // Calculate final velocities (e.vx) for all NPCs to trigger step animations in drawEntity
@@ -1190,9 +1202,9 @@ function npcTick() {
 // ---- the Gams: appears near your next objective, bounds away when crowded --
 const gams = { x: 0, y: 0, stage: '', fleeT: 0, hidden: false, met: false, restSaid: false };
 function gamsSpot() {
-  if (G.flags.finale) return { x: 184, r: 9 + Y_OFF, stage: 'rest' };
-  if (!G.gear.boots) return player.x < 118 * TILE ? { x: 108, r: 70 + Y_OFF, stage: 'boots1' } : null;
-  if (!G.chestnutsDone) return { x: 108, r: 48 + Y_OFF, stage: 'alm' };
+  if (G.flags.finale) return { x: 160, r: 9 + Y_OFF, stage: 'rest' };
+  if (!G.gear.boots) return player.x < 94 * TILE ? { x: 84, r: 70 + Y_OFF, stage: 'boots1' } : null;
+  if (!G.chestnutsDone) return { x: 88, r: 48 + Y_OFF, stage: 'alm' };
   // once you're up at the Stellung, she waits at the base of the observer-post climb
   if (G.gear.jacket && !G.gear.lamp && player.y < (32 + Y_OFF) * TILE && player.x < 32 * TILE)
     return { x: 16, r: 28 + Y_OFF, stage: 'lamp2' };
@@ -1848,9 +1860,16 @@ function drawTiles() {
         cx.fillStyle = 'rgba(255,255,255,0.15)'; cx.fillRect(x, y, TILE, 1);
       } else if (t === 4) {
         const wob = Math.sin(frame * 0.08 + tx * 0.9) * 1.5;
-        cx.fillStyle = 'rgba(70,140,180,0.75)';
-        cx.fillRect(x, y + (tileAt(tx, ty - 1) === 4 ? 0 : 2 + wob * 0.5), TILE, TILE);
-        if (tileAt(tx, ty - 1) !== 4) { cx.fillStyle = 'rgba(220,245,255,0.6)'; cx.fillRect(x, y + 1 + wob * 0.5, TILE, 2); }
+        const grad = cx.createLinearGradient(0, y, 0, y + TILE);
+        if (tileAt(tx, ty - 1) !== 4) {
+          grad.addColorStop(0, '#3b82a6');
+          grad.addColorStop(1, '#2a6585');
+        } else {
+          grad.addColorStop(0, '#2a6585');
+          grad.addColorStop(1, '#1e4c66');
+        }
+        cx.fillStyle = grad;
+        cx.fillRect(x - SEAM, y + (tileAt(tx, ty - 1) === 4 ? -SEAM : 2 + wob * 0.5), TILE + SEAM * 2, TILE + SEAM * 2);
       } else if (t === 5) {
         // ferrata cable + rungs
         cx.strokeStyle = '#d8dde2'; cx.lineWidth = 2;
@@ -1863,6 +1882,58 @@ function drawTiles() {
           cx.beginPath(); cx.moveTo(bx, y + TILE); cx.quadraticCurveTo(bx + sway, y + 8, bx + sway, y + 3); cx.stroke();
           cx.fillStyle = '#6da34c'; cx.fillRect(bx + sway - 1.5, y + 2, 3, 3);
         }
+      }
+    }
+  }
+}
+
+function drawWaterOverlay() {
+  const SEAM = 0.5;
+  const x0 = Math.max(0, Math.floor(cam.x / TILE) - 1), x1 = Math.min(WORLD_W - 1, Math.ceil((cam.x + VW) / TILE) + 1);
+  const y0 = Math.max(0, Math.floor(cam.y / TILE) - 1), y1 = Math.min(WORLD_H - 1, Math.ceil((cam.y + VH) / TILE) + 1);
+  
+  for (let ty = y0; ty <= y1; ty++) {
+    for (let tx = x0; tx <= x1; tx++) {
+      const t = grid[ty * WORLD_W + tx];
+      if (t !== 4) continue;
+      
+      const x = tx * TILE - cam.x, y = ty * TILE - cam.y;
+      const wob = Math.sin(frame * 0.08 + tx * 0.9) * 1.5;
+      const hasWaterAbove = tileAt(tx, ty - 1) === 4;
+      
+      const grad = cx.createLinearGradient(0, y, 0, y + TILE);
+      if (!hasWaterAbove) {
+        grad.addColorStop(0, 'rgba(90, 175, 215, 0.35)');
+        grad.addColorStop(1, 'rgba(60, 140, 180, 0.45)');
+      } else {
+        grad.addColorStop(0, 'rgba(60, 140, 180, 0.45)');
+        grad.addColorStop(1, 'rgba(30, 95, 130, 0.55)');
+      }
+      
+      cx.fillStyle = grad;
+      cx.fillRect(x - SEAM, y + (hasWaterAbove ? -SEAM : 2 + wob * 0.5), TILE + SEAM * 2, TILE + SEAM * 2);
+      
+      if (!hasWaterAbove) {
+        const surfY = y + 2 + wob * 0.5;
+        
+        // Dynamic double wave foam rendering
+        cx.fillStyle = 'rgba(215, 245, 255, 0.65)';
+        cx.fillRect(x, surfY, TILE, 2);
+        
+        const wob2 = Math.sin(frame * 0.05 + tx * 1.3) * 1.0;
+        cx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+        cx.lineWidth = 1;
+        cx.beginPath();
+        cx.moveTo(x, surfY + 1.2 + wob2 * 0.5);
+        cx.lineTo(x + TILE, surfY + 1.2 + wob2 * 0.5);
+        cx.stroke();
+      }
+      
+      // Specular reflections/shimmer lines inside the body
+      if ((tx + ty) % 3 === 0) {
+        const shimmerX = Math.sin(frame * 0.02 + ty * 0.5) * 3;
+        cx.fillStyle = 'rgba(255, 255, 255, 0.04)';
+        cx.fillRect(x + 2 + shimmerX, y + TILE / 2, TILE - 4, 1.5);
       }
     }
   }
@@ -1897,19 +1968,214 @@ function drawTree(x, fr, kind, s) {
   const bx = x * TILE + 8 - cam.x, by = fr * TILE - cam.y;
   if (bx < -60 || bx > VW + 60) return;
   const H = 70 * s;
-  cx.strokeStyle = '#6b4a2c'; cx.lineWidth = 3 * s;
-  cx.beginPath(); cx.moveTo(bx, by); cx.lineTo(bx, by - H); cx.stroke();
+
+  // Helper for quadratic bezier points
+  const getQuadPoint = (p0x, p0y, p1x, p1y, p2x, p2y, t) => {
+    const mt = 1 - t;
+    return {
+      x: mt * mt * p0x + 2 * mt * t * p1x + t * t * p2x,
+      y: mt * mt * p0y + 2 * mt * t * p1y + t * t * p2y
+    };
+  };
+
+  // 1. Calculate Trunk Points (Tapered & Flared base)
+  const steps = 6;
+  const trunkPoints = [];
+  const baseW = 5.5 * s;
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    const currH = H * t;
+    // Larches have a slight organic bend
+    const tx = (kind === 0) ? bx + Math.sin(t * Math.PI * 1.25) * 2.5 * s + t * 2 * s : bx;
+    const ty = by - currH;
+    let tw = baseW * (1 - t * 0.76);
+    if (i === 0) tw = baseW * 1.55; // Root flare
+    else if (i === 1) tw = baseW * 1.15;
+    trunkPoints.push({ x: tx, y: ty, w: tw });
+  }
+
+  // 2. Draw Trunk (Light and shadow halves for 3D depth)
+  // Left half (light)
+  cx.beginPath();
+  for (let i = 0; i <= steps; i++) {
+    cx.lineTo(trunkPoints[i].x - trunkPoints[i].w / 2, trunkPoints[i].y);
+  }
+  for (let i = steps; i >= 0; i--) {
+    cx.lineTo(trunkPoints[i].x, trunkPoints[i].y);
+  }
+  cx.closePath();
+  cx.fillStyle = hexLerp('#6b4b32', '#1c130d', curPC.night);
+  cx.fill();
+
+  // Right half (shadow)
+  cx.beginPath();
+  for (let i = 0; i <= steps; i++) {
+    cx.lineTo(trunkPoints[i].x, trunkPoints[i].y);
+  }
+  for (let i = steps; i >= 0; i--) {
+    cx.lineTo(trunkPoints[i].x + trunkPoints[i].w / 2, trunkPoints[i].y);
+  }
+  cx.closePath();
+  cx.fillStyle = hexLerp('#442f1f', '#100c07', curPC.night);
+  cx.fill();
+
+  // Bark grooves (subtle texture, low contrast)
+  cx.strokeStyle = hexLerp('#523925', '#140e09', curPC.night);
+  cx.lineWidth = 0.6 * s;
+  cx.beginPath();
+  for (let i = 0; i <= steps; i++) {
+    const p = trunkPoints[i];
+    const gx = p.x - p.w * 0.15;
+    if (i === 0) cx.moveTo(gx, p.y);
+    else cx.lineTo(gx, p.y);
+  }
+  cx.stroke();
+
+  cx.beginPath();
+  for (let i = 0; i <= steps; i++) {
+    const p = trunkPoints[i];
+    const gx = p.x + p.w * 0.2;
+    if (i === 0) cx.moveTo(gx, p.y);
+    else cx.lineTo(gx, p.y);
+  }
+  cx.stroke();
+
+  // 3. Draw Foliage
   if (kind === 0) { // larch: feathery, golden-green
-    cx.fillStyle = hexLerp('#7fa05a', '#2c4434', curPC.night);
+    // Low-contrast foliage colors
+    const shadowCol = hexLerp('#5f8247', '#1b2a1a', curPC.night);
+    const mainCol = hexLerp('#7fa05a', '#223625', curPC.night);
+    const highCol = hexLerp('#99ba73', '#2b4733', curPC.night);
+
     for (let i = 0; i < 6; i++) {
-      const ly = by - H * (0.35 + i * 0.12), lw = (38 - i * 5) * s;
-      cx.beginPath(); cx.moveTo(bx - lw / 2, ly); cx.quadraticCurveTo(bx, ly - 9 * s, bx + lw / 2, ly); cx.quadraticCurveTo(bx, ly + 4 * s, bx - lw / 2, ly); cx.fill();
+      const t = 0.35 + i * 0.12;
+      const tx = bx + Math.sin(t * Math.PI * 1.25) * 2.5 * s + t * 2 * s;
+      const ly = by - H * t;
+      const lw = (39 - i * 5) * s;
+
+      // Draw branch structure
+      cx.strokeStyle = hexLerp('#4e3523', '#130d09', curPC.night);
+      cx.lineWidth = (2.0 - i * 0.2) * s;
+      cx.beginPath();
+      cx.moveTo(tx, ly);
+      cx.quadraticCurveTo(tx - lw * 0.3, ly + 6 * s, tx - lw / 2, ly - 3 * s);
+      cx.moveTo(tx, ly);
+      cx.quadraticCurveTo(tx + lw * 0.3, ly + 6 * s, tx + lw / 2, ly - 3 * s);
+      cx.stroke();
+
+      // Collect puff positions to draw them in cohesive layers (all shadows, then all mains, then all highlights)
+      const numPuffs = 3;
+      const positions = [];
+      positions.push({ x: tx, y: ly, r: 7.2 * s });
+
+      for (let k = 1; k <= numPuffs; k++) {
+        const pt = k / numPuffs;
+        const radius = (7.2 - pt * 3.4) * s;
+
+        const lp = getQuadPoint(tx, ly, tx - lw * 0.3, ly + 6 * s, tx - lw / 2, ly - 3 * s, pt);
+        positions.push({ x: lp.x, y: lp.y, r: radius });
+
+        const rp = getQuadPoint(tx, ly, tx + lw * 0.3, ly + 6 * s, tx + lw / 2, ly - 3 * s, pt);
+        positions.push({ x: rp.x, y: rp.y, r: radius });
+      }
+
+      // Draw shadow layer first
+      cx.fillStyle = shadowCol;
+      for (const pos of positions) {
+        cx.beginPath(); cx.arc(pos.x, pos.y + 0.7 * s, pos.r, 0, 7); cx.fill();
+      }
+
+      // Draw main layer
+      cx.fillStyle = mainCol;
+      for (const pos of positions) {
+        cx.beginPath(); cx.arc(pos.x, pos.y, pos.r, 0, 7); cx.fill();
+      }
+
+      // Draw highlight layer (subtly shifted, larger size ratio to blend better)
+      cx.fillStyle = highCol;
+      for (const pos of positions) {
+        cx.beginPath(); cx.arc(pos.x - 0.4 * s, pos.y - 0.4 * s, pos.r * 0.88, 0, 7); cx.fill();
+      }
     }
-  } else { // spruce
-    cx.fillStyle = hexLerp('#39614a', '#1f3328', curPC.night);
-    for (let i = 0; i < 4; i++) {
-      const ly = by - H * (0.3 + i * 0.18), lw = (42 - i * 8) * s;
-      cx.beginPath(); cx.moveTo(bx - lw / 2, ly); cx.lineTo(bx, ly - 16 * s); cx.lineTo(bx + lw / 2, ly); cx.closePath(); cx.fill();
+  } else { // spruce: structured, tiered, deep forest green
+    // Low-contrast evergreen colors
+    const spShadowCol = hexLerp('#203f30', '#0a1510', curPC.night);
+    const spMainCol = hexLerp('#2b523c', '#102018', curPC.night);
+    const spHighCol = hexLerp('#38684d', '#162b20', curPC.night);
+
+    // Helper for drawing scalloped spruce tier path (shallower scallops)
+    const drawSpruceTierPath = (tx, ly, lw, topH) => {
+      cx.beginPath();
+      cx.moveTo(tx, ly - topH);
+      cx.quadraticCurveTo(tx - lw * 0.2, ly - topH * 0.4, tx - lw / 2, ly);
+      const numScallops = 6;
+      for (let j = 0; j < numScallops; j++) {
+        const xStart = tx - lw / 2 + (lw / numScallops) * j;
+        const xEnd = tx - lw / 2 + (lw / numScallops) * (j + 1);
+        const xMid = (xStart + xEnd) / 2;
+        // Shallower scallop depth (2.5 instead of 4)
+        const hangY = ly + 2.5 * s * (1 - Math.abs(xMid - tx) / (lw / 2));
+        cx.lineTo(xMid, hangY);
+        cx.lineTo(xEnd, ly);
+      }
+      cx.quadraticCurveTo(tx + lw * 0.2, ly - topH * 0.4, tx, ly - topH);
+      cx.closePath();
+    };
+
+    // Helper for drawing a hanging pinecone
+    const drawPinecone = (px, py) => {
+      const pcW = 3 * s, pcH = 6.5 * s;
+      const coneCol = hexLerp('#734829', '#1d120a', curPC.night);
+      const coneColD = hexLerp('#52321c', '#140c06', curPC.night);
+      cx.fillStyle = coneCol;
+      cx.beginPath(); cx.ellipse(px, py + pcH / 2, pcW / 2, pcH / 2, 0, 0, 7); cx.fill();
+      cx.fillStyle = coneColD;
+      cx.beginPath(); cx.ellipse(px, py + pcH / 2, pcW / 2, pcH / 2, 0, 0, Math.PI); cx.fill();
+      cx.strokeStyle = hexLerp('#442f1f', '#100b07', curPC.night);
+      cx.lineWidth = 0.8 * s;
+      cx.beginPath(); cx.moveTo(px, py); cx.lineTo(px, py - 2 * s); cx.stroke();
+    };
+
+    for (let i = 0; i < 5; i++) {
+      const t = 0.24 + i * 0.16;
+      const tx = bx;
+      const ly = by - H * t;
+      const lw = (45 - i * 7) * s;
+      const topH = 17 * s;
+
+      // Shadow tier (narrower offset)
+      cx.fillStyle = spShadowCol;
+      drawSpruceTierPath(tx, ly + 1 * s, lw + 1 * s, topH);
+      cx.fill();
+
+      // Main tier
+      cx.fillStyle = spMainCol;
+      drawSpruceTierPath(tx, ly, lw, topH);
+      cx.fill();
+
+      // Highlight tier (shifted less for softer contrast)
+      cx.fillStyle = spHighCol;
+      drawSpruceTierPath(tx - 0.4 * s, ly - 0.6 * s, lw * 0.92, topH * 0.9);
+      cx.fill();
+
+      // Needle texturing lines (very soft, lower weight)
+      cx.strokeStyle = hexLerp('#1c3b2b', '#0a1410', curPC.night);
+      cx.lineWidth = 0.5 * s;
+      cx.beginPath();
+      const numScallops = 6;
+      for (let j = 0; j < numScallops; j++) {
+        const xMid = tx - lw / 2 + (lw / numScallops) * (j + 0.5);
+        const yMid = ly + 2.5 * s * (1 - Math.abs(xMid - tx) / (lw / 2));
+        cx.moveTo(tx + (xMid - tx) * 0.35, ly - topH * 0.35);
+        cx.lineTo(xMid, yMid);
+      }
+      cx.stroke();
+
+      // Hanging cones from lower tiers
+      if (i < 3) {
+        drawPinecone(tx - lw / 2 + 1 * s, ly + 1 * s);
+        drawPinecone(tx + lw / 2 - 1 * s, ly + 1 * s);
+      }
     }
   }
 }
@@ -2331,9 +2597,44 @@ function drawEntity(e) {
         cx.arc(bx1 + 5.7, by1 - 1.5, 0.6, 0, 7);
         cx.fill();
       } else if (e.gear === 'lamp') {
-        cx.fillStyle = '#4a4e55'; cx.fillRect(x - 5, gy - 4, 10, 8);
-        cx.fillStyle = '#ffe27a'; cx.beginPath(); cx.arc(x + 3, gy, 3, 0, 7); cx.fill();
-        cx.fillStyle = 'rgba(255,226,122,0.3)'; cx.beginPath(); cx.arc(x + 3, gy, 7 + bob, 0, 7); cx.fill();
+        // Detailed woven headband strap (dark charcoal with a vibrant blue-cyan stripe)
+        cx.strokeStyle = '#2c2e33'; cx.lineWidth = 2.2;
+        cx.beginPath(); cx.ellipse(x, gy + 1, 9.5, 3.8, 0, 0, 2 * Math.PI); cx.stroke();
+        cx.strokeStyle = '#3498db'; cx.lineWidth = 0.8;
+        cx.beginPath(); cx.ellipse(x, gy + 1, 9.5, 3.8, 0, 0, 2 * Math.PI); cx.stroke();
+        
+        // Strap adjustment buckles on the left and right sides
+        cx.fillStyle = '#7f8c8d';
+        cx.fillRect(x - 8.5, gy - 0.5, 1.2, 3);
+        cx.fillRect(x + 7.3, gy - 0.5, 1.2, 3);
+
+        // Black mounting bracket behind the housing
+        cx.fillStyle = '#1e2022'; cx.fillRect(x - 6, gy - 3.5, 12, 7);
+
+        // Main lamp housing (slate-grey with rounded corners)
+        cx.fillStyle = '#4a4e55';
+        roundRect(x - 4.5, gy - 4.5, 9, 9, 1.5); cx.fill();
+        
+        // Red power button on top
+        cx.fillStyle = '#e74c3c'; cx.fillRect(x - 2, gy - 5.5, 4, 1.2);
+
+        // Chrome reflector/bezel on the front
+        cx.fillStyle = '#bdc3c7'; cx.beginPath(); cx.arc(x + 1.2, gy + 0.5, 3, 0, 7); cx.fill();
+
+        // Bright LED lens/bulb
+        cx.fillStyle = '#ffe27a'; cx.beginPath(); cx.arc(x + 1.2, gy + 0.5, 1.8, 0, 7); cx.fill();
+
+        // Pulsing yellow glow aura
+        cx.fillStyle = 'rgba(255,226,122,0.3)'; cx.beginPath(); cx.arc(x + 1.2, gy + 0.5, 6.5 + bob, 0, 7); cx.fill();
+
+        // Translucent headlight beam to the right (dynamic light rays)
+        cx.fillStyle = 'rgba(255,226,122,0.18)';
+        cx.beginPath();
+        cx.moveTo(x + 3.2, gy - 1.5);
+        cx.lineTo(x + 11.5, gy - 5);
+        cx.lineTo(x + 11.5, gy + 6);
+        cx.lineTo(x + 3.2, gy + 2.5);
+        cx.closePath(); cx.fill();
       } else if (e.gear === 'kit') {
         cx.strokeStyle = '#e07b30'; cx.lineWidth = 2.5;
         cx.beginPath(); cx.arc(x - 3, gy, 4, 0, 7); cx.stroke();
@@ -3112,6 +3413,11 @@ function drawPlayer() {
 
   // === HEADLAMP ===
   if (G.gear.lamp) {
+    // Tiny headband strap wrapping around the head/beanie
+    cx.fillStyle = '#2c2e33';
+    cx.fillRect(-4.5, -3 + hY, 7.5, 1);
+    
+    // Tiny lamp housing
     cx.fillStyle = '#4a4e55';
     cx.fillRect(3, -3.5 + hY, 3.5, 2.5);
     cx.fillStyle = '#3a3e45';
@@ -3313,6 +3619,11 @@ function drawIcon(name, x, y, s) {
   cx.lineCap = 'round'; cx.lineJoin = 'round';
   switch (name) {
     case 'fire': {
+      // Logs underneath (closer to the in-game campfire)
+      cx.fillStyle = '#5e4429';
+      cx.fillRect(-7, 5, 14, 3);
+      cx.fillRect(-5, 2.5, 10, 3);
+
       cx.fillStyle = '#ff9d2e';
       cx.beginPath(); cx.moveTo(-4, 7); cx.quadraticCurveTo(-7.5, 2, -3.5, -2);
       cx.quadraticCurveTo(-1, -4.5, 0.5, -8); cx.quadraticCurveTo(1, -3.5, 4, -0.5);
@@ -3383,11 +3694,49 @@ function drawIcon(name, x, y, s) {
       break;
     }
     case 'lamp': {
-      cx.fillStyle = '#2c2e33'; cx.fillRect(-8, -1.5, 16, 3);       // strap
-      cx.fillStyle = '#4a4e55'; cx.fillRect(-5, -4.5, 9, 9);
-      cx.fillStyle = '#ffe27a'; cx.beginPath(); cx.arc(1, 0, 3, 0, 7); cx.fill();
-      cx.fillStyle = 'rgba(255,226,122,0.45)';
-      cx.beginPath(); cx.moveTo(3.5, -2.5); cx.lineTo(8, -5.5); cx.lineTo(8, 5.5); cx.lineTo(3.5, 2.5); cx.closePath(); cx.fill();
+      // Woven headband strap (charcoal with vibrant blue accent stripe)
+      cx.fillStyle = '#2c2e33'; cx.fillRect(-8, -1.8, 16, 3.6);       // strap base
+      cx.fillStyle = '#3498db'; cx.fillRect(-8, -0.8, 16, 0.8);       // stripe accent
+      
+      // Strap adjustment buckles/sliders on the sides
+      cx.fillStyle = '#7f8c8d';
+      cx.fillRect(-6, -2.5, 1.5, 5);
+      cx.fillRect(4.5, -2.5, 1.5, 5);
+
+      // Black plastic mounting plate behind the housing
+      cx.fillStyle = '#1e2022'; cx.fillRect(-5.5, -4, 11, 8);
+
+      // Main headlight housing (slate-grey with rounded corners)
+      cx.fillStyle = '#4a4e55';
+      roundRect(-4.5, -4.5, 9, 9, 1.5); cx.fill();
+      
+      // Red power button on top
+      cx.fillStyle = '#e74c3c'; cx.fillRect(-2, -5.7, 4, 1.2);
+
+      // Chrome reflector/bezel on the front
+      cx.fillStyle = '#bdc3c7'; cx.beginPath(); cx.arc(1, 0.5, 3, 0, 7); cx.fill();
+
+      // Bright LED lens/bulb
+      cx.fillStyle = '#ffe27a'; cx.beginPath(); cx.arc(1, 0.5, 1.8, 0, 7); cx.fill();
+
+      // Detailed double-layered light beam/cone pointing forward
+      // Outer soft beam
+      cx.fillStyle = 'rgba(255,226,122,0.18)';
+      cx.beginPath();
+      cx.moveTo(3, -2);
+      cx.lineTo(8, -6.5);
+      cx.lineTo(8, 7.5);
+      cx.lineTo(3, 3);
+      cx.closePath(); cx.fill();
+      
+      // Core bright beam
+      cx.fillStyle = 'rgba(255,226,122,0.38)';
+      cx.beginPath();
+      cx.moveTo(3, -1);
+      cx.lineTo(7.5, -3.5);
+      cx.lineTo(7.5, 4.5);
+      cx.lineTo(3, 2);
+      cx.closePath(); cx.fill();
       break;
     }
     case 'kit': { // carabiner
@@ -3732,15 +4081,35 @@ function drawPortrait(who, x, y, s) {
 
       // Headlamp (if acquired)
       if (G.gear.lamp) {
+        // Headlamp strap wrapping around the beanie (charcoal with blue accent stripe)
+        cx.fillStyle = '#2c2e33';
+        cx.fillRect(-7.5, hy - 8, 12, 2.2);
+        cx.fillStyle = '#3498db';
+        cx.fillRect(-7.5, hy - 7.5, 12, 0.6);
+
+        // Main housing (slate-grey with black mounting bracket plate)
+        cx.fillStyle = '#1e2022';
+        cx.fillRect(3.8, hy - 8.5, 1, 3.8); // mounting bracket peeking out
         cx.fillStyle = '#4a4e55';
-        cx.fillRect(4.5, hy - 8.5, 5, 3.8);
-        cx.fillStyle = '#3a3e45';
-        cx.fillRect(4.5, hy - 8.5, 5, 1.2);
+        cx.fillRect(4.8, hy - 8.5, 4.5, 3.8); // main housing
+        
+        // Red power button on top
+        cx.fillStyle = '#e74c3c';
+        cx.fillRect(5.8, hy - 9.3, 2, 0.8);
+
+        // Chrome reflector/bezel on the front
+        cx.fillStyle = '#bdc3c7';
+        cx.beginPath(); cx.arc(7.6, hy - 6.6, 1.4, 0, 7); cx.fill();
+
+        // Bright LED lens/bulb
+        cx.fillStyle = '#ffe27a';
+        cx.beginPath(); cx.arc(7.6, hy - 6.6, 0.8, 0, 7); cx.fill();
+
         if (lampOn()) {
           cx.fillStyle = 'rgba(255,235,150,0.9)';
-          cx.beginPath(); cx.arc(7, hy - 6.6, 2.5, 0, 7); cx.fill();
+          cx.beginPath(); cx.arc(7.6, hy - 6.6, 2.5, 0, 7); cx.fill();
           cx.fillStyle = 'rgba(255,235,150,0.25)';
-          cx.beginPath(); cx.arc(7, hy - 6.6, 6, 0, 7); cx.fill();
+          cx.beginPath(); cx.arc(7.6, hy - 6.6, 6, 0, 7); cx.fill();
         }
       }
       break;
@@ -4278,64 +4647,196 @@ function drawDialog(W, H) {
   if (!cur) return;
   const journal = D.style === 'journal';
   const pk = journal ? null : portraitKey(cur[0]);
-  const bh = 96;
-  let bw = Math.min(W - 28, 680);
-  let bcx = W / 2, by = H - bh - (isTouch ? 96 : 18);
+  const bh = 118;
+  let bw = Math.min(W - 40, 720);
+  let bcx = W / 2, by = H - bh - (isTouch ? 96 : 24);
   if (isTouch) {
     // on touch the box shares the bottom strip with the joystick and action
     // buttons; when there is room between them, tuck it in there instead of
     // floating it above the controls
     const { left, right } = touchCtrls(W, H);
     if (right - left >= 290) {
-      bw = Math.min(680, right - left);
+      bw = Math.min(720, right - left);
       bcx = (left + right) / 2;
       by = H - bh - 16;
     }
   }
   const bx = bcx - bw / 2;
   if (journal) {
-    cx.fillStyle = 'rgba(238,228,198,0.96)'; roundRect(bx, by, bw, bh, 10); cx.fill();
-    cx.strokeStyle = 'rgba(122,90,57,0.5)'; cx.lineWidth = 1; cx.stroke();
-    // faded ruling, like an old notebook
-    cx.strokeStyle = 'rgba(122,90,57,0.12)';
-    for (let ly = by + 24; ly < by + bh - 10; ly += 17) { cx.beginPath(); cx.moveTo(bx + 12, ly); cx.lineTo(bx + bw - 12, ly); cx.stroke(); }
+    // Parchment paper gradient
+    const g = cx.createLinearGradient(bx, by, bx, by + bh);
+    g.addColorStop(0, '#f5ecd2');
+    g.addColorStop(1, '#e7dba4');
+    cx.fillStyle = g;
+    roundRect(bx, by, bw, bh, 10);
+    cx.fill();
+
+    // Hand-drawn sketchy outer border
+    cx.strokeStyle = 'rgba(90, 68, 44, 0.45)';
+    cx.lineWidth = 1.2;
+    roundRect(bx + 0.5, by + 0.5, bw - 1, bh - 1, 10);
+    cx.stroke();
+
+    // Inner sketched hairline border (slightly offset, hand-drawn look)
+    cx.strokeStyle = 'rgba(90, 68, 44, 0.2)';
+    cx.lineWidth = 0.6;
+    roundRect(bx + 2, by + 2, bw - 4, bh - 4, 8);
+    cx.stroke();
+
+    // Left dashed binding stitches
+    cx.strokeStyle = 'rgba(90, 68, 44, 0.25)';
+    cx.lineWidth = 1.2;
+    cx.setLineDash([3, 3]);
+    cx.beginPath();
+    cx.moveTo(bx + 14, by + 6);
+    cx.lineTo(bx + 14, by + bh - 6);
+    cx.stroke();
+    cx.setLineDash([]); // Reset dashed lines
+
+    // Vertical red margin rule
+    cx.strokeStyle = 'rgba(190, 70, 70, 0.22)';
+    cx.lineWidth = 1;
+    cx.beginPath();
+    cx.moveTo(bx + 42, by + 6);
+    cx.lineTo(bx + 42, by + bh - 6);
+    cx.stroke();
+
+    // Horizontal school ruled lines (spaced by 20px, matching text line height!)
+    cx.strokeStyle = 'rgba(85, 110, 150, 0.14)';
+    for (let ly = by + 34; ly < by + bh - 12; ly += 20) {
+      cx.beginPath();
+      cx.moveTo(bx + 43, ly);
+      cx.lineTo(bx + bw - 12, ly);
+      cx.stroke();
+    }
   } else {
-    panel(bx, by, bw, bh, 9);
+    // Rich gradient background for depth
+    const g = cx.createLinearGradient(bx, by, bx, by + bh);
+    g.addColorStop(0, 'rgba(20, 24, 40, 0.94)');
+    g.addColorStop(1, 'rgba(10, 12, 22, 0.98)');
+    cx.fillStyle = g;
+    roundRect(bx, by, bw, bh, 12);
+    cx.fill();
+
+    // Outer border (refined gold brass border)
+    cx.strokeStyle = UI_GOLD_DIM;
+    cx.lineWidth = 1;
+    roundRect(bx + 0.5, by + 0.5, bw - 1, bh - 1, 12);
+    cx.stroke();
+
+    // Inner glowing/translucent hairline highlight
+    cx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+    cx.lineWidth = 1;
+    roundRect(bx + 3.5, by + 3.5, bw - 7, bh - 7, 8.5);
+    cx.stroke();
+
+    // Ornamental brass corners with diamond dots
+    cx.strokeStyle = UI_GOLD;
+    cx.lineWidth = 1.5;
+    const c = 8; // length of corner ticks
+    for (const [sx, sy] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) {
+      const ax = sx > 0 ? bx + 3.5 : bx + bw - 3.5;
+      const ay_val = sy > 0 ? by + 3.5 : by + bh - 3.5;
+      cx.beginPath();
+      cx.moveTo(ax + sx * c, ay_val);
+      cx.lineTo(ax, ay_val);
+      cx.lineTo(ax, ay_val + sy * c);
+      cx.stroke();
+
+      // Tiny hand-crafted brass diamond dot rivet
+      cx.fillStyle = UI_GOLD;
+      cx.beginPath();
+      const dotX = ax + sx * 10, dotY = ay_val + sy * 10;
+      cx.moveTo(dotX, dotY - 2);
+      cx.lineTo(dotX + 2, dotY);
+      cx.lineTo(dotX, dotY + 2);
+      cx.lineTo(dotX - 2, dotY);
+      cx.closePath();
+      cx.fill();
+    }
   }
+
   let tx = bx + 18, ty2 = by + 23;
   if (pk) {
-    const ps = bh - 22, px0 = bx + 11, py0 = by + 11;
-    cx.fillStyle = '#10141f'; roundRect(px0, py0, ps, ps, 5); cx.fill();
+    const ps = bh - 24, px0 = bx + 12, py0 = by + 12;
+    cx.fillStyle = '#0d0f18'; roundRect(px0, py0, ps, ps, 6); cx.fill();
     drawPortrait(pk, px0 + ps / 2, py0 + ps / 2, ps - 4);
-    cx.strokeStyle = UI_GOLD_DIM; cx.lineWidth = 1; roundRect(px0 + 0.5, py0 + 0.5, ps - 1, ps - 1, 5); cx.stroke();
-    tx = px0 + ps + 14;
+    cx.strokeStyle = UI_GOLD_DIM; cx.lineWidth = 1; roundRect(px0 + 0.5, py0 + 0.5, ps - 1, ps - 1, 6); cx.stroke();
+    tx = px0 + ps + 18;
+    ty2 = by + 28;
+  } else {
+    tx = journal ? bx + 48 : bx + 24;
+    ty2 = journal ? by + 29 : by + 28;
   }
+
   if (cur[0]) {
-    setTracking(1.5);
-    cx.fillStyle = journal ? '#7a5a39' : UI_GOLD; cx.font = 'bold 14px Georgia, serif'; cx.textAlign = 'left';
-    cx.fillText(cur[0].toUpperCase(), tx, ty2); ty2 += 20;
+    setTracking(1.8);
+    cx.fillStyle = journal ? '#5a3f25' : '#ffd57d';
+    cx.font = 'bold 13.5px "Lora", Georgia, serif';
+    cx.textAlign = 'left';
+    cx.fillText(cur[0].toUpperCase(), tx, ty2);
+    ty2 += journal ? 21 : 22;
     setTracking(0);
   }
-  cx.fillStyle = journal ? '#4a3c28' : UI_CREAM;
-  cx.font = journal ? 'italic 13px Georgia, serif' : '13.5px Georgia, serif';
+
+  cx.fillStyle = journal ? '#2c1e12' : UI_CREAM;
+  cx.font = journal ? 'italic 17px "Caveat", "Kalam", Georgia, serif' : '14.5px "Lora", Georgia, serif';
   cx.textAlign = 'left';
-  wrapText(cur[1].slice(0, Math.floor(D.chars)), tx, ty2, bx + bw - 24 - tx, 17);
+  wrapText(cur[1].slice(0, Math.floor(D.chars)), tx, ty2, bx + bw - 24 - tx, journal ? 20 : 21);
+
   // once the line has finished typing: bobbing arrow + continue prompt
   if (D.chars >= cur[1].length) {
     const dim = journal ? 'rgba(90,74,53,0.75)' : 'rgba(243,236,210,0.7)';
-    cx.fillStyle = journal ? '#7a5a39' : UI_GOLD; cx.font = '11px Georgia, serif'; cx.textAlign = 'center';
-    cx.fillText('▼', bx + bw / 2, by + bh - 9 + Math.sin(frame * 0.12) * 1.5);
-    setTracking(1);
-    cx.font = '10.5px Georgia, serif'; cx.textAlign = 'right';
+    // Bouncing chevron instead of unicode ▼
+    const arrowY = by + bh - 12 + Math.sin(frame * 0.12) * 2;
+    cx.strokeStyle = journal ? 'rgba(122, 90, 57, 0.8)' : UI_GOLD;
+    cx.lineWidth = 2;
+    cx.lineCap = 'round';
+    cx.lineJoin = 'round';
+    cx.beginPath();
+    cx.moveTo(bx + bw / 2 - 5, arrowY - 2);
+    cx.lineTo(bx + bw / 2, arrowY + 2);
+    cx.lineTo(bx + bw / 2 + 5, arrowY - 2);
+    cx.stroke();
+
+    setTracking(1.2);
+    cx.font = journal ? '11px "Caveat", "Kalam", Georgia, serif' : '10.5px "Lora", Georgia, serif';
+    cx.textAlign = 'right';
     const label = TX.dlg_next.toUpperCase();
     cx.fillStyle = dim;
-    cx.fillText(label, bx + bw - 16, by + bh - 13);
+    cx.fillText(label, bx + bw - 16, by + bh - 14);
+
     if (!isTouch) {
-      const kx = bx + bw - 16 - cx.measureText(label).width - 22;
-      cx.strokeStyle = journal ? 'rgba(122,90,57,0.6)' : UI_GOLD_DIM; cx.lineWidth = 1;
-      roundRect(kx, by + bh - 20.5, 15, 15, 3); cx.stroke();
-      cx.textAlign = 'center'; cx.font = 'bold 9.5px Georgia, serif';
-      cx.fillText('E', kx + 7.5, by + bh - 12.5);
+      const lw = cx.measureText(label).width;
+      const kx = bx + bw - 16 - lw - 24;
+      const ky_cap = by + bh - 22;
+      if (journal) {
+        cx.strokeStyle = 'rgba(122,90,57,0.7)';
+        cx.lineWidth = 1;
+        roundRect(kx + 0.5, ky_cap + 0.5, 15, 15, 3);
+        cx.stroke();
+      } else {
+        // 3D keycap effect
+        cx.fillStyle = 'rgba(20, 24, 40, 0.6)';
+        roundRect(kx, ky_cap, 16, 16, 3);
+        cx.fill();
+        cx.strokeStyle = UI_GOLD_DIM;
+        cx.lineWidth = 1;
+        roundRect(kx + 0.5, ky_cap + 0.5, 15, 15, 3);
+        cx.stroke();
+        // bottom/right shadow line
+        cx.strokeStyle = UI_GOLD;
+        cx.lineWidth = 1.2;
+        cx.beginPath();
+        cx.moveTo(kx + 2, ky_cap + 16);
+        cx.lineTo(kx + 16, ky_cap + 16);
+        cx.lineTo(kx + 16, ky_cap + 2);
+        cx.stroke();
+      }
+      cx.fillStyle = journal ? '#5a3f25' : UI_GOLD;
+      cx.textAlign = 'center';
+      cx.font = 'bold 9.5px "Lora", Georgia, serif';
+      cx.fillText('E', kx + 8, ky_cap + 11.5);
     }
     setTracking(0);
   }
@@ -4374,14 +4875,49 @@ function drawMapTree(tx, ty, tscale) {
   cx.save();
   cx.translate(tx, ty);
   cx.scale(tscale, tscale);
-  // Trunk
-  cx.fillStyle = '#5a4a35';
-  cx.fillRect(-0.8, 0, 1.6, 5);
-  // Foliage
-  cx.fillStyle = '#4c6e43';
-  cx.beginPath(); cx.moveTo(0, -6); cx.lineTo(-3.5, -1.5); cx.lineTo(3.5, -1.5); cx.closePath(); cx.fill();
-  cx.beginPath(); cx.moveTo(0, -9); cx.lineTo(-2.8, -4.5); cx.lineTo(2.8, -4.5); cx.closePath(); cx.fill();
-  cx.beginPath(); cx.moveTo(0, -11); cx.lineTo(-2, -7.5); cx.lineTo(2, -7.5); cx.closePath(); cx.fill();
+  
+  // Trunk (tapered and shaded)
+  cx.fillStyle = '#66533c'; // light trunk
+  cx.beginPath();
+  cx.moveTo(-1.2, 5); cx.lineTo(-0.4, 0); cx.lineTo(0, 0); cx.lineTo(0, 5);
+  cx.closePath(); cx.fill();
+  cx.fillStyle = '#473929'; // shadow trunk
+  cx.beginPath();
+  cx.moveTo(0, 5); cx.lineTo(0, 0); cx.lineTo(0.4, 0); cx.lineTo(1.2, 5);
+  cx.closePath(); cx.fill();
+
+  // Foliage Helper
+  const drawMapTier = (topY, bottomY, w) => {
+    // shadow layer
+    cx.fillStyle = '#2f4b26';
+    cx.beginPath();
+    cx.moveTo(0, topY);
+    cx.lineTo(-w - 0.5, bottomY + 0.5);
+    cx.lineTo(w + 0.5, bottomY + 0.5);
+    cx.closePath(); cx.fill();
+
+    // main layer
+    cx.fillStyle = '#4c6e43';
+    cx.beginPath();
+    cx.moveTo(0, topY);
+    cx.lineTo(-w, bottomY);
+    cx.lineTo(w, bottomY);
+    cx.closePath(); cx.fill();
+
+    // highlight layer
+    cx.fillStyle = '#719d67';
+    cx.beginPath();
+    cx.moveTo(-0.3, topY + 0.2);
+    cx.lineTo(-w + 0.4, bottomY - 0.4);
+    cx.lineTo(w - 0.8, bottomY - 0.4);
+    cx.closePath(); cx.fill();
+  };
+
+  // 3 overlapping detailed tiers
+  drawMapTier(-6, -1.5, 3.8);
+  drawMapTier(-9, -4.5, 3.0);
+  drawMapTier(-11.5, -7.5, 2.2);
+
   cx.restore();
 }
 
@@ -4684,9 +5220,6 @@ function drawMap() {
     } else if (z.id === 'camp') {
       // Tent
       drawMapTent(zx + zw * 0.72, zy + zh * 0.6, 0.8);
-      // Fires
-      drawIcon('fire', zx + zw * 0.3, zy + zh * 0.6, 9);
-      drawIcon('fire', zx + zw * 0.42, zy + zh * 0.6, 9);
       // Trees
       drawMapTree(zx + zw * 0.15, zy + zh * 0.7, 0.7);
       drawMapTree(zx + zw * 0.88, zy + zh * 0.75, 0.7);
@@ -4780,6 +5313,7 @@ function drawMap() {
 
   // Landmarks at fixed, modest size
   for (const id in FIRES) {
+    if (id === 'tent') continue;
     const f = FIRES[id];
     const fz = ZONES.find(z => f.x >= z.x && f.x < z.x + z.w && f.r - 1 >= z.y && f.r - 1 < z.y + z.h);
     if (fz && G.visited[fz.id]) drawIcon('fire', ox + f.x * sc, oy + (f.r - 1) * sc, 11);
@@ -5071,140 +5605,306 @@ function drawPhotoScene(n, ix, iy, iw, ih) {
 }
 
 // ------------------------------------------------------------ title / end --
-// dedicated title backdrop: dusk over the Gamstal — warm light in the saddle,
-// layered ridges, a winding trail, flowering meadow, chapel on the east hill
-function drawTitleBg(W, H) {
-  const hor = H * 0.62, mY = H * 0.74;
-  const sky = cx.createLinearGradient(0, 0, 0, hor);
-  sky.addColorStop(0, '#3b4765'); sky.addColorStop(0.5, '#76869f');
-  sky.addColorStop(0.82, '#d8a87e'); sky.addColorStop(1, '#f0cf9c');
-  cx.fillStyle = sky; cx.fillRect(0, 0, W, hor + 2);
-  // hazy valley floor receding into the light between far ridges and meadow
-  const haze = cx.createLinearGradient(0, hor - 8, 0, mY + 12);
-  haze.addColorStop(0, '#e7c79c'); haze.addColorStop(0.5, '#b6a892'); haze.addColorStop(1, '#6f7e5e');
-  cx.fillStyle = haze; cx.fillRect(0, hor - 8, W, mY - hor + 20);
-  // low sun glowing through the pass
-  const glow = cx.createRadialGradient(W * 0.5, hor * 0.99, 6, W * 0.5, hor * 0.99, W * 0.34);
-  glow.addColorStop(0, 'rgba(255,236,188,0.95)'); glow.addColorStop(0.5, 'rgba(255,224,168,0.4)'); glow.addColorStop(1, 'rgba(255,224,168,0)');
-  cx.fillStyle = glow; cx.fillRect(0, 0, W, mY);
-  // a few birds drifting home
-  cx.strokeStyle = 'rgba(42,50,74,0.6)'; cx.lineWidth = 1.2;
-  for (let i = 0; i < 5; i++) {
-    const bx = W * (0.3 + i * 0.1 + Math.sin(i * 7.3) * 0.04), by = H * (0.14 + Math.sin(i * 3.7) * 0.045), s = 3 + (i % 3);
-    cx.beginPath(); cx.moveTo(bx - s, by); cx.quadraticCurveTo(bx - s * 0.3, by - s * 0.9, bx, by);
-    cx.quadraticCurveTo(bx + s * 0.3, by - s * 0.9, bx + s, by); cx.stroke();
-  }
-  // ridge layers, far to near, with a saddle in the middle for the light
-  const ridge = (pts, color) => {
-    cx.fillStyle = color; cx.beginPath(); cx.moveTo(-4, hor + 4);
-    for (const [t, r] of pts) cx.lineTo(t * W, hor - r * H);
-    cx.lineTo(W + 4, hor + 4); cx.closePath(); cx.fill();
-  };
-  ridge([[0, 0.20], [0.1, 0.27], [0.2, 0.16], [0.3, 0.23], [0.42, 0.10], [0.5, 0.13], [0.6, 0.09], [0.72, 0.22], [0.84, 0.14], [0.95, 0.25], [1, 0.18]], '#93a2bd');
-  ridge([[0, 0.30], [0.12, 0.38], [0.24, 0.20], [0.34, 0.27], [0.45, 0.07], [0.5, 0.05], [0.56, 0.08], [0.68, 0.25], [0.8, 0.33], [0.92, 0.21], [1, 0.29]], '#647596');
-  ridge([[0, 0.16], [0.1, 0.21], [0.22, 0.08], [0.34, 0.02], [0.5, -0.01], [0.66, 0.02], [0.78, 0.09], [0.88, 0.13], [1, 0.10]], '#414f6e');
-  // meadow foreground
-  const mg = cx.createLinearGradient(0, mY - 20, 0, H);
-  mg.addColorStop(0, '#566041'); mg.addColorStop(1, '#2b3422');
-  cx.fillStyle = mg;
-  cx.beginPath(); cx.moveTo(-4, mY + 10);
-  cx.quadraticCurveTo(W * 0.3, mY - 18, W * 0.55, mY - 4);
-  cx.quadraticCurveTo(W * 0.8, mY + 8, W + 4, mY - 8);
-  cx.lineTo(W + 4, H + 4); cx.lineTo(-4, H + 4); cx.closePath(); cx.fill();
-  // the trail, switchbacking up toward the saddle
-  cx.strokeStyle = 'rgba(238,222,182,0.7)'; cx.lineCap = 'round';
-  cx.lineWidth = 13; cx.beginPath(); cx.moveTo(W * 0.45, H + 8); cx.quadraticCurveTo(W * 0.6, H * 0.92, W * 0.5, H * 0.85); cx.stroke();
-  cx.lineWidth = 7; cx.beginPath(); cx.moveTo(W * 0.5, H * 0.85); cx.quadraticCurveTo(W * 0.38, H * 0.79, W * 0.49, H * 0.74); cx.stroke();
-  cx.lineWidth = 3.5; cx.strokeStyle = 'rgba(238,222,182,0.55)';
-  cx.beginPath(); cx.moveTo(W * 0.49, H * 0.74); cx.quadraticCurveTo(W * 0.56, H * 0.69, W * 0.5, hor + 6); cx.stroke();
-  // chapel silhouette on the east shoulder
-  const chx = W * 0.84, chy = hor - H * 0.105;
-  cx.fillStyle = '#323d59';
-  cx.fillRect(chx - 8, chy - 8, 16, 8);
-  cx.beginPath(); cx.moveTo(chx - 10, chy - 8); cx.lineTo(chx, chy - 14); cx.lineTo(chx + 10, chy - 8); cx.closePath(); cx.fill();
-  cx.fillRect(chx + 4, chy - 20, 6, 12);
-  cx.beginPath(); cx.moveTo(chx + 3, chy - 20); cx.lineTo(chx + 7, chy - 27); cx.lineTo(chx + 11, chy - 20); cx.closePath(); cx.fill();
-  cx.strokeStyle = '#323d59'; cx.lineWidth = 1.2;
-  cx.beginPath(); cx.moveTo(chx + 7, chy - 27); cx.lineTo(chx + 7, chy - 31); cx.moveTo(chx + 5, chy - 29.5); cx.lineTo(chx + 9, chy - 29.5); cx.stroke();
-  // larches framing the meadow
-  cx.fillStyle = '#222d1d';
-  for (const [tx2, ts] of [[0.06, 1], [0.115, 0.7], [0.95, 0.85]]) {
-    const x0 = tx2 * W, yb = mY + 14, h2 = H * 0.16 * ts;
-    cx.fillRect(x0 - 1.5, yb - h2 * 0.25, 3, h2 * 0.3);
-    for (let k = 0; k < 3; k++) {
-      const w2 = (16 - k * 4) * ts, yk = yb - h2 * (0.22 + k * 0.26);
-      cx.beginPath(); cx.moveTo(x0 - w2, yk); cx.lineTo(x0, yk - h2 * 0.34); cx.lineTo(x0 + w2, yk); cx.closePath(); cx.fill();
+// helper to draw detailed trees on the title screen meadow
+function drawTitleTree(bx, by, kind, s, nightVal) {
+  const H = 70 * s;
+  cx.strokeStyle = '#6b4a2c'; cx.lineWidth = 3 * s;
+  cx.beginPath(); cx.moveTo(bx, by); cx.lineTo(bx, by - H); cx.stroke();
+  if (kind === 0) { // larch: feathery, golden-green
+    cx.fillStyle = hexLerp('#7fa05a', '#2c4434', nightVal);
+    for (let i = 0; i < 6; i++) {
+      const ly = by - H * (0.35 + i * 0.12), lw = (38 - i * 5) * s;
+      cx.beginPath(); cx.moveTo(bx - lw / 2, ly); cx.quadraticCurveTo(bx, ly - 9 * s, bx + lw / 2, ly); cx.quadraticCurveTo(bx, ly + 4 * s, bx - lw / 2, ly); cx.fill();
+    }
+  } else { // spruce
+    cx.fillStyle = hexLerp('#39614a', '#1f3328', nightVal);
+    for (let i = 0; i < 4; i++) {
+      const ly = by - H * (0.3 + i * 0.18), lw = (42 - i * 8) * s;
+      cx.beginPath(); cx.moveTo(bx - lw / 2, ly); cx.lineTo(bx, ly - 16 * s); cx.lineTo(bx + lw / 2, ly); cx.closePath(); cx.fill();
     }
   }
-  // flowers in the grass
-  const fcols = ['#e8e2cc', '#d9577a', '#ffd54f', '#9fc3e0'];
-  for (let i = 0; i < 26; i++) {
-    const fx = ((i * 0.79 + 0.13) % 1) * W, fy = mY + 18 + ((i * 0.37) % 1) * (H - mY - 26);
-    cx.strokeStyle = 'rgba(122,140,96,0.8)'; cx.lineWidth = 1;
-    cx.beginPath(); cx.moveTo(fx, fy + 4); cx.lineTo(fx, fy); cx.stroke();
-    cx.fillStyle = fcols[i % 4]; cx.beginPath(); cx.arc(fx, fy - 1, 1.6, 0, 7); cx.fill();
+}
+
+// helper to draw detailed flowers on the title screen meadow
+function drawTitleFlower(x, y, kind) {
+  cx.strokeStyle = '#557d3a'; cx.lineWidth = 1;
+  cx.beginPath(); cx.moveTo(x, y); cx.lineTo(x, y - 6); cx.stroke();
+  if (kind === 'rose') { cx.fillStyle = '#d9577a'; cx.beginPath(); cx.arc(x, y - 7, 3, 0, 7); cx.fill(); }
+  else if (kind === 'gent') { cx.fillStyle = '#2b5fb8'; cx.beginPath(); cx.arc(x, y - 7, 2.5, 0, 7); cx.fill(); }
+  else { // edelweiss
+    cx.fillStyle = '#f2f0e4';
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * Math.PI * 2;
+      cx.beginPath(); cx.ellipse(x + Math.cos(a) * 3, y - 7 + Math.sin(a) * 3, 2.5, 1.2, a, 0, 7); cx.fill();
+    }
+    cx.fillStyle = '#d9c75e'; cx.beginPath(); cx.arc(x, y - 7, 1.5, 0, 7); cx.fill();
   }
-  // resting boot and the summit book, bottom left
-  drawIcon('boots', W * 0.1, H * 0.88, Math.min(56, W * 0.12));
-  drawIcon('book', W * 0.19, H * 0.93, Math.min(40, W * 0.085));
-  // gentle vignette so the title and corner buttons read
-  const vg = cx.createLinearGradient(0, 0, 0, H * 0.3);
-  vg.addColorStop(0, 'rgba(18,22,38,0.4)'); vg.addColorStop(1, 'rgba(18,22,38,0)');
-  cx.fillStyle = vg; cx.fillRect(0, 0, W, H * 0.3);
+}
+
+// dynamic title backdrop using in-game peaks, church, conifer bands, and bg rock
+function drawTitleBg(W, H) {
+  // slowly pan camera on title screen
+  cam.x = 816 + Math.sin(frame * 0.001) * 80;
+  cam.y = 1030 + Math.cos(frame * 0.001) * 10;
+  
+  const pc = phaseColors();
+
+  // Draw in-game background under ZOOM scale
+  cx.save();
+  cx.setTransform(ZOOM, 0, 0, ZOOM, 0, 0);
+  
+  drawSky(pc);
+  
+  // Draw foreground meadow hill under ZOOM scale
+  const mY = VH * 0.72;
+  const mg = cx.createLinearGradient(0, mY - 10, 0, VH);
+  const grassCol0 = hexLerp('#5d9148', '#1b2a14', pc.night);
+  const grassCol1 = hexLerp('#2b3422', '#0a1007', pc.night);
+  mg.addColorStop(0, grassCol0);
+  mg.addColorStop(1, grassCol1);
+  cx.fillStyle = mg;
+  cx.beginPath();
+  cx.moveTo(-10, mY + 6);
+  cx.quadraticCurveTo(VW * 0.3, mY - 12, VW * 0.55, mY - 3);
+  cx.quadraticCurveTo(VW * 0.8, mY + 5, VW + 10, mY - 5);
+  cx.lineTo(VW + 10, VH + 10);
+  cx.lineTo(-10, VH + 10);
+  cx.closePath(); cx.fill();
+
+  // Draw swaying organic grass blades along the hill edge
+  cx.strokeStyle = grassCol0;
+  cx.lineWidth = 1.2;
+  cx.beginPath();
+  for (let x = 0; x < VW; x += 3.5) {
+    let y = mY - 3;
+    if (x < VW * 0.55) {
+      const t = x / (VW * 0.55);
+      y = (1-t)*(1-t)*(mY+6) + 2*(1-t)*t*(mY-12) + t*t*(mY-3);
+    } else {
+      const t = (x - VW * 0.55) / (VW * 0.45);
+      y = (1-t)*(1-t)*(mY-3) + 2*(1-t)*t*(mY+5) + t*t*(mY-5);
+    }
+    const sway = Math.sin(x + frame * 0.035) * 1.5;
+    cx.moveTo(x, y + 2);
+    cx.lineTo(x + sway, y - 1 - (x % 3));
+  }
+  cx.stroke();
+
+  // Draw hiking path winding up the hill
+  cx.save();
+  cx.globalAlpha = 0.75;
+  const pg = cx.createLinearGradient(0, mY, 0, VH);
+  pg.addColorStop(0, hexLerp('#ceb68f', '#463728', pc.night));
+  pg.addColorStop(1, hexLerp('#a68a67', '#322619', pc.night));
+  cx.fillStyle = pg;
+  cx.beginPath();
+  cx.moveTo(VW * 0.45, VH + 5);
+  cx.quadraticCurveTo(VW * 0.52, VH - 20, VW * 0.49, VH - 32);
+  cx.lineTo(VW * 0.51, VH - 32);
+  cx.quadraticCurveTo(VW * 0.54, VH - 20, VW * 0.48, VH + 5);
+  cx.closePath(); cx.fill();
+  cx.restore();
+
+  // Draw detailed tree assets framing the meadow
+  drawTitleTree(VW * 0.08, mY + 6, 0, 0.85, pc.night); // Larch left
+  drawTitleTree(VW * 0.16, mY + 4, 1, 0.65, pc.night); // Spruce left
+  drawTitleTree(VW * 0.92, mY + 5, 1, 0.82, pc.night); // Spruce right
+  drawTitleTree(VW * 0.84, mY + 8, 0, 0.62, pc.night); // Larch right
+
+  // Draw flowers scattered in the grass
+  drawTitleFlower(VW * 0.32, mY + 8, 'edel');
+  drawTitleFlower(VW * 0.38, mY + 14, 'gent');
+  drawTitleFlower(VW * 0.62, mY + 10, 'rose');
+  drawTitleFlower(VW * 0.70, mY + 16, 'edel');
+
+  // Re-use detailed boot and book assets
+  drawIcon('boots', VW * 0.28, mY + 8, 24);
+  drawIcon('book', VW * 0.38, mY + 14, 18);
+
+  // Apply night shading/vignette overlay
+  if (pc.night > 0.01) {
+    cx.fillStyle = `rgba(12, 16, 34, ${pc.night * 0.42})`;
+    cx.fillRect(0, 0, VW, VH);
+  }
+
+  // Draw glowing fireflies at night
+  if (pc.night > 0.05) {
+    for (let i = 0; i < 6; i++) {
+      const fx = ((i * 127 + frame * 0.15) % (VW * 0.8)) + VW * 0.1;
+      const fy = mY - 10 - ((i * 93 + frame * 0.08) % 40) + Math.sin(frame * 0.04 + i) * 3.5;
+      
+      cx.fillStyle = `rgba(255, 230, 140, ${0.4 * pc.night * (0.6 + 0.4 * Math.sin(frame * 0.05 + i))})`;
+      cx.beginPath(); cx.arc(fx, fy, 1.4, 0, 7); cx.fill();
+      
+      const rg = cx.createRadialGradient(fx, fy, 0.2, fx, fy, 7);
+      rg.addColorStop(0, `rgba(255, 235, 170, ${0.2 * pc.night * (0.6 + 0.4 * Math.sin(frame * 0.05 + i))})`);
+      rg.addColorStop(1, 'rgba(255, 235, 170, 0)');
+      cx.fillStyle = rg; cx.fillRect(fx - 7, fy - 7, 14, 14);
+    }
+  }
+
+  // Draw rain overlay if active
+  if (pc.rain > 0.01) {
+    cx.strokeStyle = `rgba(174,194,224,${0.25 * pc.rain})`;
+    cx.lineWidth = 1.0;
+    cx.beginPath();
+    for (let i = 0; i < 20; i++) {
+      const rx = (i * 97 + frame * 3.5) % VW;
+      const ry = (i * 137 + frame * 5.5) % VH;
+      cx.moveTo(rx, ry); cx.lineTo(rx - 3, ry + 12);
+    }
+    cx.stroke();
+  }
+
+  cx.restore();
+
+  // Subtle top/bottom overlay vignette for reading elements
+  const vg = cx.createLinearGradient(0, 0, 0, H * 0.32);
+  vg.addColorStop(0, 'rgba(12,14,28,0.45)');
+  vg.addColorStop(1, 'rgba(12,14,28,0)');
+  cx.fillStyle = vg; cx.fillRect(0, 0, W, H * 0.32);
+
+  const vg2 = cx.createLinearGradient(0, H, 0, H * 0.72);
+  vg2.addColorStop(0, 'rgba(12,14,28,0.35)');
+  vg2.addColorStop(1, 'rgba(12,14,28,0)');
+  cx.fillStyle = vg2; cx.fillRect(0, H * 0.72, W, H * 0.28);
 }
 
 function drawTitle() {
+  // cycle day phase on the title screen every 15 seconds
+  if (frame > 0 && frame % 900 === 0) {
+    phasePrev = G.phase;
+    G.phase = (G.phase % 5) + 1;
+    phaseLerpT = 0;
+  }
+
   cx.save();
   cx.setTransform(DPR, 0, 0, DPR, 0, 0);
   const W = cv.width / DPR, H = cv.height / DPR;
   drawTitleBg(W, H);
+  
   cx.textAlign = 'center'; cx.textBaseline = 'middle';
+  
+  // Set pointer cursor on hover
+  const hoveredId = hitBtn(mpos);
+  cv.style.cursor = hoveredId ? 'pointer' : 'default';
+
   cx.save();
-  cx.shadowColor = 'rgba(20,22,36,0.55)'; cx.shadowBlur = 10; cx.shadowOffsetY = 2;
+  
+  // Title text gold gradient
+  const titleY = H * 0.27;
   setTracking(Math.min(6, W * 0.012));
-  cx.fillStyle = '#f3ecd2';
+  
+  const tg = cx.createLinearGradient(W / 2, titleY - 25, W / 2, titleY + 25);
+  tg.addColorStop(0, '#fefaf0');
+  tg.addColorStop(0.5, '#f3ecd2');
+  tg.addColorStop(1, '#d0bd92');
+  cx.fillStyle = tg;
   cx.font = `bold ${Math.min(50, W * 0.095)}px Georgia, serif`;
-  cx.fillText(TX.title, W / 2, H * 0.27);
+  cx.fillText(TX.title, W / 2, titleY);
+
   setTracking(0);
   cx.font = `italic ${Math.min(15, W * 0.033)}px Georgia, serif`;
-  cx.fillStyle = 'rgba(243,236,210,0.9)';
-  cx.fillText(TX.subtitle, W / 2, H * 0.27 + 32);
+  cx.fillStyle = 'rgba(243,236,210,0.95)';
+  cx.fillText(TX.subtitle, W / 2, titleY + 34);
   cx.restore();
+
   // thin rules flanking the subtitle
   const sw = Math.min(W * 0.8, cx.measureText(TX.subtitle).width);
-  cx.strokeStyle = 'rgba(243,236,210,0.45)'; cx.lineWidth = 1;
+  cx.strokeStyle = 'rgba(243,236,210,0.55)'; cx.lineWidth = 1;
   cx.beginPath();
-  cx.moveTo(W / 2 - sw / 2 - 44, H * 0.27 + 32); cx.lineTo(W / 2 - sw / 2 - 14, H * 0.27 + 32);
-  cx.moveTo(W / 2 + sw / 2 + 14, H * 0.27 + 32); cx.lineTo(W / 2 + sw / 2 + 44, H * 0.27 + 32);
+  cx.moveTo(W / 2 - sw / 2 - 44, titleY + 34); cx.lineTo(W / 2 - sw / 2 - 14, titleY + 34);
+  cx.moveTo(W / 2 + sw / 2 + 14, titleY + 34); cx.lineTo(W / 2 + sw / 2 + 44, titleY + 34);
   cx.stroke();
 
   // menu: one clear primary action, a quiet secondary, language as a text link
   BTNS = [];
   if (fsSupported) { addBtn('fs', W - 49, 60, 20, isFullscreen() ? 'i:shrink' : 'i:expand'); drawBtn(BTNS[0]); }
+  
   const bw2 = Math.min(270, W * 0.72);
+  let rowY = H * 0.52;
+  const menuCount = hasSave() ? 3 : 2;
+  const cardW = bw2 + 40;
+  const cardH = (menuCount * 50) + 20;
+  const cardX = W / 2 - cardW / 2;
+  const cardY = rowY - 30;
+  
+  // Glassmorphic panel for the menu
+  cx.save();
+  cx.fillStyle = 'rgba(18, 22, 38, 0.45)';
+  cx.strokeStyle = 'rgba(243, 236, 210, 0.18)';
+  cx.lineWidth = 1.2;
+  cx.shadowColor = 'rgba(10, 10, 18, 0.3)';
+  cx.shadowBlur = 10;
+  cx.shadowOffsetY = 4;
+  roundRect(cardX, cardY, cardW, cardH, 16);
+  cx.fill(); cx.stroke();
+  cx.restore();
+
   const prim = (id, label, y) => {
+    const isHovered = hoveredId === id;
     const x = W / 2 - bw2 / 2;
+    
+    cx.save();
+    if (isHovered) {
+      cx.translate(W / 2, y);
+      cx.scale(1.03, 1.03);
+      cx.translate(-W / 2, -y);
+      cx.shadowColor = 'rgba(240, 217, 162, 0.4)';
+      cx.shadowBlur = 8;
+      cx.shadowOffsetY = 0;
+    }
+    
     const pg = cx.createLinearGradient(0, y - 20, 0, y + 20);
-    pg.addColorStop(0, '#f0d9a2'); pg.addColorStop(1, '#d8ae6c');
+    if (isHovered) {
+      pg.addColorStop(0, '#fff0c7'); pg.addColorStop(1, '#e2bd7e');
+    } else {
+      pg.addColorStop(0, '#f0d9a2'); pg.addColorStop(1, '#d8ae6c');
+    }
+    
     cx.fillStyle = pg; roundRect(x, y - 20, bw2, 40, 12); cx.fill();
-    cx.strokeStyle = 'rgba(70,50,18,0.5)'; cx.lineWidth = 1; roundRect(x + 0.5, y - 19.5, bw2 - 1, 39, 12); cx.stroke();
+    cx.strokeStyle = isHovered ? 'rgba(90,70,30,0.8)' : 'rgba(70,50,18,0.5)';
+    cx.lineWidth = isHovered ? 1.5 : 1;
+    roundRect(x + 0.5, y - 19.5, bw2 - 1, 39, 12); cx.stroke();
+    
     cx.fillStyle = '#2a2210'; cx.font = 'bold 15px Georgia, serif'; cx.fillText(label, W / 2, y + 1);
+    cx.restore();
+    
     BTNS.push({ id, x: (W / 2) * DPR, y: y * DPR, w: bw2 * DPR, h: 44 * DPR, lr: 0 });
   };
+  
   const seco = (id, label, y) => {
-    cx.fillStyle = 'rgba(14,17,30,0.62)'; roundRect(W / 2 - bw2 / 2, y - 16, bw2, 32, 10); cx.fill();
-    cx.strokeStyle = 'rgba(243,236,210,0.38)'; cx.lineWidth = 1; cx.stroke();
-    cx.fillStyle = 'rgba(243,236,210,0.92)'; cx.font = '13.5px Georgia, serif'; cx.fillText(label, W / 2, y + 1);
+    const isHovered = hoveredId === id;
+    cx.save();
+    if (isHovered) {
+      cx.translate(W / 2, y);
+      cx.scale(1.03, 1.03);
+      cx.translate(-W / 2, -y);
+    }
+    
+    cx.fillStyle = isHovered ? 'rgba(28, 32, 54, 0.82)' : 'rgba(14,17,30,0.62)';
+    roundRect(W / 2 - bw2 / 2, y - 16, bw2, 32, 10); cx.fill();
+    cx.strokeStyle = isHovered ? 'rgba(243,236,210,0.72)' : 'rgba(243,236,210,0.38)';
+    cx.lineWidth = 1; cx.stroke();
+    
+    cx.fillStyle = isHovered ? '#ffffff' : 'rgba(243,236,210,0.92)';
+    cx.font = '13.5px Georgia, serif'; cx.fillText(label, W / 2, y + 1);
+    cx.restore();
+    
     BTNS.push({ id, x: (W / 2) * DPR, y: y * DPR, w: bw2 * DPR, h: 36 * DPR, lr: 0 });
   };
+
   const tert = (id, label, y) => {
-    cx.fillStyle = 'rgba(243,236,210,0.7)'; cx.font = '12.5px Georgia, serif'; cx.fillText(label, W / 2, y);
+    const isHovered = hoveredId === id;
+    cx.fillStyle = isHovered ? '#ffffff' : 'rgba(243,236,210,0.7)';
+    cx.font = '12.5px Georgia, serif'; cx.fillText(label, W / 2, y);
     const lw2 = cx.measureText(label).width;
-    cx.strokeStyle = 'rgba(243,236,210,0.3)'; cx.lineWidth = 1;
+    cx.strokeStyle = isHovered ? 'rgba(243,236,210,0.7)' : 'rgba(243,236,210,0.3)';
+    cx.lineWidth = 1;
     cx.beginPath(); cx.moveTo(W / 2 - lw2 / 2, y + 8); cx.lineTo(W / 2 + lw2 / 2, y + 8); cx.stroke();
     BTNS.push({ id, x: (W / 2) * DPR, y: y * DPR, w: (lw2 + 44) * DPR, h: 30 * DPR, lr: 0 });
   };
-  let rowY = H * 0.52;
+
   if (hasSave()) {
     prim('cont', TX.title_continue, rowY); rowY += 52;
     seco('new', TX.title_new, rowY); rowY += 42;
@@ -5238,6 +5938,9 @@ function drawTitle() {
       G.mode = 'play';
       caption([TX.continue_caption, G.objective], 200);
     } else {
+      G.phase = 1;
+      phasePrev = 1;
+      phaseLerpT = 1;
       G.mode = 'play';
       startIntro();
     }
@@ -5333,6 +6036,31 @@ function step() {
     npcTick();
     zoneTick();
     critterTick();
+
+    // Spawn ambient water bubbles rising from bottom of water bodies in view
+    if (frame % 12 === 0) {
+      const x0 = Math.max(0, Math.floor(cam.x / TILE)), x1 = Math.min(WORLD_W - 1, Math.ceil((cam.x + VW) / TILE));
+      const y0 = Math.max(0, Math.floor(cam.y / TILE)), y1 = Math.min(WORLD_H - 1, Math.ceil((cam.y + VH) / TILE));
+      for (let attempt = 0; attempt < 4; attempt++) {
+        const tx = Math.floor(x0 + Math.random() * (x1 - x0 + 1));
+        const ty = Math.floor(y0 + Math.random() * (y1 - y0 + 1));
+        if (grid[ty * WORLD_W + tx] === 4) {
+          const bx = tx * TILE + Math.random() * TILE;
+          const by = (ty + 1) * TILE - 2;
+          spawnPart({
+            x: bx,
+            y: by,
+            vx: (Math.random() - 0.5) * 0.1,
+            vy: -0.25 - Math.random() * 0.35,
+            t: 60 + Math.random() * 40,
+            c: 'rgba(230, 245, 255, 0.55)',
+            s: 1.5 + Math.random() * 1.5,
+            bubble: true
+          });
+          break;
+        }
+      }
+    }
   } else if (G.mode === 'dialog') {
     dialogTick();
   }
@@ -5396,6 +6124,7 @@ function render() {
   drawGams();
   drawCritters();
   drawPlayer();
+  drawWaterOverlay();
   drawWaterfall();
   drawLightShafts(pc);
   rainTick(pc);

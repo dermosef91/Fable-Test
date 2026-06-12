@@ -22,12 +22,12 @@ worse than missing ones. Routine work doesn't belong here.
 
 - Play locally: open `index.html` in a browser, or `npm run dev`
   (http-server on port 8080).
-- Tests: `npm test` / `node test/check-world.js` — ~280 headless
+- Tests: `npm test` (or `node test/check-world.js`) — ~280 headless
   world-geometry
   assertions (floor/headroom under every entity, gear gates sealed except
   the intended route, jump arcs reachable under the real physics).
   Run after **any** change to `world.js` and before every push.
-- `node test/smoke-render.js` — stubbed-DOM crash test that drives
+- `npm run smoke` (or `node test/smoke-render.js`) — stubbed-DOM crash test that drives
   title → play → dialog → map frames; run it after renderer changes.
 - **Geometry changes and their assertions land in the same commit.** If you
   move a ledge, update the ladder/hop lists in `check-world.js` too.
@@ -53,6 +53,8 @@ needed), drive with `page.keyboard` / `page.touchscreen` (use
 any scene via `page.evaluate(() => { G.gear = {...}; player.x = …; })`.
 Real keyboard presses can fall between frames in headless runs; the
 engine's `pend*` event queue exists for exactly that.
+
+- **Add screenshots/media** to the verification/walkthrough documentation (e.g. `walkthrough.md` or PR details) for all visual, layout, or level-design changes. Use the headless browser script or manual captures to show the before/after states where feasible.
 
 ## Deploy & collaboration
 
@@ -104,6 +106,8 @@ engine's `pend*` event queue exists for exactly that.
   Darkness is a *soft* gate (drains warmth, passable for the determined).
 - One-way drops and shortcut loops (chimney, Schartl, scree-run) are part
   of the metroidvania feel — add them when a new area would force a slog.
+- **No trapping drops/gaps:** Avoid creating deep gaps where the player can fall and get stuck. Any platforming section must have a maximum drop depth of ~4 tiles to the nearest exit/climbable platform, or have clear re-entry/escape routes (e.g. wooden planks/one-way steps, or walkable horizontal exit tunnels).
+
 - **Vector Asset Design Guidelines:** For structures (like the Alm hut redesign) and visual elements, favor high-quality hand-coded details over simple blocks:
   - *Dimensionality:* Add steep roofs, eaves/overhangs, and outline strokes (`cx.strokeStyle`) for structural depth.
   - *Texturing:* Use pattern line-work (e.g. horizontal plank lines, brick overlays, wood grains) rather than flat fills.

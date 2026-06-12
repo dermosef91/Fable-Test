@@ -7,7 +7,7 @@
 
 const TILE = 16;
 
-const WORLD_W = 264;   // x 0..191 the Gamstal · x 192.. the Hinteres Tal (glider country)
+const WORLD_W = 240;   // x 0..167 the Gamstal · x 168.. the Hinteres Tal (glider country)
 const WORLD_H = 90;    // Increased from 80 to 90 to prevent the artificial ceiling at the top
 const Y_OFF = 10;      // Shift offset to push level geometry down
 
@@ -24,50 +24,60 @@ function buildWorld() {
 
   // --- big landforms -----------------------------------------------------
   fill(0, 70, WORLD_W, 10, 1);   // valley floor
-  fill(32, 48, 79, 10, 1);       // Alm shelf (x32..110)
-  fill(2, 28, 109, 9, 1);        // upper band: Stellung terrace / tunnel floor / Hochband (x2..110)
+  fill(32, 48, 55, 10, 1);       // Alm shelf (x32..86)
+  fill(2, 28, 85, 9, 1);         // upper band: Stellung terrace / tunnel floor / Hochband (x2..86)
   carve(4, 28, 7, 9);            // chimney through the band, above the gorge (x4..10)
   fill(10, 28, 1, 1, 1);         // landing lip at the chimney mouth
   carve(11, 33, 21, 4);          // headroom over the gorge slot — full jumps need sky
-  fill(28, 8, 45, 14, 1);        // tunnel ceiling massif (x28..72, passage stays open y22..27)
-  fill(96, 12, 15, 16, 1);       // headwall above the Hochband (x96..110)
+  fill(28, 8, 33, 14, 1);        // tunnel ceiling massif (x28..60, passage stays open y22..27)
+  fill(72, 12, 15, 16, 1);       // headwall above the Hochband (x72..86)
 
   // --- ridge path: a real climb to the peak --------------------------------
   // Platforms are THIN (3–4 tiles of rock) so sky shows between the crags.
   // Stage 1 — The Shoulder: flat entry from the ferrata, then first step up
-  fill(96, 12, 9, 7, 1);         // entry platform (x96..104, floor y12) — thick, bonds to headwall
-  fill(105, 10, 4, 4, 1);        // first step up (x105..108, y10..14) (top 10, bottom 14)
+  fill(72, 12, 9, 7, 1);         // entry platform (x72..80, floor y12) — thick, bonds to headwall
+  fill(81, 10, 4, 4, 1);         // first step up (x81..84, y10..14) (top 10, bottom 14)
 
   // Stage 2 — The Knife Edge: narrow ledges stepping sharply upward
-  fill(110, 8, 3, 6, 1);         // ledge (x110..112, y8..14)
-  fill(115, 6, 3, 8, 1);         // ledge (x115..117, y6..14)
-  fill(119, 4, 4, 10, 1);        // high point (x119..122, y4..14)
-  fill(126, 7, 3, 7, 1);         // deep saddle (x126..128, y7..14) — big drop!
+  fill(86, 8, 3, 6, 1);          // ledge (x86..88, y8..14)
+  fill(91, 6, 3, 8, 1);          // ledge (x91..93, y6..14)
+  fill(95, 4, 4, 10, 1);         // high point (x95..98, y4..14)
+  fill(102, 7, 3, 7, 1);         // deep saddle (x102..104, y7..14) — big drop!
 
   // Stage 3 — The Summit Block: dramatic peaks and valleys
-  fill(131, 5, 3, 9, 1);         // ledge (x131..133, y5..14)
-  fill(135, 3, 3, 11, 1);        // sub-peak (x135..137, y3..14) — first glimpse of the top
-  fill(140, 8, 4, 6, 1);         // deep saddle (x140..143, y8..14) — plunges back down!
-  fill(146, 4, 3, 10, 1);        // ledge (x146..148, y4..14)
-  fill(150, 2, 4, 12, 1);        // the pinnacle (x150..153, y2..14) — highest point on the ridge!
-  fill(157, 3, 9, 11, 1);        // summit plateau (x157..165, y3..14) — the Gipfel
+  fill(107, 5, 3, 9, 1);         // ledge (x107..109, y5..14)
+  fill(111, 3, 3, 11, 1);        // sub-peak (x111..113, y3..14) — first glimpse of the top
+  fill(116, 8, 4, 6, 1);         // deep saddle (x116..119, y8..14) — plunges back down!
+  fill(122, 4, 3, 10, 1);        // ledge (x122..124, y4..14)
+  fill(126, 2, 4, 12, 1);        // the pinnacle (x126..129, y2..14) — highest point on the ridge!
+  fill(133, 3, 9, 11, 1);        // summit plateau (x133..141, y3..14) — the Gipfel
 
   // Stage 4 — The East Ridge: descent toward the notch and the east end
-  fill(167, 5, 3, 3, 1);         // ledge (x167..169, y5..7)
-  fill(171, 7, 3, 3, 1);         // pre-notch ledge (x171..173, y7..9)
-  carve(172, 7, 2, 3);           // the notch — a clean drop into the pond far below
-  fill(176, 7, 3, 3, 1);         // post-notch ledge (x176..178, y7..9)
-  fill(181, 9, 4, 3, 1);         // ledge (x181..184, y9..11)
-  fill(186, 11, 4, 3, 1);        // final ledge (x186..189, y11..13)
+  fill(143, 5, 3, 3, 1);         // ledge (x143..145, y5..7)
+  fill(147, 7, 3, 3, 1);         // pre-notch ledge (x147..149, y7..9)
+  carve(148, 7, 2, 3);           // the notch — a clean drop into the pond far below
+  fill(152, 7, 3, 3, 1);         // post-notch ledge (x152..154, y7..9)
+  fill(157, 9, 4, 3, 1);         // ledge (x157..160, y9..11)
+  fill(162, 11, 4, 3, 1);        // final ledge (x162..165, y11..13)
 
   // Solid ground under the upper ridge. A missed jump lands here on the solid
   // ground — climb back onto the route at the re-entry ledge (the deep saddle).
-  fill(111, 14, 55, 22, 1);
-  fill(123, 11, 2, 1, 3);        // re-entry plank: solid ground -> deep saddle
+  fill(87, 14, 55, 22, 1);
+  fill(99, 11, 2, 1, 3);        // re-entry plank: solid ground -> deep saddle
 
-  // scree slope: valley (x152, y~70) climbing west to the Alm (x111, y48)
-  for (let x = 111; x <= 152; x++) {
-    const top = 48 + Math.round(((x - 111) * 22) / 42);
+  // Rock steps serving as escapes in the deep drops of the ridge path
+  fill(90, 11, 1, 3, 1);        // rock step in gap x90
+  fill(94, 9, 1, 5, 1);         // rock step in gap x94
+  fill(105, 10, 2, 4, 1);       // rock step in gap x105..106
+  fill(110, 8, 1, 6, 1);        // rock step in gap x110
+  fill(114, 11, 2, 3, 1);       // rock step in gap x114..115
+  fill(120, 11, 2, 3, 1);       // rock step in gap x120..121
+  fill(125, 7, 1, 7, 1);        // rock step in gap x125
+  fill(130, 6, 3, 8, 1);        // rock step in gap x130..132
+
+  // scree slope: valley (x128, y~70) climbing west to the Alm (x87, y48)
+  for (let x = 87; x <= 128; x++) {
+    const top = 48 + Math.round(((x - 87) * 22) / 41);
     fill(x, top, 1, Math.max(1, 70 - top), 1);
     fill(x, top, 1, 2, 2); // loose scree skin
   }
@@ -75,8 +85,8 @@ function buildWorld() {
   // opening onto a flat saddle terrace mid-slope — the boots-free way to the
   // east forest. The climb to the Alm continues above it: one deliberate jump
   // onto the scree slab at x128/129, which still demands proper boots.
-  for (let i = 0; i <= 8; i++) carve(111 + 2 * i, 67 - i, 2, 3);
-  carve(129, 58, 8, 3); // the saddle terrace (floor y61, slab roof at x129)
+  for (let i = 0; i <= 8; i++) carve(87 + 2 * i, 67 - i, 2, 3);
+  carve(105, 58, 8, 3); // the saddle terrace (floor y61, slab roof at x105)
 
   // --- gorge ledges (lower climb: valley -> Alm shelf) --------------------
   // even 3-tile risers all the way up
@@ -115,14 +125,14 @@ function buildWorld() {
   // (the ferrata set waits here — the cable below sends you looking)
   // Five airy hops up the east face: the set is earned, not found. Only the
   // first step is reachable from the Hochband floor — no skipping ahead.
-  carve(52, 13, 21, 6);    // east-facing nook, floor y19, tunnel roof stays 3 thick
-  fill(52, 15, 4, 4, 1);   // Ledge C (kit platform)
-  fill(58, 15, 2, 4, 1);   // Ledge B
-  fill(63, 17, 2, 2, 1);   // Ledge A
-  fill(78, 26, 2, 1, 1);   // 1. first step off the Hochband
-  fill(84, 23, 2, 1, 1);   // 2. a long rising leap toward the headwall
-  fill(81, 21, 1, 1, 1);   // 3. single-tile perch — precision
-  fill(75, 19, 2, 1, 3);   // 4. one-way plank at the nook's mouth
+  carve(40, 13, 21, 6);    // east-facing nook, floor y19, tunnel roof stays 3 thick
+  fill(40, 15, 4, 4, 1);   // Ledge C (kit platform)
+  fill(46, 15, 2, 4, 1);   // Ledge B
+  fill(51, 17, 2, 2, 1);   // Ledge A
+  fill(66, 26, 2, 1, 1);   // 1. first step off the Hochband
+  fill(72, 23, 2, 1, 1);   // 2. a long rising leap toward the headwall
+  fill(69, 21, 1, 1, 1);   // 3. single-tile perch — precision
+  fill(63, 19, 2, 1, 3);   // 4. one-way plank at the nook's mouth
 
   // --- tunnel furniture ----------------------------------------------------
   fill(34, 26, 3, 2, 1);   // low rubble pile near the west mouth — hop over
@@ -134,29 +144,29 @@ function buildWorld() {
 
   // --- water ---------------------------------------------------------------
   fill(23, 70, 11, 3, 4);  // plunge pool under the falls
-  fill(167, 70, 7, 3, 4);  // forest pond
-  fill(169, 69, 2, 1, 3);  // half-sunk log across the pond (one-way)
+  fill(143, 70, 7, 3, 4);  // forest pond
+  fill(145, 69, 2, 1, 3);  // half-sunk log across the pond (one-way)
 
   // --- odds and ends -------------------------------------------------------
-  fill(188, 69, 1, 1, 1);  // lone boulder, east end
-  fill(106, 69, 2, 1, 6);  // nettles in the larch shade
+  fill(164, 69, 1, 1, 1);  // lone boulder, east end
+  fill(82, 69, 2, 1, 6);   // nettles in the larch shade
   // via ferrata "Rosa": two pitches up the headwall. The two-row gap stops
   // the climb at the lower anchor — jump toward the wall to catch the upper
   // cable, or swing off LEFT onto the belay ledge to rest. The ledge sits
   // clear of the climb corridor (x94 must stay open, the body needs it).
-  fill(95, 21, 1, 7, 5);   // lower pitch (y21..27)
-  fill(91, 21, 3, 1, 1);   // belay ledge (x91..93)
-  fill(95, 12, 1, 7, 5);   // upper pitch (y12..18) — anchored at the ridge lip
+  fill(71, 21, 1, 7, 5);   // lower pitch (y21..27)
+  fill(67, 21, 3, 1, 1);   // belay ledge (x91..93)
+  fill(71, 12, 1, 7, 5);   // upper pitch (y12..18) — anchored at the ridge lip
   fill(0, 0, 2, WORLD_H, 1);            // west wall
 
   // --- Hinteres Tal (post-finale glider country, x192..) --------------------
-  fill(190, 0, 2, WORLD_H, 1);   // the massif's east face
-  carve(190, 5, 2, 7);           // the slip behind the Flugschule sign (y5..11)
-  fill(192, 12, 6, 1, 1);        // launch ledge / Startplatz
-  fill(193, 13, 1, 57, 5);       // fixed cable back up the face (for the way home)
-  fill(218, 68, 5, 2, 1);        // grassy knoll
-  fill(244, 66, 4, 4, 1);        // chapel knoll
-  fill(231, 70, 8, 3, 4);        // the lake (carved into valley floor)
+  fill(166, 0, 2, WORLD_H, 1);   // the massif's east face
+  carve(166, 5, 2, 7);           // the slip behind the Flugschule sign (y5..11)
+  fill(168, 12, 6, 1, 1);        // launch ledge / Startplatz
+  fill(169, 13, 1, 57, 5);       // fixed cable back up the face (for the way home)
+  fill(194, 68, 5, 2, 1);        // grassy knoll
+  fill(220, 66, 4, 4, 1);        // chapel knoll
+  fill(207, 70, 8, 3, 4);        // the lake (carved into valley floor)
   fill(WORLD_W - 2, 0, 2, WORLD_H, 1);  // east wall
 
   return g;
@@ -167,20 +177,20 @@ const WATERFALL = { x: 24, y: 29, w: 4, h: 41 }; // tiles
 
 // Thermal columns in the Hinteres Tal — warm air that lifts a glider.
 const THERMALS = [
-  { x: 207, y: 16, w: 4, h: 52 },
-  { x: 226, y: 14, w: 4, h: 54 },
-  { x: 246, y: 18, w: 4, h: 50 },
+  { x: 183, y: 16, w: 4, h: 52 },
+  { x: 202, y: 14, w: 4, h: 54 },
+  { x: 222, y: 18, w: 4, h: 50 },
 ];
 
 // The flying course: five rings hung in the air. [tileX, tileY of center]
-const RINGS = [[210, 36], [222, 24], [233, 46], [247, 30], [256, 55]];
+const RINGS = [[186, 36], [198, 24], [209, 46], [223, 30], [232, 55]];
 
 // Moving platforms — the hut's old material hoist still runs in the gorge,
 // and the summit-cross supply hoist bridges the saddle on the upper ridge.
 // Oscillates between (x,y) and (x2,y2); w tiles wide; period in frames.
 const MOVERS = [
   { x: 13, y: 40, x2: 18, y2: 40, w: 3, period: 300 },
-  { x: 138, y: 6, x2: 142, y2: 6, w: 3, period: 260 },
+  { x: 114, y: 6, x2: 118, y2: 6, w: 3, period: 260 },
   { x: 11, y: 17, x2: 14, y2: 17, w: 2, period: 220 },
 ];
 
@@ -190,21 +200,21 @@ const MOVERS = [
 // =========================================================================
 const ZONES = [
   { id: 'wache',    x: 2,   y: 2,  w: 26, h: 15, en: 'Observer Post',         de: 'Beobachterstand',       it: 'Posto di vedetta',      outdoor: true },
-  { id: 'depot',    x: 52,  y: 11, w: 22, h: 9,  en: 'The Depot',             de: 'Das Materialdepot',     it: 'Il deposito',           outdoor: true },
-  { id: 'start',    x: 188, y: 0,  w: 12, h: 14, en: 'Launch Site',           de: 'Startplatz',            it: 'Decollo',               outdoor: true },
-  { id: 'hintertal', x: 192, y: 0, w: 72, h: 80, en: 'The Hidden Valley',     de: 'Hinteres Tal',          it: 'Valle nascosta',        outdoor: true },
-  { id: 'gipfel',   x: 150, y: 0,  w: 24, h: 19, en: 'The Summit',            de: 'Gipfel',                it: 'Cima Gamsblick',        outdoor: true },
-  { id: 'grat',     x: 96,  y: 0,  w: 94, h: 19, en: 'Ridge Path',            de: 'Gratweg',               it: 'Via di cresta',         outdoor: true },
-  { id: 'ferrata',  x: 92,  y: 11, w: 6,  h: 18, en: 'Via Ferrata "Rosa"',    de: 'Klettersteig „Rosa“',   it: 'Via ferrata «Rosa»',    outdoor: true },
+  { id: 'depot',    x: 40,  y: 11, w: 22, h: 9,  en: 'The Depot',             de: 'Das Materialdepot',     it: 'Il deposito',           outdoor: true },
+  { id: 'start',    x: 164, y: 0,  w: 12, h: 14, en: 'Launch Site',           de: 'Startplatz',            it: 'Decollo',               outdoor: true },
+  { id: 'hintertal', x: 168, y: 0, w: 72, h: 80, en: 'The Hidden Valley',     de: 'Hinteres Tal',          it: 'Valle nascosta',        outdoor: true },
+  { id: 'gipfel',   x: 126, y: 0,  w: 24, h: 19, en: 'The Summit',            de: 'Gipfel',                it: 'Cima Gamsblick',        outdoor: true },
+  { id: 'grat',     x: 72,  y: 0,  w: 94, h: 19, en: 'Ridge Path',            de: 'Gratweg',               it: 'Via di cresta',         outdoor: true },
+  { id: 'ferrata',  x: 68,  y: 11, w: 6,  h: 18, en: 'Via Ferrata "Rosa"',    de: 'Klettersteig „Rosa“',   it: 'Via ferrata «Rosa»',    outdoor: true },
   { id: 'stellung', x: 2,   y: 17, w: 26, h: 20, en: 'Old Position 1916',     de: 'Alte Stellung 1916',    it: 'Vecchia postazione',    outdoor: true },
-  { id: 'stollen',  x: 27,  y: 17, w: 47, h: 13, en: 'The Tunnel',            de: 'Der Stollen',           it: 'La galleria',           dark: true, covered: true },
-  { id: 'hochband', x: 73,  y: 17, w: 23, h: 12, en: 'High-Ledge Bivouac',    de: 'Hochband-Biwak',        it: 'Cengia alta',           outdoor: true },
+  { id: 'stollen',  x: 27,  y: 17, w: 35, h: 13, en: 'The Tunnel',            de: 'Der Stollen',           it: 'La galleria',           dark: true, covered: true },
+  { id: 'hochband', x: 61,  y: 17, w: 11, h: 12, en: 'High-Ledge Bivouac',    de: 'Hochband-Biwak',        it: 'Cengia alta',           outdoor: true },
   { id: 'schlucht', x: 2,   y: 37, w: 31, h: 43, en: 'Waterfall Gorge',       de: 'Wasserfallschlucht',    it: 'Gola della cascata',    outdoor: true },
-  { id: 'alm',      x: 32,  y: 37, w: 79, h: 21, en: 'Gamsblick Alm',         de: 'Gamsblick-Alm',         it: 'Malga Gamsblick',       outdoor: true },
-  { id: 'galerie',  x: 97,  y: 56, w: 15, h: 24, en: 'Larch Shade',           de: 'Im Lärchenschatten',    it: "All'ombra dei larici",  covered: true },
-  { id: 'geroell',  x: 111, y: 38, w: 45, h: 34, en: 'The Scree Field',       de: 'Das Geröllfeld',        it: 'Il ghiaione',           outdoor: true },
-  { id: 'wald',     x: 156, y: 56, w: 36, h: 24, en: 'Larch Forest & Pond',   de: 'Lärchenwald & Teich',   it: 'Bosco e laghetto',      outdoor: true },
-  { id: 'camp',     x: 33,  y: 56, w: 64, h: 24, en: 'Campsite Gamsblick',    de: 'Campingplatz Gamsblick', it: 'Campeggio Gamsblick',  outdoor: true },
+  { id: 'alm',      x: 32,  y: 37, w: 55, h: 21, en: 'Gamsblick Alm',         de: 'Gamsblick-Alm',         it: 'Malga Gamsblick',       outdoor: true },
+  { id: 'galerie',  x: 73,  y: 56, w: 15, h: 24, en: 'Larch Shade',           de: 'Im Lärchenschatten',    it: "All'ombra dei larici",  covered: true },
+  { id: 'geroell',  x: 87,  y: 38, w: 45, h: 34, en: 'The Scree Field',       de: 'Das Geröllfeld',        it: 'Il ghiaione',           outdoor: true },
+  { id: 'wald',     x: 132, y: 56, w: 36, h: 24, en: 'Larch Forest & Pond',   de: 'Lärchenwald & Teich',   it: 'Bosco e laghetto',      outdoor: true },
+  { id: 'camp',     x: 33,  y: 56, w: 40, h: 24, en: 'Campsite Gamsblick',    de: 'Campingplatz Gamsblick', it: 'Campeggio Gamsblick',  outdoor: true },
 ];
 
 // =========================================================================
@@ -279,41 +289,41 @@ const PHASES = [
 // =========================================================================
 const ENTITIES = [
   // -- Campingplatz ---------------------------------------------------------
-  { t: 'spawn',    x: 61,  r: 70 },
-  { t: 'tent',     x: 57,  r: 70 },
-  { t: 'fire',     x: 64,  r: 70, id: 'camp', name: 'Lagerfeuer' },
-  { t: 'photo',    x: 66,  r: 70, n: 1 },
-  { t: 'sign',     x: 68,  r: 70, key: 'sign_camp' },
-  { t: 'npc',      x: 74,  r: 70, who: 'greta' },
-  { t: 'dog',      x: 76,  r: 70 },
+  { t: 'spawn',    x: 41,  r: 70 },
+  { t: 'tent',     x: 37,  r: 70 },
+  { t: 'fire',     x: 44,  r: 70, id: 'camp', name: 'Lagerfeuer' },
+  { t: 'photo',    x: 46,  r: 70, n: 1 },
+  { t: 'sign',     x: 48,  r: 70, key: 'sign_camp' },
+  { t: 'npc',      x: 54,  r: 70, who: 'greta' },
+  { t: 'dog',      x: 56,  r: 70 },
 
   // -- Lärchenschatten-Galerie ----------------------------------------------
-  { t: 'chestnut', x: 102, r: 70 },
-  { t: 'sign',     x: 109, r: 70, key: 'sign_schartl' },
-  { t: 'sign',     x: 134, r: 61, key: 'sign_sattel' },
+  { t: 'chestnut', x: 78,  r: 70 },
+  { t: 'sign',     x: 85,  r: 70, key: 'sign_schartl' },
+  { t: 'sign',     x: 110, r: 61, key: 'sign_sattel' },
 
   // -- Geröllfeld -------------------------------------------------------------
-  { t: 'marmot',   x: 140, r: 63 },
+  { t: 'marmot',   x: 116, r: 64 },
 
   // -- Lärchenwald & Teich ----------------------------------------------------
-  { t: 'shelter',  x: 160, r: 70 },
-  { t: 'photo',    x: 166, r: 70, n: 2 },
-  { t: 'gear',     x: 162, r: 70, gear: 'boots', key: 'get_boots' },
-  { t: 'chestnut', x: 178, r: 70 },
-  { t: 'tin',      x: 171, r: 73 },  // shaken loose from the silt by the Zinnensprung
-  { t: 'page',     x: 181, r: 70, n: 2 },
-  { t: 'marmot',   x: 185, r: 70 },
-  { t: 'page',     x: 188, r: 69, n: 0, hide: true }, // (slot kept free — page 2 sits on the path)
+  { t: 'shelter',  x: 136, r: 70 },
+  { t: 'photo',    x: 142, r: 70, n: 2 },
+  { t: 'gear',     x: 138, r: 70, gear: 'boots', key: 'get_boots' },
+  { t: 'chestnut', x: 154, r: 70 },
+  { t: 'tin',      x: 147, r: 73 },  // shaken loose from the silt by the Zinnensprung
+  { t: 'page',     x: 157, r: 70, n: 2 },
+  { t: 'marmot',   x: 161, r: 70 },
+  { t: 'page',     x: 164, r: 69, n: 0, hide: true }, // (slot kept free — page 2 sits on the path)
 
   // -- Gamsblick-Alm ----------------------------------------------------------
-  { t: 'sign',     x: 56,  r: 48, key: 'sign_almweg' },
-  { t: 'sign',     x: 64,  r: 48, key: 'sign_alm' },
-  { t: 'cow',      x: 72,  r: 48 },
-  { t: 'hut',      x: 84,  r: 48 },
-  { t: 'photo',    x: 81,  r: 48, n: 3 },
-  { t: 'npc',      x: 90,  r: 48, who: 'norbert' },
-  { t: 'fire',     x: 96,  r: 48, id: 'alm', name: 'Feuerstelle der Alm' },
-  { t: 'page',     x: 105, r: 48, n: 3 },
+  { t: 'sign',     x: 36,  r: 48, key: 'sign_almweg' },
+  { t: 'sign',     x: 44,  r: 48, key: 'sign_alm' },
+  { t: 'cow',      x: 52,  r: 48 },
+  { t: 'hut',      x: 64,  r: 48 },
+  { t: 'photo',    x: 61,  r: 48, n: 3 },
+  { t: 'npc',      x: 70,  r: 48, who: 'norbert' },
+  { t: 'fire',     x: 76,  r: 48, id: 'alm', name: 'Feuerstelle der Alm' },
+  { t: 'page',     x: 85,  r: 48, n: 3 },
 
   // -- Wasserfallschlucht -------------------------------------------------------
   { t: 'page',     x: 26,  r: 65, n: 4 }, // behind the falls
@@ -336,62 +346,62 @@ const ENTITIES = [
   { t: 'page',     x: 58,  r: 28, n: 6 },
 
   // -- Hochband ----------------------------------------------------------------------
-  { t: 'sign',     x: 75,  r: 28, key: 'sign_hochband' },
-  { t: 'plaque',   x: 81,  r: 28 },
-  { t: 'fire',     x: 87,  r: 28, id: 'biwak', name: 'Biwak am Hochband', biwak: true },
-  { t: 'marmot',   x: 92,  r: 28 },
+  { t: 'sign',     x: 63,  r: 28, key: 'sign_hochband' },
+  { t: 'plaque',   x: 65,  r: 28 },
+  { t: 'fire',     x: 62,  r: 28, id: 'biwak', name: 'Biwak am Hochband', biwak: true },
+  { t: 'marmot',   x: 70,  r: 28 },
 
   // -- Materialdepot -----------------------------------------------------------------
-  { t: 'gear',     x: 54,  r: 15, gear: 'kit', key: 'get_kit' },
-  { t: 'depot',    x: 70,  r: 19 },
+  { t: 'gear',     x: 42,  r: 15, gear: 'kit', key: 'get_kit' },
+  { t: 'depot',    x: 58,  r: 19 },
 
   // -- Grat & Gipfel ---------------------------------------------------------------------
-  { t: 'sign',     x: 100, r: 12, key: 'sign_grat' },
-  { t: 'marmot',   x: 120, r: 4 },
-  { t: 'sign',     x: 168, r: 5, key: 'sign_notch' },
-  { t: 'fence',    x: 171, r: 7 },
-  { t: 'fence',    x: 176, r: 7 },
-  { t: 'cross',    x: 161, r: 3 },
-  { t: 'book',     x: 159, r: 3 },
-  { t: 'photo',    x: 182, r: 9, n: 5 },
-  { t: 'bench',    x: 183, r: 9 },
-  { t: 'sign',     x: 186, r: 11, key: 'sign_flug' },
-  { t: 'gear',     x: 188, r: 11, gear: 'glider', key: 'flug_unlock' },
+  { t: 'sign',     x: 76,  r: 12, key: 'sign_grat' },
+  { t: 'marmot',   x: 96,  r: 4 },
+  { t: 'sign',     x: 144, r: 5, key: 'sign_notch' },
+  { t: 'fence',    x: 147, r: 7 },
+  { t: 'fence',    x: 152, r: 7 },
+  { t: 'cross',    x: 137, r: 3 },
+  { t: 'book',     x: 135, r: 3 },
+  { t: 'photo',    x: 158, r: 9, n: 5 },
+  { t: 'bench',    x: 159, r: 9 },
+  { t: 'sign',     x: 162, r: 11, key: 'sign_flug' },
+  { t: 'gear',     x: 164, r: 11, gear: 'glider', key: 'flug_unlock' },
 
   // -- Hinteres Tal ----------------------------------------------------------------------
-  { t: 'windsock', x: 196, r: 12 },
-  { t: 'npc',      x: 201, r: 70, who: 'vera' },
-  { t: 'fire',     x: 204, r: 70, id: 'flug', name: 'Feuerstelle der Flugschule' },
-  { t: 'windsock', x: 210, r: 70 },
-  { t: 'chapel',   x: 246, r: 66 },
-  { t: 'sign',     x: 256, r: 70, key: 'sign_talende' },
+  { t: 'windsock', x: 172, r: 12 },
+  { t: 'npc',      x: 177, r: 70, who: 'vera' },
+  { t: 'fire',     x: 180, r: 70, id: 'flug', name: 'Feuerstelle der Flugschule' },
+  { t: 'windsock', x: 186, r: 70 },
+  { t: 'chapel',   x: 222, r: 66 },
+  { t: 'sign',     x: 232, r: 70, key: 'sign_talende' },
 ];
 
 // page 1 lives inside the tent; page 7 inside the Gipfelbuch.
 
 const TREES = [
   // [x, floorRow, kind(0 larch,1 spruce), scale]
-  [54, 70, 0, 1.0], [80, 70, 0, 0.8], [93, 70, 1, 0.9],
-  [99, 70, 1, 0.7], [109, 70, 0, 0.7],
-  [156, 70, 0, 1.0], [164, 70, 1, 0.9], [176, 70, 0, 0.9], [184, 70, 0, 0.8],
-  [38, 48, 1, 0.7], [46, 48, 0, 0.8], [102, 48, 0, 1.1],
-  [62, 48, 0, 0.6],
-  [213, 70, 1, 0.9], [224, 70, 0, 1.0], [242, 70, 1, 0.8], [245, 66, 1, 0.6], [259, 70, 0, 0.9],
+  [34, 70, 0, 1.0], [60, 70, 0, 0.8], [73, 70, 1, 0.9],
+  [75, 70, 1, 0.7], [85, 70, 0, 0.7],
+  [132, 70, 0, 1.0], [140, 70, 1, 0.9], [152, 70, 0, 0.9], [160, 70, 0, 0.8],
+  [34, 48, 1, 0.7], [36, 48, 0, 0.8], [78, 48, 0, 1.1],
+  [42, 48, 0, 0.6],
+  [189, 70, 1, 0.9], [200, 70, 0, 1.0], [218, 70, 1, 0.8], [221, 66, 1, 0.6], [235, 70, 0, 0.9],
 ];
 
 const FLOWERS = [ // alpenrose & friends on the Alm, edelweiss up top
-  [66, 48, 'rose'], [78, 48, 'rose'], [100, 48, 'rose'], [108, 48, 'rose'],
-  [111, 8, 'gent'], [136, 4, 'gent'], [147, 5, 'gent'],
-  [161, 2, 'edel'], [158, 2, 'edel'],
-  [215, 70, 'gent'], [221, 68, 'rose'], [228, 70, 'gent'], [247, 66, 'gent'], [253, 70, 'rose'],
+  [46, 48, 'rose'], [58, 48, 'rose'], [76, 48, 'rose'], [84, 48, 'rose'],
+  [87, 8, 'gent'], [112, 4, 'gent'], [123, 5, 'gent'],
+  [137, 2, 'edel'], [134, 2, 'edel'],
+  [191, 70, 'gent'], [197, 68, 'rose'], [204, 70, 'gent'], [223, 66, 'gent'], [229, 70, 'rose'],
 ];
 
 // Background rock faces (drawn faded, behind the action — they sell the mountain)
 const BG_ROCK = [
-  { x: 96, y: 19, w: 94, h: 51 },             // the great south face under the ridge pillars
+  { x: 72, y: 19, w: 94, h: 51 },             // the great south face under the ridge pillars
   { x: 2,  y: 37, w: 31, h: 33 },             // gorge wall
   { x: 2,  y: 0,  w: 26, h: 28 },             // shoulder above the Stellung
-  { x: 27, y: 17, w: 47, h: 13, cave: true }, // backwall of the Stollen
+  { x: 27, y: 17, w: 35, h: 13, cave: true }, // backwall of the Stollen
 ];
 
 // =========================================================================
