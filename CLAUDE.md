@@ -206,6 +206,13 @@ engine's `pend*` event queue exists for exactly that.
   window carries momentum across the hops between staircase steps. It's pure
   physics (downhill is hardcoded east), so it needs no geometry/test changes
   — but any new scree must keep downhill = east or the run/gate breaks.
+- **Blankeis (hard ice, tile 7):** a glaze on a rock body — counts as `SOLID`,
+  drawn glassy in `drawTiles`, detected via `onIce`. Almost no friction
+  (`vx *= 0.985` idle) and sluggish accel (0.16), but you can dig the edges in
+  to brake (acc 0.30 when pressing opposite to motion); no gear gate — a skill
+  test, not a lock. Place only as small stances where a slip lands on
+  recoverable ground (the ridge saddles drop to the catch band). Mirror in
+  check-world (`solid()` must include 7; assert ice-on-rock + recoverable slip).
 - **NPC & Animal Rendering**: Characters and animals are drawn procedurally, supporting a horizontal facing direction (`face = 1` or `-1`) via context scaling: `cx.scale(face, 1)`. When in motion (i.e. horizontal velocity `vx` is non-zero), apply a sinusoidal leg/hoof walking swing offset (`swing = Math.sin(...) * scale`) to convey movement naturally.
 - **Organic Tile Rendering:** Solid tiles (rock, scree) use coordinate-seeded pseudo-random hashes `h(seed)` in `drawTiles()` to procedurally draw stable organic edge bumps, grassy humps/blades, and rounded corners, avoiding straight rectangular bounds.
 - **Saves:** bump `SAVE_KEY` only if the save shape breaks compatibility;

@@ -59,7 +59,7 @@ document.addEventListener('webkitfullscreenchange', onFsChange);
 // ----------------------------------------------------------------- world --
 const grid = buildWorld();
 const tileAt = (tx, ty) => (tx < 0 || tx >= WORLD_W || ty < 0 || ty >= WORLD_H) ? 1 : grid[ty * WORLD_W + tx];
-const SOLID = t => t === 1 || t === 2;
+const SOLID = t => t === 1 || t === 2 || t === 7;
 
 function zoneAt(px, py) {
   const tx = px / TILE, ty = py / TILE;
@@ -800,6 +800,7 @@ function physTick() {
   // ---- ground info
   const under = tilesUnder(p.x, p.y, p.w, p.h);
   const onScree = p.grounded && under.includes(2) && !under.includes(1) ? true : (p.grounded && under.includes(2) && under.every(t => t === 2 || t === 0));
+  const onIce = p.grounded && under.includes(7); // Blankeis: glassy, almost no grip
   const onOneway = under.includes(3);
 
   // a stonefall hit staggers: controls drop out for a moment
@@ -819,13 +820,18 @@ function physTick() {
     const mx = p.swim ? 1.4 : gliss ? GLISS_MAX : 2.6;
     let acc = p.swim ? 0.3 : p.grounded ? 0.55 : 0.38;
     const want = (stunned || gliss) ? 0 : (inp.right ? 1 : 0) - (inp.left ? 1 : 0);
-    if (want !== 0 && p.grounded && Math.sign(p.vx) === -want && Math.abs(p.vx) > 1.4) {
-      acc = 0.95; // skid
+    if (onIce && p.grounded && !p.swim) {
+      // Blankeis: slow to build speed, but you can dig the edges in to brake
+      const braking = want !== 0 && Math.sign(p.vx) === -want && Math.abs(p.vx) > 0.2;
+      acc = braking ? 0.30 : 0.16;
+    }
+    if (want !== 0 && p.grounded && !onIce && Math.sign(p.vx) === -want && Math.abs(p.vx) > 1.4) {
+      acc = 0.95; // skid (no biting edge on ice)
       if (frame % 3 === 0) spawnPart({ x: p.x + (want > 0 ? 0 : p.w), y: p.y + p.h, vx: -want * 1.2, vy: -0.6, g: 0.07, t: 16, c: '#c9bb9d', s: 2 });
     }
     if (want < 0) { p.vx = Math.max(p.vx - acc, -mx); p.face = -1; }
     if (want > 0) { p.vx = Math.min(p.vx + acc, mx); p.face = 1; }
-    if (want === 0 && !gliss) p.vx *= p.grounded ? 0.72 : 0.94;
+    if (want === 0 && !gliss) p.vx *= p.grounded ? (onIce ? 0.985 : 0.72) : 0.94; // ice barely slows you
 
     // scree surface: the boots gate, or — with boots + DOWN — the scree-run
     p.sliding = 0;
@@ -848,6 +854,12 @@ function physTick() {
       if (Math.random() < 0.3) spawnPart({ x: p.x + Math.random() * p.w, y: p.y + p.h, vx: 0.5 + Math.random(), vy: -0.5, g: 0.05, t: 25, c: '#b9a98c', s: 2 });
     } else if (onScree && G.gear.boots && Math.abs(p.vx) > 0.5 && Math.random() < 0.2) {
       spawnPart({ x: p.x + Math.random() * p.w, y: p.y + p.h, vx: -p.vx * 0.2, vy: -0.4, g: 0.04, t: 18, c: '#cfc1a5', s: 1.5 });
+    }
+    // Blankeis: a one-time warning, and ice crystals kicked up as you skate
+    if (onIce) {
+      if (!G.flags.iceMet) { G.flags.iceMet = true; toast(TX.toast_ice); }
+      if (Math.abs(p.vx) > 0.6 && Math.random() < 0.18)
+        spawnPart({ x: p.x + Math.random() * p.w, y: p.y + p.h, vx: -p.vx * 0.15, vy: -0.3, g: 0.03, t: 16, c: 'rgba(224,240,252,0.8)', s: 1.4 });
     }
 
     // jump (from ground, coyote, or straight out of the water)
@@ -2235,6 +2247,36 @@ function drawTiles() {
           cx.fillStyle = 'rgba(0,0,0,0.12)';
           cx.fillRect(x, y + TILE - 3, TILE, 3);
         }
+      } else if (t === 7) {
+        // Blankeis — hard glacier ice glazing the saddle: smooth, glassy, slick.
+        const up = tileAt(tx, ty - 1);
+        const upAir = !SOLID(up) && up !== 4;
+        const hashVal = Math.abs(Math.sin(tx * 12.9898 + ty * 78.233) * 43758.5453) % 1;
+        // cool rock base so the ice reads as a thin glaze bonded to the saddle
+        cx.fillStyle = hexLerp(ROCKC[bio], '#9fb6c4', 0.55);
+        cx.fillRect(x - SEAM, y - SEAM, TILE + SEAM * 2, TILE + SEAM * 2);
+        // glassy sheet with a vertical sheen
+        const ig = cx.createLinearGradient(0, y, 0, y + TILE);
+        ig.addColorStop(0, 'rgba(228,242,251,0.92)');
+        ig.addColorStop(0.5, 'rgba(184,212,231,0.80)');
+        ig.addColorStop(1, 'rgba(152,184,207,0.72)');
+        cx.fillStyle = ig;
+        cx.fillRect(x - SEAM, y - SEAM, TILE + SEAM * 2, TILE + SEAM * 2);
+        // world-stable facet cracks
+        cx.strokeStyle = 'rgba(116,148,170,0.45)'; cx.lineWidth = 0.7;
+        cx.beginPath();
+        cx.moveTo(x + hashVal * TILE, y);
+        cx.lineTo(x + ((hashVal * 1.7) % 1) * TILE, y + TILE);
+        cx.moveTo(x, y + ((hashVal * 2.3) % 1) * TILE);
+        cx.lineTo(x + TILE, y + ((hashVal * 3.1) % 1) * TILE);
+        cx.stroke();
+        // specular glints
+        cx.fillStyle = 'rgba(255,255,255,0.6)';
+        cx.fillRect(x + 2 + (tx % 4) * 2, y + 3 + (ty % 3) * 2, 3, 1.3);
+        cx.fillRect(x + 9 - (ty % 3), y + 8 + (tx % 2) * 2, 2, 1.1);
+        // a crisp bright rim along the exposed top edge
+        if (upAir) { cx.fillStyle = 'rgba(255,255,255,0.85)'; cx.fillRect(x - SEAM, y - SEAM, TILE + SEAM * 2, 1.6); }
+        if (!SOLID(tileAt(tx, ty + 1))) { cx.fillStyle = 'rgba(40,60,80,0.18)'; cx.fillRect(x, y + TILE - 3, TILE, 3); }
       } else if (t === 3) {
         cx.fillStyle = '#7a5a39'; cx.fillRect(x, y, TILE, 5);
         cx.fillStyle = '#5e4429'; cx.fillRect(x, y + 5, TILE, 2);

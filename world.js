@@ -2,7 +2,7 @@
    GIPFELBUCH — world data
    One handcrafted mountain in Südtirol, tile by tile.
    Tile codes: 0 air · 1 rock · 2 scree · 3 one-way plank · 4 water
-               5 ferrata cable · 6 nettles
+               5 ferrata cable · 6 nettles · 7 hard ice (Blankeis)
    ========================================================================= */
 
 const TILE = 16;
@@ -42,7 +42,9 @@ function buildWorld() {
   // (the x86..88 ledge is a crumbling shale slab — see CRUMBLE below)
   fill(91, 6, 3, 8, 1);          // ledge (x91..93, y6..14)
   fill(95, 4, 4, 10, 1);         // high point (x95..98, y4..14)
+  fill(95, 4, 4, 1, 7);          // Blankeis: the most exposed crest, glazed hard ice
   fill(102, 7, 3, 7, 1);         // deep saddle (x102..104, y7..14) — big drop!
+  fill(102, 7, 3, 1, 7);         // Blankeis: the saddle floor, slick — control your stop
 
   // Stage 3 — The Summit Block: dramatic peaks and valleys
   // (the x107..109 ledge is a crumbling shale slab — see CRUMBLE below)
@@ -711,6 +713,7 @@ const TX_DE = {
   // ---- system / toasts ----
   toast_slip: 'Du rutschst ab! Ohne feste Schuhe kein Halt im Geröll. · Si scivola!',
   toast_glissade: 'GERÖLLRUTSCH! Halte RUNTER, lehn dich rein — der Hang trägt dich. LINKS bremst. · Che discesa!',
+  toast_ice: 'BLANKEIS! Glashart und glatt — kaum Halt, langsam bremsen. · Ghiaccio vivo!',
   toast_fall_water: 'Ohne Jacke drückt dich der Wasserfall einfach hinunter.',
   toast_dark: 'Stockfinster. Ohne Licht traust du dich kaum einen Schritt.',
   toast_dark_turn: 'Zu dunkel. Du drehst um — ohne Lampe geht es hier nicht weiter.',
@@ -1045,6 +1048,7 @@ const TX_EN = {
 
   toast_slip: 'You slip! No grip on scree without proper boots.',
   toast_glissade: 'SCREE-RUN! Hold DOWN and lean in — the slope carries you. LEFT digs in to brake. · Che discesa!',
+  toast_ice: 'BLANKEIS! Glass-hard and slick — almost no grip, brake early. · Ghiaccio vivo!',
   toast_fall_water: 'Without a jacket, the waterfall simply hammers you down.',
   toast_dark: 'Pitch black. Without a light you hardly dare take a step.',
   toast_dark_turn: 'Too dark. You turn back — no going further without a lamp.',
