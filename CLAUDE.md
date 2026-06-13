@@ -194,6 +194,14 @@ engine's `pend*` event queue exists for exactly that.
   and plank havens; ledges inside a band intercept stones, so the exposed
   stances are the ledges themselves. Mirror both in check-world.js (open-air
   track, sky above, recoverable fall, band placement).
+- **Scree gate & scree-run:** scree (tile 2) without boots slides you
+  helplessly downhill (east) and blocks jumps — that's the boots gate, don't
+  weaken it. *With* boots, holding DOWN on scree engages the scree-run
+  (glissade): a fast, steerable controlled descent (`p.sliding === 2`,
+  capped at `GLISS_MAX`), LEFT digs in to a self-arrest. The `p.glissT`
+  window carries momentum across the hops between staircase steps. It's pure
+  physics (downhill is hardcoded east), so it needs no geometry/test changes
+  — but any new scree must keep downhill = east or the run/gate breaks.
 - **NPC & Animal Rendering**: Characters and animals are drawn procedurally, supporting a horizontal facing direction (`face = 1` or `-1`) via context scaling: `cx.scale(face, 1)`. When in motion (i.e. horizontal velocity `vx` is non-zero), apply a sinusoidal leg/hoof walking swing offset (`swing = Math.sin(...) * scale`) to convey movement naturally.
 - **Organic Tile Rendering:** Solid tiles (rock, scree) use coordinate-seeded pseudo-random hashes `h(seed)` in `drawTiles()` to procedurally draw stable organic edge bumps, grassy humps/blades, and rounded corners, avoiding straight rectangular bounds.
 - **Saves:** bump `SAVE_KEY` only if the save shape breaks compatibility;
