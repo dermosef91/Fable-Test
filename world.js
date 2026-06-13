@@ -710,6 +710,7 @@ const TX_DE = {
 
   // ---- system / toasts ----
   toast_slip: 'Du rutschst ab! Ohne feste Schuhe kein Halt im Geröll. · Si scivola!',
+  toast_glissade: 'GERÖLLRUTSCH! Halte RUNTER, lehn dich rein — der Hang trägt dich. LINKS bremst. · Che discesa!',
   toast_fall_water: 'Ohne Jacke drückt dich der Wasserfall einfach hinunter.',
   toast_dark: 'Stockfinster. Ohne Licht traust du dich kaum einen Schritt.',
   toast_dark_turn: 'Zu dunkel. Du drehst um — ohne Lampe geht es hier nicht weiter.',
@@ -1043,6 +1044,7 @@ const TX_EN = {
   ],
 
   toast_slip: 'You slip! No grip on scree without proper boots.',
+  toast_glissade: 'SCREE-RUN! Hold DOWN and lean in — the slope carries you. LEFT digs in to brake. · Che discesa!',
   toast_fall_water: 'Without a jacket, the waterfall simply hammers you down.',
   toast_dark: 'Pitch black. Without a light you hardly dare take a step.',
   toast_dark_turn: 'Too dark. You turn back — no going further without a lamp.',

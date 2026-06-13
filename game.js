@@ -115,7 +115,7 @@ const player = {
   face: 1, grounded: false, coyote: 0, jbuf: 0,
   climbing: false, swim: false, anim: 0, idle: 0,
   warmth: 100, maxWarmth: 100,
-  stumbleY: 0, sliding: 0, stunT: 0,
+  stumbleY: 0, sliding: 0, stunT: 0, glissT: 0,
 };
 
 const spawnE = ENTITIES.find(e => e.t === 'spawn');
@@ -742,6 +742,7 @@ function overlapTileWide(code, pad) {
 
 let slipToastCd = 0, darkToastCd = 0, coldToastCd = 0, fallToastCd = 0, cableToastCd = 0, gateToastCd = 0;
 let fallStartY = 0, wasGrounded = true;
+const GLISS_MAX = 4.6; // top scree-run speed (vs 2.6 walk): a real glissade
 
 function physTick() {
   const p = player;
@@ -806,21 +807,41 @@ function physTick() {
   if (stunned) p.stunT--;
 
   if (!p.climbing) {
+    // scree-run (glissade): with boots, hold DOWN to ride the scree downhill,
+    // fast and steerable; LEFT digs in to a self-arrest. The glissT window
+    // keeps the momentum across the little hops between the staircase steps.
+    // Without boots, DOWN still just slips you helplessly (the gate below).
+    const glissActive = onScree && G.gear.boots && inp.down && !stunned;
+    if (glissActive) p.glissT = 8; else if (p.glissT > 0) p.glissT--;
+    const gliss = (glissActive || p.glissT > 0) && G.gear.boots;
+
     // horizontal: quick on the ground, floatier in the air, snappy turns
-    const mx = p.swim ? 1.4 : 2.6;
+    const mx = p.swim ? 1.4 : gliss ? GLISS_MAX : 2.6;
     let acc = p.swim ? 0.3 : p.grounded ? 0.55 : 0.38;
-    const want = stunned ? 0 : (inp.right ? 1 : 0) - (inp.left ? 1 : 0);
+    const want = (stunned || gliss) ? 0 : (inp.right ? 1 : 0) - (inp.left ? 1 : 0);
     if (want !== 0 && p.grounded && Math.sign(p.vx) === -want && Math.abs(p.vx) > 1.4) {
       acc = 0.95; // skid
       if (frame % 3 === 0) spawnPart({ x: p.x + (want > 0 ? 0 : p.w), y: p.y + p.h, vx: -want * 1.2, vy: -0.6, g: 0.07, t: 16, c: '#c9bb9d', s: 2 });
     }
     if (want < 0) { p.vx = Math.max(p.vx - acc, -mx); p.face = -1; }
     if (want > 0) { p.vx = Math.min(p.vx + acc, mx); p.face = 1; }
-    if (want === 0) p.vx *= p.grounded ? 0.72 : 0.94;
+    if (want === 0 && !gliss) p.vx *= p.grounded ? 0.72 : 0.94;
 
-    // scree slide (the boots gate)
+    // scree surface: the boots gate, or — with boots + DOWN — the scree-run
     p.sliding = 0;
-    if (onScree && !G.gear.boots) {
+    if (gliss) {
+      const target = inp.left ? -0.6 : GLISS_MAX; // LEFT digs in: a self-arrest
+      p.vx += (target - p.vx) * 0.14;
+      if (p.vx > GLISS_MAX) p.vx = GLISS_MAX;
+      if (p.vx < -1) p.vx = -1;
+      p.sliding = 2;
+      p.face = p.vx < -0.05 ? -1 : 1;
+      if (p.grounded && Math.abs(p.vx) > 1.2) {
+        if (frame % 2 === 0) spawnPart({ x: p.x + (p.vx > 0 ? 0 : p.w), y: p.y + p.h, vx: -p.vx * 0.3 + (Math.random() - 0.5), vy: -0.5 - Math.random(), g: 0.06, t: 26, c: Math.random() < 0.5 ? '#cfc1a5' : '#b9a98c', s: 2 + Math.random() * 1.5 });
+        if (frame % 8 === 0) noiseBurst(0.07, 0.02, 700);
+      }
+      if (!G.flags.glissadeMet && p.vx > 2.8) { G.flags.glissadeMet = true; toast(TX.toast_glissade); }
+    } else if (onScree && !G.gear.boots) {
       p.vx = Math.min(p.vx + 0.55, 3.2); // downhill is east
       p.sliding = 1;
       if ((inp.left || jumpEdge) && slipToastCd <= 0) { toast(TX.toast_slip); sfx.slip(); slipToastCd = 160; }
@@ -3493,6 +3514,7 @@ function drawPlayer() {
   let sy = 1;
   if (p.landT > 0) sy = 1 - (p.landT / 9) * 0.16;
   else if (!p.grounded && !p.climbing && Math.abs(p.vy) > 5 && !p.gliding) sy = 1.08;
+  if (p.sliding === 2) sy = Math.min(sy, 0.84); // crouch low into the scree-run
   cx.scale((p.face === -1 ? -1 : 1) * (2 - sy), sy);
   cx.translate(0, -10);
 

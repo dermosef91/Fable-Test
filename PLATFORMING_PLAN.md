@@ -172,6 +172,33 @@ The doc was written against a stale checkout:
   reward placement, HUD slots, save fields and both text tables. Not worth it
   for one zone each.
 
+## 4b. Shipped: the scree-run (glissade) — making the Scree Field play like a place
+
+The Scree Field was flagged as the dullest stretch: with boots it was a flat
+diagonal *walk*. Rather than re-terrace the slope (which would destabilise the
+boots gate and three entangled tests — see below), the fix was a **new verb on
+the existing geometry**:
+
+- **With boots, hold DOWN on scree to scree-run** — a fast (`GLISS_MAX` 4.6 vs
+  2.6 walk), steerable controlled glissade downhill; LEFT digs in to a
+  self-arrest. `p.glissT` carries momentum across the staircase hops;
+  `p.sliding === 2` drives a crouch pose + dust + scree rumble.
+- **It inverts the boots meaning** (helpless slip → mastered descent) and turns
+  the chestnut-quest backtrack (Alm → pond) into a fun shortcut — the run
+  delivers you from Alm height straight down to the Larch Forest & Pond.
+- **Pure physics, zero geometry change**, so the boots gate and all geometry
+  assertions stayed green. Verified end-to-end in headless Chrome (10 checks):
+  exceeds walk speed, reaches the valley soft (no stumble), self-arrest brakes,
+  bootless players still can't enter it or climb the slope (gate holds), jump
+  exits cleanly.
+
+**Geometric switchbacks were deliberately deferred.** Terracing the diagonal
+would have to rewrite the core scree generator, the test-6 slope formula, the
+Schartl walk-sim (test 15), and reposition the saddle terrace / sign / marmot /
+flowers — all while preserving "downhill = east" (the slide gate hardcodes it).
+That's high risk for mostly cosmetic gain; the scree-run delivers the
+"engaging + varied" goal on its own. Revisit terracing only as its own change.
+
 ## 5. Sequencing
 
 One PR per mechanic, in this order (each independently shippable):
