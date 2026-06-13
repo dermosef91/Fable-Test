@@ -1851,57 +1851,62 @@ const GRASS = { ridge: '#9fae7e', high: '#8fa37a', alm: '#6fae57', valley: '#5d9
 const ROCKC = { ridge: '#b8b2a4', high: '#a8a094', alm: '#97907f', valley: '#8c8577' };
 
 // ----- baked procedural surface textures (no asset files; drawn once) -----
-// A 128×128 detail sheet is 8×8 tiles of organic grain. We blit a sub-tile per
+// A 512×512 detail sheet is 8×8 tiles of organic grain, supersampled at 4× (each
+// sub-tile is 64px of source for a 16px world tile). We blit a sub-tile per
 // terrain tile keyed to its world index, so detail is world-locked and never
 // swims with the camera, and the 8×8 spread means the base grain only repeats
-// every 8 tiles. Translucent over the biome fill, so the base colour shows
-// through; per-tile colour jitter + procedural decor (drawRockDecor) break up
-// whatever periodicity is left.
+// every 8 tiles. Blitted with smoothing ON (see drawTiles/texRect) so the world's
+// ZOOM upscale resamples the high-res grain cleanly instead of nearest-neighbour
+// magnifying a low-res sheet into blocks. Translucent over the biome fill; the
+// per-tile colour jitter + drawRockDecor break up whatever periodicity is left.
 let TEX = null;
 function ensureTex() {
   if (TEX) return TEX;
-  const SZ = 128;
+  const SS = 4, SUB = 16 * SS, SZ = SUB * 8;   // 64-px sub-tiles, 512² sheet
   const mk = paint => {
     const c = document.createElement('canvas'); c.width = SZ; c.height = SZ;
     paint(c.getContext('2d')); return c;
   };
   const R = Math.random;
   TEX = {
+    SUB,
     rock: mk(g => {
-      // broad soft blotches — large-scale tonal variation
-      for (let i = 0; i < 26; i++) {
-        const x = R() * SZ, y = R() * SZ, r = 4 + R() * 12;
+      // broad soft blotches — large-scale tonal variation (scaled with SS)
+      for (let i = 0; i < 100; i++) {
+        const x = R() * SZ, y = R() * SZ, r = (4 + R() * 12) * SS;
         g.fillStyle = R() < 0.5 ? `rgba(0,0,0,${0.03 + R() * 0.05})` : `rgba(255,255,255,${0.02 + R() * 0.04})`;
         g.beginPath(); g.ellipse(x, y, r, r * (0.55 + R() * 0.4), R() * 3, 0, 7); g.fill();
       }
-      g.strokeStyle = 'rgba(0,0,0,0.15)'; g.lineWidth = 1;            // cracks
-      for (let i = 0; i < 46; i++) {
+      g.lineWidth = 1.3;                                               // cracks
+      for (let i = 0; i < 360; i++) {
+        g.strokeStyle = `rgba(0,0,0,${0.1 + R() * 0.08})`;
         const x = R() * SZ, y = R() * SZ;
         g.beginPath(); g.moveTo(x, y);
-        g.lineTo(x + (R() - 0.5) * 22, y + (R() - 0.5) * 22);
-        g.lineTo(x + (R() - 0.5) * 30, y + (R() - 0.5) * 30); g.stroke();
+        g.lineTo(x + (R() - 0.5) * 22 * SS, y + (R() - 0.5) * 22 * SS);
+        g.lineTo(x + (R() - 0.5) * 30 * SS, y + (R() - 0.5) * 30 * SS); g.stroke();
       }
-      for (let i = 0; i < 380; i++) {                                 // pits + mineral flecks
-        const x = R() * SZ, y = R() * SZ, s = R() < 0.5 ? 1 : 2;
+      for (let i = 0; i < 5600; i++) {                                 // fine pits + flecks
+        const x = R() * SZ, y = R() * SZ, s = R() < 0.62 ? 1 : 2;
         g.fillStyle = R() < 0.62 ? `rgba(0,0,0,${0.05 + R() * 0.1})` : `rgba(255,255,255,${0.04 + R() * 0.08})`;
         g.fillRect(x, y, s, s);
       }
     }),
     dirt: mk(g => {
-      for (let i = 0; i < 600; i++) {                                 // grain
+      for (let i = 0; i < 8800; i++) {                                 // grain
         const x = R() * SZ, y = R() * SZ, s = R() < 0.72 ? 1 : 2;
         g.fillStyle = R() < 0.55 ? `rgba(58,44,28,${0.06 + R() * 0.1})` : `rgba(232,222,196,${0.05 + R() * 0.1})`;
         g.fillRect(x, y, s, s);
       }
-      g.fillStyle = 'rgba(120,104,80,0.28)';                          // pebbles
-      for (let i = 0; i < 48; i++) { g.beginPath(); g.arc(R() * SZ, R() * SZ, 1 + R() * 1.4, 0, 7); g.fill(); }
+      g.fillStyle = 'rgba(120,104,80,0.28)';                           // pebbles
+      for (let i = 0; i < 190; i++) { g.beginPath(); g.arc(R() * SZ, R() * SZ, (1 + R() * 1.4) * SS * 0.6, 0, 7); g.fill(); }
     }),
   };
   return TEX;
 }
 function texTile(sheet, tx, ty, x, y) {
-  const cols = sheet.width / 16;
-  cx.drawImage(sheet, (tx % cols + cols) % cols * 16, (ty % cols + cols) % cols * 16, 16, 16, x, y, TILE, TILE);
+  const SUB = TEX.SUB, cols = sheet.width / SUB;
+  // 0.5px inset so bilinear sampling never bleeds across sub-tile boundaries
+  cx.drawImage(sheet, (tx % cols + cols) % cols * SUB + 0.5, (ty % cols + cols) % cols * SUB + 0.5, SUB - 1, SUB - 1, x, y, TILE, TILE);
 }
 // cover a big background rect (cliff face) with world-locked detail, clipped to
 // the rect and clamped to the viewport so the cost stays bounded
@@ -1910,6 +1915,7 @@ function texRect(sheet, sx, sy, w, h) {
   const vx1 = Math.min(sx + w, VW), vy1 = Math.min(sy + h, VH);
   if (vx1 <= vx0 || vy1 <= vy0) return;
   cx.save();
+  cx.imageSmoothingEnabled = true; // resample the high-res grain cleanly (restored by restore())
   cx.beginPath(); cx.rect(sx, sy, w, h); cx.clip();
   const tx0 = Math.floor((vx0 + cam.x) / TILE), ty0 = Math.floor((vy0 + cam.y) / TILE);
   const tx1 = Math.ceil((vx1 + cam.x) / TILE), ty1 = Math.ceil((vy1 + cam.y) / TILE);
@@ -1980,6 +1986,7 @@ function drawRockDecor(x, y, h, bio) {
 
 function drawTiles() {
   const tex = ensureTex();
+  cx.imageSmoothingEnabled = true; // smooth the supersampled grain blits (restored at end)
   const SEAM = 0.5; // overlap to hide sub-pixel gridlines between tiles
   const x0 = Math.max(0, Math.floor(cam.x / TILE) - 1), x1 = Math.min(WORLD_W - 1, Math.ceil((cam.x + VW) / TILE) + 1);
   const y0 = Math.max(0, Math.floor(cam.y / TILE) - 1), y1 = Math.min(WORLD_H - 1, Math.ceil((cam.y + VH) / TILE) + 1);
@@ -2290,6 +2297,7 @@ function drawWaterOverlay() {
       }
     }
   }
+  cx.imageSmoothingEnabled = false; // back to crisp nearest-neighbour for the rest of the frame
 }
 
 function drawWaterfall() {

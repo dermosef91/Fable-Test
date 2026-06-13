@@ -136,11 +136,15 @@ engine's `pend*` event queue exists for exactly that.
   cut-outs, then a `'lighter'` warm glow keyed to `amb` (so fires/lamp tint what
   they light at night/dusk but stay neutral in daylight). One `lights[]` list
   feeds both — add a source there, don't duplicate coords.
-- **Baked textures, never asset files.** `ensureTex()` paints a 128×128 detail
-  sheet once into an offscreen canvas; `texTile`/`texRect` blit a 16-px sub-tile
-  keyed to **world tile index** (`tx%8,ty%8`) so grain is world-locked and never
-  swims with the camera. This is how we add surface fidelity within the
-  no-assets rule — extend the sheet, don't load images.
+- **Baked textures, never asset files.** `ensureTex()` paints a 512×512 detail
+  sheet once into an offscreen canvas — **4× supersampled** (64-px sub-tiles for
+  16-px world tiles); `texTile`/`texRect` blit a sub-tile keyed to **world tile
+  index** (`tx%8,ty%8`) so grain is world-locked and never swims with the camera.
+  Blit it with **`imageSmoothingEnabled = true`** (scoped to `drawTiles`/`texRect`,
+  restored to `false` after) so the world's ZOOM upscale resamples the high-res
+  grain cleanly — without that, nearest-neighbour magnifies the sheet into blocks
+  and the texture looks low-res. Source crop is inset 0.5px to stop bilinear
+  bleed across sub-tiles. Extend the sheet, don't load images.
 - **Break tile uniformity at three scales, never per-tile decoration grids.**
   Large tonal variation lives in the *baked sheet* (broad blotches) + a subtle
   per-tile colour jitter (`hexLerp` ~0.15, stronger reveals the grid); small
