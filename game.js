@@ -828,7 +828,7 @@ function physTick() {
     if (onIce && p.grounded && !p.swim) {
       // Blankeis: slow to build speed, but you can dig the edges in to brake
       const braking = want !== 0 && Math.sign(p.vx) === -want && Math.abs(p.vx) > 0.2;
-      acc = braking ? 0.30 : 0.16;
+      acc = braking ? 0.30 : 0.11;
     }
     if (want !== 0 && p.grounded && !onIce && Math.sign(p.vx) === -want && Math.abs(p.vx) > 1.4) {
       acc = 0.95; // skid (no biting edge on ice)
@@ -836,7 +836,7 @@ function physTick() {
     }
     if (want < 0) { p.vx = Math.max(p.vx - acc, -mx); p.face = -1; }
     if (want > 0) { p.vx = Math.min(p.vx + acc, mx); p.face = 1; }
-    if (want === 0 && !gliss) p.vx *= p.grounded ? (onIce ? 0.985 : 0.72) : 0.94; // ice barely slows you
+    if (want === 0 && !gliss) p.vx *= p.grounded ? (onIce ? 0.993 : 0.72) : 0.94; // ice barely slows you
 
     // scree surface: the boots gate, or — with boots + DOWN — the scree-run
     p.sliding = 0;

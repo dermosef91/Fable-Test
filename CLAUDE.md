@@ -227,7 +227,7 @@ engine's `pend*` event queue exists for exactly that.
   — but any new scree must keep downhill = east or the run/gate breaks.
 - **Blankeis (hard ice, tile 7):** a glaze on a rock body — counts as `SOLID`,
   drawn glassy in `drawTiles`, detected via `onIce`. Almost no friction
-  (`vx *= 0.985` idle) and sluggish accel (0.16), but you can dig the edges in
+  (`vx *= 0.993` idle) and sluggish accel (0.11), but you can dig the edges in
   to brake (acc 0.30 when pressing opposite to motion); no gear gate — a skill
   test, not a lock. Place only as small stances where a slip lands on
   recoverable ground (the ridge saddles drop to the catch band). Mirror in
