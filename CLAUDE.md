@@ -106,6 +106,25 @@ engine's `pend*` event queue exists for exactly that.
 
 ## Engine conventions (game.js)
 
+- **Rendering layers (in `render`):** sky → bg-rock → decor → tiles → entities
+  → actors → weather/particles → `drawLighting` (warm light) → `drawColorGrade`
+  → `drawVignette` → HUD. The grade and vignette are device-space post passes
+  drawn *after* `cx.restore()`, so they wash the world but never the HUD.
+- **Art-direct phases from `GRADE`, not ternaries.** Each phase has one
+  `{top,bot,a}` multiply wash (lerped like `phaseColors`). Tune time-of-day mood
+  there instead of adding `G.phase === n ? …` branches across draw functions.
+- **Lighting is two passes in `drawLighting`:** a low-res darkness overlay with
+  cut-outs, then a `'lighter'` warm glow keyed to `amb` (so fires/lamp tint what
+  they light at night/dusk but stay neutral in daylight). One `lights[]` list
+  feeds both — add a source there, don't duplicate coords.
+- **Baked textures, never asset files.** `ensureTex()` paints a 64×64 detail
+  sheet once into an offscreen canvas; `texTile`/`texRect` blit a sub-tile
+  keyed to **world tile index** (`tx&3,ty&3`) so grain is world-locked and never
+  swims with the camera. This is how we add surface fidelity within the
+  no-assets rule — extend the sheet, don't load images.
+- **Contact shadows:** `groundShadow(x, floorY, hw, a)` grounds actors/objects;
+  draw it before the body, at the floor line, only when grounded. Add new
+  shadow-worthy entity types to `SHADOW_ENTS`.
 - **Coordinate spaces:** world pixels are drawn under `setTransform(ZOOM,...)`;
   HUD/UI is drawn under `setTransform(DPR,...)` where `W = cv.width / DPR`,
   `H = cv.height / DPR` are CSS pixels. Touch hit-testing happens in

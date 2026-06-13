@@ -1080,6 +1080,7 @@ function drawGams() {
   const x = gams.x - cam.x, y = gams.y - cam.y;
   if (x < -40 || x > VW + 40) return;
   const rest = gams.stage === 'rest';
+  groundShadow(x, y, rest ? 12 : 10, 0.18);
   cx.save(); cx.translate(x, y);
   if (gams.fleeT > 0 && gams.dir < 0) cx.scale(-1, 1);
   cx.fillStyle = '#8a6f50';
@@ -1185,6 +1186,35 @@ function phaseColors() {
   };
   if (phaseLerpT >= 1) phasePrev = G.phase;
   return out;
+}
+
+// Per-phase color grade — one cheap post-process wash that ties the whole
+// palette together (warm sky / cool valley by time of day). Art-direct a phase
+// from HERE instead of scattering ternaries through every draw function.
+const GRADE = [null,
+  { top: '#ffe9cc', bot: '#d6e0ee', a: 0.10 }, // 1 morning mist — warm light, cool valley
+  { top: '#9aa6b0', bot: '#8893a0', a: 0.18 }, // 2 rain — cool, muted
+  { top: '#2f3c66', bot: '#161f3c', a: 0.16 }, // 3 night — deep blue
+  { top: '#ffd0ab', bot: '#b6a2c6', a: 0.18 }, // 4 first light — alpenglow pink → mauve
+  { top: '#fff6e6', bot: '#edf4f3', a: 0.05 }, // 5 clear morning — near-neutral
+];
+function gradeNow() {
+  const b = GRADE[G.phase]; if (!b) return null;
+  const a = GRADE[phasePrev] || b;
+  return { top: hexLerp(a.top, b.top, phaseLerpT), bot: hexLerp(a.bot, b.bot, phaseLerpT), a: lerp(a.a, b.a, phaseLerpT) };
+}
+function drawColorGrade() {
+  const g = gradeNow(); if (!g || g.a <= 0.001) return;
+  cx.setTransform(1, 0, 0, 1, 0, 0);
+  cx.imageSmoothingEnabled = true;
+  cx.globalCompositeOperation = 'multiply';
+  cx.globalAlpha = g.a;
+  const grad = cx.createLinearGradient(0, 0, 0, cv.height);
+  grad.addColorStop(0, g.top); grad.addColorStop(1, g.bot);
+  cx.fillStyle = grad; cx.fillRect(0, 0, cv.width, cv.height);
+  cx.globalCompositeOperation = 'source-over';
+  cx.globalAlpha = 1;
+  cx.imageSmoothingEnabled = false;
 }
 
 let frame = 0;
@@ -1334,6 +1364,7 @@ function drawBgRock() {
     else { gr.addColorStop(0, '#a8a394'); gr.addColorStop(1, '#8d897e'); }
     cx.fillStyle = gr;
     cx.fillRect(x, y, w, h);
+    texRect(ensureTex().rock, x, y, w, h);
     // strata
     cx.strokeStyle = 'rgba(0,0,0,0.08)'; cx.lineWidth = 1;
     for (let i = 1; i < 6; i++) {
@@ -1355,7 +1386,74 @@ function biomeAt(tx, ty) {
 const GRASS = { ridge: '#9fae7e', high: '#8fa37a', alm: '#6fae57', valley: '#5d9148' };
 const ROCKC = { ridge: '#b8b2a4', high: '#a8a094', alm: '#97907f', valley: '#8c8577' };
 
+// ----- baked procedural surface textures (no asset files; drawn once) -----
+// A 64×64 detail sheet is 4×4 tiles of organic grain. We blit a sub-tile per
+// terrain tile keyed to its world index, so detail is world-locked and never
+// swims with the camera. Translucent over the existing biome fill, so the base
+// colour still shows through.
+let TEX = null;
+function ensureTex() {
+  if (TEX) return TEX;
+  const mk = paint => {
+    const c = document.createElement('canvas'); c.width = 64; c.height = 64;
+    paint(c.getContext('2d')); return c;
+  };
+  const R = Math.random;
+  TEX = {
+    rock: mk(g => {
+      g.strokeStyle = 'rgba(0,0,0,0.15)'; g.lineWidth = 1;            // cracks
+      for (let i = 0; i < 11; i++) {
+        const x = R() * 64, y = R() * 64;
+        g.beginPath(); g.moveTo(x, y);
+        g.lineTo(x + (R() - 0.5) * 22, y + (R() - 0.5) * 22);
+        g.lineTo(x + (R() - 0.5) * 30, y + (R() - 0.5) * 30); g.stroke();
+      }
+      for (let i = 0; i < 95; i++) {                                  // pits + mineral flecks
+        const x = R() * 64, y = R() * 64, s = R() < 0.5 ? 1 : 2;
+        g.fillStyle = R() < 0.62 ? `rgba(0,0,0,${0.05 + R() * 0.1})` : `rgba(255,255,255,${0.04 + R() * 0.08})`;
+        g.fillRect(x, y, s, s);
+      }
+    }),
+    dirt: mk(g => {
+      for (let i = 0; i < 150; i++) {                                 // grain
+        const x = R() * 64, y = R() * 64, s = R() < 0.72 ? 1 : 2;
+        g.fillStyle = R() < 0.55 ? `rgba(58,44,28,${0.06 + R() * 0.1})` : `rgba(232,222,196,${0.05 + R() * 0.1})`;
+        g.fillRect(x, y, s, s);
+      }
+      g.fillStyle = 'rgba(120,104,80,0.28)';                          // pebbles
+      for (let i = 0; i < 12; i++) { g.beginPath(); g.arc(R() * 64, R() * 64, 1 + R() * 1.4, 0, 7); g.fill(); }
+    }),
+  };
+  return TEX;
+}
+function texTile(sheet, tx, ty, x, y) {
+  cx.drawImage(sheet, (tx & 3) * 16, (ty & 3) * 16, 16, 16, x, y, TILE, TILE);
+}
+// cover a big background rect (cliff face) with world-locked detail, clipped to
+// the rect and clamped to the viewport so the cost stays bounded
+function texRect(sheet, sx, sy, w, h) {
+  const vx0 = Math.max(sx, 0), vy0 = Math.max(sy, 0);
+  const vx1 = Math.min(sx + w, VW), vy1 = Math.min(sy + h, VH);
+  if (vx1 <= vx0 || vy1 <= vy0) return;
+  cx.save();
+  cx.beginPath(); cx.rect(sx, sy, w, h); cx.clip();
+  const tx0 = Math.floor((vx0 + cam.x) / TILE), ty0 = Math.floor((vy0 + cam.y) / TILE);
+  const tx1 = Math.ceil((vx1 + cam.x) / TILE), ty1 = Math.ceil((vy1 + cam.y) / TILE);
+  for (let ty = ty0; ty < ty1; ty++)
+    for (let tx = tx0; tx < tx1; tx++)
+      texTile(sheet, tx, ty, tx * TILE - cam.x, ty * TILE - cam.y);
+  cx.restore();
+}
+// soft elliptical contact shadow at a floor line (screen space) — grounds
+// characters and loose objects so they read as resting on the terrain
+function groundShadow(x, floorY, hw, a) {
+  cx.fillStyle = `rgba(18,22,28,${a})`;
+  cx.beginPath(); cx.ellipse(x, floorY, hw, hw * 0.34, 0, 0, 7); cx.fill();
+}
+const SHADOW_ENTS = new Set(['npc', 'dog', 'cow', 'marmot', 'gear', 'chestnut', 'tin', 'relic', 'book', 'bench', 'page']);
+
 function drawTiles() {
+  const tex = ensureTex();
   const x0 = Math.max(0, Math.floor(cam.x / TILE) - 1), x1 = Math.min(WORLD_W - 1, Math.ceil((cam.x + VW) / TILE) + 1);
   const y0 = Math.max(0, Math.floor(cam.y / TILE) - 1), y1 = Math.min(WORLD_H - 1, Math.ceil((cam.y + VH) / TILE) + 1);
   for (let ty = y0; ty <= y1; ty++) {
@@ -1367,6 +1465,7 @@ function drawTiles() {
       if (t === 1) {
         cx.fillStyle = ROCKC[bio];
         cx.fillRect(x, y, TILE, TILE);
+        texTile(tex.rock, tx, ty, x, y);
         // speckle
         if ((tx * 7 + ty * 13) % 5 === 0) { cx.fillStyle = 'rgba(0,0,0,0.07)'; cx.fillRect(x + (tx % 3) * 4, y + (ty % 3) * 4, 3, 3); }
         // grass cap if air above
@@ -1386,6 +1485,7 @@ function drawTiles() {
         }
       } else if (t === 2) {
         cx.fillStyle = '#b3a88e'; cx.fillRect(x, y, TILE, TILE);
+        texTile(tex.dirt, tx, ty, x, y);
         cx.fillStyle = '#998d72';
         cx.fillRect(x + ((tx * 3) % 8), y + ((ty * 5) % 8), 4, 3);
         cx.fillRect(x + ((tx * 5 + 7) % 10), y + ((ty * 3 + 4) % 10), 3, 3);
@@ -1481,6 +1581,8 @@ function drawEntity(e) {
   if (x < -80 || x > VW + 80) return;
   const taken = takenIds.has(eid(e));
   const bob = Math.sin(frame * 0.06 + e.x) * 2;
+
+  if (!taken && SHADOW_ENTS.has(e.t)) groundShadow(x, y, e.t === 'cow' ? 14 : 9, 0.2);
 
   switch (e.t) {
     case 'tent': {
@@ -1886,6 +1988,9 @@ function drawPlayer() {
   const leg = Math.sin(p.anim * 2.2) * (run ? 4 : 0);
   const breathe = Math.sin(p.idle) * 0.6;
 
+  if (p.grounded && !p.climbing && !p.gliding)
+    groundShadow(p.x + p.w / 2 - cam.x, p.y + p.h - cam.y, p.w * 0.6, 0.22);
+
   cx.save();
   cx.translate(x, y + 10);
   // squash on landing, stretch in fast air
@@ -2089,37 +2194,59 @@ const lcx = lightCv.getContext('2d');
 function drawLighting(pc) {
   let amb = pc.ambient;
   if (curZone && curZone.dark) amb = Math.max(amb, G.gear.lamp ? 0.86 : 0.94);
-  if (amb <= 0.01) return;
-  const s = 0.35;
-  lightCv.width = Math.ceil(VW * s); lightCv.height = Math.ceil(VH * s);
-  lcx.setTransform(s, 0, 0, s, 0, 0);
-  lcx.fillStyle = `rgba(8,10,30,${amb})`;
-  lcx.fillRect(0, 0, VW, VH);
-  lcx.globalCompositeOperation = 'destination-out';
-  const punch = (x, y, r, a) => {
-    const g = lcx.createRadialGradient(x, y, r * 0.15, x, y, r);
-    g.addColorStop(0, `rgba(0,0,0,${a})`); g.addColorStop(1, 'rgba(0,0,0,0)');
-    lcx.fillStyle = g;
-    lcx.fillRect(x - r, y - r, r * 2, r * 2);
-  };
-  // player lamp
+
+  // Gather every light source once: [x, y, radius, cutAlpha, warmRGB, warmAlpha].
+  // The same list feeds the darkness cut-outs and the warm additive glow, so a
+  // lamp/fire/window both clears the gloom AND tints what it lights.
+  const lights = [];
   const px = player.x + player.w / 2 - cam.x, py = player.y + 6 - cam.y;
-  punch(px, py, lampOn() ? 95 : 26, lampOn() ? 0.97 : 0.5);
-  // fires
+  lights.push([px, py, lampOn() ? 95 : 26, lampOn() ? 0.97 : 0.5, '255,226,150', lampOn() ? 0.34 : 0]);
   for (const id in FIRES) {
     const f = FIRES[id];
     const fx = f.x * TILE + 8 - cam.x, fy = f.r * TILE - 10 - cam.y;
     if (fx > -100 && fx < VW + 100 && fy > -100 && fy < VH + 100)
-      punch(fx, fy, 70 + Math.sin(frame * 0.2) * 5, 0.95);
+      lights.push([fx, fy, 70 + Math.sin(frame * 0.2) * 5, 0.95, '255,150,60', 0.55]);
   }
-  // hut windows
   const hut = ENTITIES.find(e => e.t === 'hut');
-  const hx = hut.x * TILE + 8 - cam.x, hy = hut.r * TILE - 18 - cam.y;
-  if (hx > -100 && hx < VW + 100) punch(hx, hy, 55, 0.8);
-  lcx.globalCompositeOperation = 'source-over';
-  cx.imageSmoothingEnabled = true;
-  cx.drawImage(lightCv, 0, 0, VW, VH);
-  cx.imageSmoothingEnabled = false;
+  if (hut) {
+    const hx = hut.x * TILE + 8 - cam.x, hy = hut.r * TILE - 18 - cam.y;
+    if (hx > -100 && hx < VW + 100) lights.push([hx, hy, 55, 0.8, '255,196,110', 0.42]);
+  }
+
+  // darkness layer with cut-outs, composited as a low-res overlay
+  if (amb > 0.01) {
+    const s = 0.35;
+    lightCv.width = Math.ceil(VW * s); lightCv.height = Math.ceil(VH * s);
+    lcx.setTransform(s, 0, 0, s, 0, 0);
+    lcx.fillStyle = `rgba(8,10,30,${amb})`;
+    lcx.fillRect(0, 0, VW, VH);
+    lcx.globalCompositeOperation = 'destination-out';
+    for (const [x, y, r, a] of lights) {
+      const g = lcx.createRadialGradient(x, y, r * 0.15, x, y, r);
+      g.addColorStop(0, `rgba(0,0,0,${a})`); g.addColorStop(1, 'rgba(0,0,0,0)');
+      lcx.fillStyle = g; lcx.fillRect(x - r, y - r, r * 2, r * 2);
+    }
+    lcx.globalCompositeOperation = 'source-over';
+    cx.imageSmoothingEnabled = true;
+    cx.drawImage(lightCv, 0, 0, VW, VH);
+    cx.imageSmoothingEnabled = false;
+  }
+
+  // warm additive glow — only reads once it's dark enough to matter, so fires
+  // in daylight stay neutral but lamplight and hearths go amber after dusk
+  const warmK = Math.min(1, amb * 1.5);
+  if (warmK > 0.05) {
+    cx.globalCompositeOperation = 'lighter';
+    for (const [x, y, r, , rgb, wa] of lights) {
+      if (!wa) continue;
+      const rr = r * 1.05, g = cx.createRadialGradient(x, y, r * 0.1, x, y, rr);
+      g.addColorStop(0, `rgba(${rgb},${wa * warmK})`);
+      g.addColorStop(0.5, `rgba(${rgb},${wa * warmK * 0.4})`);
+      g.addColorStop(1, `rgba(${rgb},0)`);
+      cx.fillStyle = g; cx.fillRect(x - rr, y - rr, rr * 2, rr * 2);
+    }
+    cx.globalCompositeOperation = 'source-over';
+  }
 }
 
 // ============================================================ vector icons =
@@ -3140,6 +3267,7 @@ function render() {
   ambientTick(pc);
   musicTick();
 
+  drawColorGrade();
   drawVignette();
   if (G.mode === 'map') drawMap();
   else drawHUD();
