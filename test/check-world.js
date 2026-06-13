@@ -1,6 +1,6 @@
 /* Headless sanity checks for the world geometry.
    Run: node test/check-world.js */
-const { TILE, WORLD_W, WORLD_H, buildWorld, WATERFALL, THERMALS, RINGS, MOVERS, CRUMBLE, STONEFALL, ZONES, ENTITIES, TREES } = require('../world.js');
+const { TILE, WORLD_W, WORLD_H, buildWorld, WATERFALL, THERMALS, SINK, RINGS, MOVERS, CRUMBLE, STONEFALL, ZONES, ENTITIES, TREES } = require('../world.js');
 
 const g = buildWorld();
 const Y_OFF = WORLD_H - 80;
@@ -361,6 +361,18 @@ for (const t of THERMALS) {
   const cxm = t.x + (t.w >> 1);
   for (let y = t.y + 2; y < t.y + t.h - 4; y++) if (solid(at(cxm, y))) clear = false;
   ok(clear, `thermal at x${t.x} has a clear core`);
+}
+// sink pockets: open air, clear of the thermal columns and ring centres so the
+// course stays catchable (a sink that swallowed a ring would soft-lock the run)
+for (const s of SINK) {
+  let clearCore = true;
+  const cxm = s.x + (s.w >> 1);
+  for (let y = s.y + 1; y < s.y + s.h - 1; y++) if (solid(at(cxm, y))) clearCore = false;
+  ok(clearCore, `sink pocket at x${s.x} has a clear core`);
+  const noThermal = !THERMALS.some(t => s.x < t.x + t.w && s.x + s.w > t.x);
+  ok(noThermal, `sink pocket at x${s.x} does not overlap a thermal column`);
+  const noRing = !RINGS.some(([rx, ry]) => rx >= s.x && rx < s.x + s.w && ry >= s.y && ry < s.y + s.h);
+  ok(noRing, `sink pocket at x${s.x} does not swallow a ring`);
 }
 
 console.log(fails === 0 ? '\nALL CHECKS PASSED' : `\n${fails} CHECKS FAILED`);
