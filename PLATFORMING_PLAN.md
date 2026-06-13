@@ -222,6 +222,18 @@ flowers — all while preserving "downhill = east" (the slide gate hardcodes it)
 That's high risk for mostly cosmetic gain; the scree-run delivers the
 "engaging + varied" goal on its own. Revisit terracing only as its own change.
 
+## 4c. Shipped: the tunnel lamp-flicker draft — making the dark dynamic
+
+The Stollen was a static lamp-gate (rubble hops in a fixed pool of light).
+Now `lampTick` gives the lamp a constant gentle breath wherever it's lit, and
+in the dark tunnel a periodic **draft** guts the flame — the pool of light
+shrinks to a tight circle for ~0.5 s (low whoosh + sideways sparks + a
+one-time hint), then recovers. You learn to wait for the flame to steady
+before committing to a rubble hop. Pure rendering/atmosphere — no geometry,
+clamped so the lamp never blacks out (darkness stays a *soft* gate). 8-check
+headless playtest green (gust dips the pool, never below the floor, recovers,
+natural gusts fire only in the dark zone, none in daylight).
+
 ## 5. Sequencing
 
 One PR per mechanic, in this order (each independently shippable):
