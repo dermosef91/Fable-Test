@@ -161,18 +161,21 @@ engine's `pend*` event queue exists for exactly that.
 - **Break tile uniformity at three scales, never per-tile decoration grids.**
   Large tonal variation lives in the *baked sheet* (broad blotches) + a subtle
   per-tile colour jitter (`hexLerp` ~0.15, stronger reveals the grid); small
-  accents (lichen, moss, veins, quartz) come from `drawRockDecor`, gated *rare*
-  (`h(seed) > ~0.9`) and offset off-grid. A frequent per-tile element (one oval
-  per tile) just re-creates the grid you were hiding — keep those in the sheet.
+  accents (lichen, moss, veins, quartz, embedded boulders, mineral streaks) come
+  from `drawRockDecor`, gated *rare* (`h(seed) > ~0.85`) and offset off-grid. A
+  frequent per-tile element (one oval per tile) just re-creates the grid you
+  were hiding — keep those in the sheet.
+- **Edge-aware wall vegetation (`drawWallVeg`):** grass tufts on vertical faces,
+  vines/roots under overhangs, alpine flowers in crevices — keyed to the
+  `upAir/downAir/leftAir/rightAir` flags and drawn *after* the edge bumps so
+  plants sit on the silhouette. Scale density by biome (`vegK`: lush in
+  valley/alm, sparse on the high ridge) so the mountain dries out with altitude.
 - **Edge AO:** thin dark strips on air-facing tile sides + a band under the
   grass cap carve depth; keep them subtle so they don't fight the organic edge
   bumps.
 - **Contact shadows:** `groundShadow(x, floorY, hw, a)` grounds actors/objects;
   draw it before the body, at the floor line, only when grounded. Add new
   shadow-worthy entity types to `SHADOW_ENTS`.
-- **Rim light (`rimLight`):** a warm sun-side edge catch on figures, only at
-  first light / dawn (`rimK`). Drawn in screen space *after* the figure so it's
-  independent of `cx.scale(face,1)`; character entity boxes live in `RIM_ENTS`.
 - **Ambient motes (`drawMotes`):** decorative per-zone air life (dust in shafts,
   pollen on the Alm, wind-grit on the ridge, mist in the gorge), keyed off
   `curZone.id` in `moteKind`. A separate pool from gameplay `parts`, drawn
