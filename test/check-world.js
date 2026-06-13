@@ -5,7 +5,7 @@ const { TILE, WORLD_W, WORLD_H, buildWorld, WATERFALL, THERMALS, RINGS, MOVERS, 
 const g = buildWorld();
 const Y_OFF = WORLD_H - 80;
 const at = (x, y) => (x < 0 || x >= WORLD_W || y < 0 || y >= WORLD_H) ? 1 : g[y * WORLD_W + x];
-const solid = t => t === 1 || t === 2;
+const solid = t => t === 1 || t === 2 || t === 7;
 
 let fails = 0;
 const ok = (cond, msg) => {
@@ -241,6 +241,23 @@ for (const c of CRUMBLE) {
   ok(air, `crumble@${c.x},${c.y} hangs in open air (slab replaces rock)`);
   ok(sky, `crumble@${c.x},${c.y} has 4 rows of open sky above`);
   ok(recover, `crumble@${c.x},${c.y} falls land on ground within 9 tiles (catch band)`);
+}
+// Blankeis: hard ice (tile 7) glazes the two on-route ridge stances. The ice
+// is the standable surface (counts as solid), sits on a rock body, and a slip
+// off lands on recoverable ground (the catch band / rock steps) within reach.
+const ICE = [{ x0: 95, x1: 98, y: 4 }, { x0: 102, x1: 104, y: 7 }];
+for (const ic of ICE) {
+  let iced = true, rockBody = true, recover = true;
+  for (let x = ic.x0; x <= ic.x1; x++) {
+    if (at(x, ic.y + Y_OFF) !== 7) iced = false;          // surface is ice
+    if (!solid(at(x, ic.y + 1 + Y_OFF))) rockBody = false; // bonded to rock below
+    let d = 1;
+    while (d <= 10 && !solid(at(x, ic.y + d + Y_OFF))) d++;
+    if (d > 10) recover = false;
+  }
+  ok(iced, `Blankeis glazes the stance x${ic.x0}..${ic.x1} at y${ic.y}`);
+  ok(rockBody, `ice stance x${ic.x0}..${ic.x1} is a glaze on solid rock (not floating)`);
+  ok(recover, `a slip off the ice x${ic.x0}..${ic.x1} lands on ground within 10 tiles`);
 }
 // summit plateau is solid and has headroom
 ok(solid(at(135, 1 + Y_OFF)) && solid(at(139, 1 + Y_OFF)), 'summit plateau solid at key points');

@@ -44,6 +44,20 @@ The doc was written against a stale checkout:
 
 ## 2. Tier 1 — high value, contained risk
 
+### 2.1 Blankeis — hard-ice patches on the ridge saddles ✅ SHIPPED
+
+Shipped on the two on-route knife-edge stances that survived the geometry
+merge: the **high point (x95..98, y4)** — the most exposed crest, fittingly
+glazed — and the **deep saddle (x102..104, y7)**. (The originally-planned
+x116..119 saddle no longer exists; a parallel merge turned it into a
+hoist-bridged gap.) Final tuning from headless playtest: idle friction
+`vx *= 0.985`, forward accel **0.16** (sluggish), but **brake authority 0.30**
+when pressing opposite to motion so a landing brake-tap reliably stops you on
+the small patches — "ice but fair." No gear gate. A slip lands on the catch
+band (verified soft + recoverable). 11-check headless playtest green.
+
+Original design notes below (kept for reference):
+
 ### 2.1 Blankeis — hard-ice patches on the ridge saddles
 
 - **What:** new tile code `7` (ice skin, drawn glassy blue-white over rock,
