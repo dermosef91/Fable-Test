@@ -1552,7 +1552,6 @@ function drawGams() {
   cx.beginPath(); cx.moveTo(hx + 2.4, hy + 1.2); cx.lineTo(hx - 1.2, hy - 1.5); cx.stroke();
 
   cx.restore();
-  rimLight(x, y, rest ? 11 : 17, 11);
 }
 
 // ---- marmots (proximity, not interaction) ----
@@ -2002,31 +2001,13 @@ function groundShadow(x, floorY, hw, a) {
 }
 const SHADOW_ENTS = new Set(['npc', 'dog', 'cow', 'marmot', 'gear', 'chestnut', 'tin', 'relic', 'book', 'bench', 'page']);
 
-// Warm rim/edge light on the sun-facing (screen-left) side of a figure, only at
-// first light / dawn so characters catch the low sun and sit in the scene.
-// Drawn in screen space after the figure, so it's independent of face-scaling.
-function rimK() { return G.phase === 4 ? 0.9 : G.phase === 1 ? 0.45 : 0; }
-function rimLight(cxs, floorY, height, hw) {
-  const k = rimK(); if (k <= 0) return;
-  const rgb = G.phase === 4 ? '255,150,90' : '255,228,170';
-  const ex = cxs - hw, topY = floorY - height;
-  cx.save();
-  cx.globalCompositeOperation = 'lighter';
-  const g = cx.createLinearGradient(ex, 0, ex + 3.4, 0);
-  g.addColorStop(0, `rgba(${rgb},${0.45 * k})`);
-  g.addColorStop(1, `rgba(${rgb},0)`);
-  cx.fillStyle = g;
-  cx.fillRect(ex, topY, 3.4, height);
-  cx.restore();
-}
-const RIM_ENTS = { npc: [6, 18], cow: [13, 16], dog: [8, 9], marmot: [6, 7] };
-
 // Per-tile rock decoration keyed to a world-stable hash so the spread is
 // non-repeating: large mottling, lichen rosettes, moss, mineral veins, quartz.
 // Sparse, world-stable decoration. Broad tonal variation comes from the baked
 // sheet + per-tile colour jitter; these are the *rare* accents (rosettes, moss,
 // veins, sparkle), gated low and offset off-grid so they never read as a grid.
-function drawRockDecor(x, y, h, bio) {
+// Face decals — drawn under the edge bumps, on the rock surface itself.
+function drawRockDecor(x, y, h, bio, upAir) {
   if (h(70) > 0.9) {                                    // lichen rosette
     const lx = x + h(71) * TILE, ly = y + h(72) * TILE;
     const col = (bio === 'valley' || bio === 'alm') ? '182,196,150' : '176,186,168';
@@ -2052,6 +2033,70 @@ function drawRockDecor(x, y, h, bio) {
     cx.fillStyle = 'rgba(255,255,250,0.65)';
     cx.fillRect(x + h(97) * TILE, y + h(98) * TILE, 1.4, 1.4);
   }
+  // embedded boulder / cobble — large-scale interest that breaks the flat face
+  if (h(100) > 0.86) {
+    const bx = x + 3 + h(101) * (TILE - 6), by = y + 3 + h(102) * (TILE - 6), r = 2.4 + h(103) * 2.6;
+    cx.fillStyle = `rgba(58,54,46,${0.14 + h(104) * 0.1})`;
+    cx.beginPath(); cx.ellipse(bx, by, r, r * (0.7 + h(105) * 0.25), h(106) * 3, 0, 7); cx.fill();
+    cx.lineWidth = 0.6;
+    cx.strokeStyle = 'rgba(255,255,255,0.12)';
+    cx.beginPath(); cx.arc(bx, by, r * 0.92, Math.PI * 1.15, Math.PI * 1.85); cx.stroke();
+    cx.strokeStyle = 'rgba(0,0,0,0.16)';
+    cx.beginPath(); cx.arc(bx, by, r * 0.92, Math.PI * 0.15, Math.PI * 0.85); cx.stroke();
+  }
+  // vertical mineral / water streaks down a tall face (only where rock above)
+  if (!upAir && h(108) > 0.84) {
+    const n = 1 + Math.floor(h(109) * 2);
+    for (let i = 0; i < n; i++) {
+      const sx = x + 2 + h(110 + i) * (TILE - 4);
+      cx.strokeStyle = `rgba(${h(112 + i) > 0.5 ? '206,196,172' : '42,38,32'},${0.06 + h(113 + i) * 0.06})`;
+      cx.lineWidth = 0.7 + h(114 + i) * 0.8;
+      cx.beginPath(); cx.moveTo(sx, y - 1); cx.lineTo(sx + (h(115 + i) - 0.5) * 2.5, y + TILE + 1); cx.stroke();
+    }
+  }
+}
+
+// Edge vegetation — drawn over the bumps/grass so plants sit on the silhouette.
+// Greener and denser lower down (alm/valley), sparse and dry on the high ridge.
+function drawWallVeg(x, y, h, bio, upAir, downAir, leftAir, rightAir) {
+  const vegK = bio === 'valley' ? 1 : bio === 'alm' ? 0.95 : bio === 'high' ? 0.5 : 0.22;
+  const gcol = bio === 'valley' ? '#5d9148' : bio === 'alm' ? '#6fae57' : bio === 'high' ? '#7e8f5e' : '#8a9468';
+  if (leftAir && h(120) > 1 - 0.32 * vegK) drawTuft(x + 0.5, y + 3 + h(121) * (TILE - 6), -1, 0.9 + h(122) * 0.4, gcol, h, 123);
+  if (rightAir && h(126) > 1 - 0.32 * vegK) drawTuft(x + TILE - 0.5, y + 3 + h(127) * (TILE - 6), 1, 0.9 + h(128) * 0.4, gcol, h, 129);
+  if (downAir && h(132) > 1 - 0.28 * vegK) {
+    const vcol = (bio === 'valley' || bio === 'alm') ? 'rgba(86,118,68,0.85)' : 'rgba(96,104,72,0.8)';
+    drawVine(x + 2 + h(133) * (TILE - 4), y + TILE, 4 + h(134) * 7, vcol, h, 135);
+  }
+  if ((leftAir || rightAir || upAir) && h(138) > 0.95) {   // alpine flower in a crevice / on a ledge
+    const fx = x + (leftAir ? 2 : rightAir ? TILE - 2 : 3 + h(139) * (TILE - 6));
+    const fy = y + (upAir ? 1 : 3 + h(140) * (TILE - 6));
+    cx.fillStyle = h(141) > 0.5 ? '#d9577a' : '#5a7fd0';   // alpenrose / gentian
+    cx.beginPath(); cx.arc(fx, fy, 1.5, 0, 7); cx.fill();
+    cx.fillStyle = '#e9c84a'; cx.beginPath(); cx.arc(fx, fy, 0.6, 0, 7); cx.fill();
+  }
+}
+function drawTuft(ax, ay, dir, scale, col, h, seed) {
+  cx.strokeStyle = col; cx.lineWidth = 0.8;
+  const n = 3 + Math.floor(h(seed) * 3);
+  for (let i = 0; i < n; i++) {
+    const t = i / Math.max(1, n - 1) - 0.5;
+    const len = (3 + h(seed + 1 + i) * 3.5) * scale;
+    cx.beginPath(); cx.moveTo(ax, ay + t * 2);
+    cx.quadraticCurveTo(ax + dir * 2 + t, ay - len * 0.5, ax + dir * (2 + Math.abs(t) * 2.5) + t * 1.5, ay - len + Math.abs(t) * 1.5);
+    cx.stroke();
+  }
+}
+function drawVine(ax, ay, len, col, h, seed) {
+  cx.strokeStyle = col; cx.lineWidth = 0.9;
+  const sway = (h(seed) - 0.5) * 5;
+  cx.beginPath(); cx.moveTo(ax, ay);
+  cx.quadraticCurveTo(ax + sway * 0.5, ay + len * 0.5, ax + sway, ay + len);
+  cx.stroke();
+  cx.fillStyle = col;
+  for (let i = 1; i <= 2; i++) {
+    const f = i / 3, lx = ax + sway * f, ly = ay + len * f;
+    cx.beginPath(); cx.ellipse(lx + (i % 2 ? 1.6 : -1.6), ly, 1.7, 0.9, i % 2 ? 0.6 : -0.6, 0, 7); cx.fill();
+  }
 }
 
 function drawTiles() {
@@ -2075,9 +2120,6 @@ function drawTiles() {
         cx.fillStyle = rockColor;
         cx.fillRect(x - SEAM, y - SEAM, TILE + SEAM * 2, TILE + SEAM * 2);
         texTile(tex.rock, tx, ty, x, y);
-        drawRockDecor(x, y, h, bio);
-        // speckle
-        if ((tx * 7 + ty * 13) % 5 === 0) { cx.fillStyle = 'rgba(0,0,0,0.07)'; cx.fillRect(x + (tx % 3) * 4, y + (ty % 3) * 4, 3, 3); }
 
         const up = tileAt(tx, ty - 1);
         const down = tileAt(tx, ty + 1);
@@ -2087,6 +2129,10 @@ function drawTiles() {
         const downAir = !SOLID(down);
         const leftAir = !SOLID(left);
         const rightAir = !SOLID(right);
+
+        drawRockDecor(x, y, h, bio, upAir);
+        // speckle
+        if ((tx * 7 + ty * 13) % 5 === 0) { cx.fillStyle = 'rgba(0,0,0,0.07)'; cx.fillRect(x + (tx % 3) * 4, y + (ty % 3) * 4, 3, 3); }
 
         // inner-edge ambient occlusion on air-facing sides — carves depth
         if (leftAir) { cx.fillStyle = 'rgba(0,0,0,0.08)'; cx.fillRect(x, y, 2, TILE); }
@@ -2178,13 +2224,16 @@ function drawTiles() {
         if (downAir) {
           cx.fillStyle = 'rgba(0,0,0,0.18)';
           cx.fillRect(x, y + TILE - 3, TILE, 3);
-          
+
           cx.fillStyle = 'rgba(86,118,68,0.8)';
           if ((tx * 13 + ty * 7) % 3 !== 2) {
             cx.fillRect(x + (tx % 5) * 3, y + TILE, 2, 3 + (tx % 3) * 2);
             cx.fillRect(x + 8 + (ty % 4) * 2, y + TILE, 2, 2 + (ty % 3) * 2);
           }
         }
+
+        // vegetation clinging to the wall — drawn last, over the edge bumps
+        if (upAir || downAir || leftAir || rightAir) drawWallVeg(x, y, h, bio, upAir, downAir, leftAir, rightAir);
       } else if (t === 2) {
         const dh = Math.abs(Math.sin(tx * 41.3 + ty * 9.71) * 4117.7) % 1;
         const rockColor = hexLerp('#b3a88e', dh > 0.5 ? '#c6bca2' : '#928871', Math.abs(dh - 0.5) * 0.2);
@@ -3577,7 +3626,6 @@ cx.fillStyle = hexLerp('#3d3327', '#ffd87a', curPC.night);
       break;
     }
   }
-  if (!taken && RIM_ENTS[e.t]) rimLight(x, y, RIM_ENTS[e.t][1], RIM_ENTS[e.t][0]);
 }
 
 function drawPlayer() {
@@ -3900,7 +3948,6 @@ function drawPlayer() {
   }
 
   cx.restore();
-  if (!p.gliding) rimLight(p.x + p.w / 2 - cam.x, p.y + p.h - cam.y, p.h, 6);
 }
 function lampOn() { return G.gear.lamp && (curPC.night > 0.1 || (curZone && curZone.dark)); }
 
