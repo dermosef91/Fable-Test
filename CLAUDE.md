@@ -136,14 +136,31 @@ engine's `pend*` event queue exists for exactly that.
   cut-outs, then a `'lighter'` warm glow keyed to `amb` (so fires/lamp tint what
   they light at night/dusk but stay neutral in daylight). One `lights[]` list
   feeds both — add a source there, don't duplicate coords.
-- **Baked textures, never asset files.** `ensureTex()` paints a 64×64 detail
-  sheet once into an offscreen canvas; `texTile`/`texRect` blit a sub-tile
-  keyed to **world tile index** (`tx&3,ty&3`) so grain is world-locked and never
+- **Baked textures, never asset files.** `ensureTex()` paints a 128×128 detail
+  sheet once into an offscreen canvas; `texTile`/`texRect` blit a 16-px sub-tile
+  keyed to **world tile index** (`tx%8,ty%8`) so grain is world-locked and never
   swims with the camera. This is how we add surface fidelity within the
   no-assets rule — extend the sheet, don't load images.
+- **Break tile uniformity at three scales, never per-tile decoration grids.**
+  Large tonal variation lives in the *baked sheet* (broad blotches) + a subtle
+  per-tile colour jitter (`hexLerp` ~0.15, stronger reveals the grid); small
+  accents (lichen, moss, veins, quartz) come from `drawRockDecor`, gated *rare*
+  (`h(seed) > ~0.9`) and offset off-grid. A frequent per-tile element (one oval
+  per tile) just re-creates the grid you were hiding — keep those in the sheet.
+- **Edge AO:** thin dark strips on air-facing tile sides + a band under the
+  grass cap carve depth; keep them subtle so they don't fight the organic edge
+  bumps.
 - **Contact shadows:** `groundShadow(x, floorY, hw, a)` grounds actors/objects;
   draw it before the body, at the floor line, only when grounded. Add new
   shadow-worthy entity types to `SHADOW_ENTS`.
+- **Rim light (`rimLight`):** a warm sun-side edge catch on figures, only at
+  first light / dawn (`rimK`). Drawn in screen space *after* the figure so it's
+  independent of `cx.scale(face,1)`; character entity boxes live in `RIM_ENTS`.
+- **Ambient motes (`drawMotes`):** decorative per-zone air life (dust in shafts,
+  pollen on the Alm, wind-grit on the ridge, mist in the gorge), keyed off
+  `curZone.id` in `moteKind`. A separate pool from gameplay `parts`, drawn
+  *before* `drawLighting` so night/lamp dim them (dust only glows in the lamp
+  pool underground).
 - **Coordinate spaces:** world pixels are drawn under `setTransform(ZOOM,...)`;
   HUD/UI is drawn under `setTransform(DPR,...)` where `W = cv.width / DPR`,
   `H = cv.height / DPR` are CSS pixels. Touch hit-testing happens in
