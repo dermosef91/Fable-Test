@@ -141,6 +141,15 @@ Original design notes below (kept for reference):
   under the arc model; the headwall-seal and scree-breach gate assertions
   stay green.
 
+### 3.2 Wind in the Hinteres Tal — not on the ridge ✅ SHIPPED
+
+Shipped as `SINK` force-field pockets (`inSink`) that drag a gliding player
+down (vy → 2.2, or 3.4 diving) — placed clear of the thermal columns and ring
+centres (asserted in check-world so the course can't soft-lock), plus a gentle
+steady easterly (`valleyWind`, ~0.35–0.95) that nudges a glider east and now
+drives the windsock angles. No canopy collapse; sinks are escapable (steer or
+dive out, soft landing). 9-check headless playtest green. Design notes below.
+
 ### 3.2 Wind in the Hinteres Tal — not on the ridge
 
 - **Why not the ridge (doc's proposal):** the ridge is precision platforming

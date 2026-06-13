@@ -72,6 +72,11 @@ const inWaterfall = (px, py) =>
   py >= WATERFALL.y * TILE && py < (WATERFALL.y + WATERFALL.h) * TILE;
 const inThermal = (px, py) => THERMALS.some(t =>
   px >= t.x * TILE && px < (t.x + t.w) * TILE && py >= t.y * TILE && py < (t.y + t.h) * TILE);
+const inSink = (px, py) => SINK.some(s =>
+  px >= s.x * TILE && px < (s.x + s.w) * TILE && py >= s.y * TILE && py < (s.y + s.h) * TILE);
+// the Hinteres Tal breeze: a gentle, steady easterly the windsocks show and a
+// glider drifts on (ride it out to the far rings, work a little to come back)
+let valleyWind = 0.7;
 
 // -------------------------------------------------------------- language --
 let LANG = 'en';
@@ -891,11 +896,17 @@ function physTick() {
     else if (!p.gliding && p.vy > 0.4) p.gliding = true;
     if (p.gliding) {
       p.vy = Math.min(p.vy, inp.down ? 2.4 : 1.05);
-      if (inThermal(p.x + p.w / 2, p.y + p.h / 2)) {
+      const cx2 = p.x + p.w / 2, cy2 = p.y + p.h / 2;
+      if (inThermal(cx2, cy2)) {
         p.vy = Math.max(p.vy - 1.45, -1.6); // ride the warm air up
         if (!G.flags.thermalMet) { G.flags.thermalMet = true; toast(TX.toast_thermal); }
+      } else if (inSink(cx2, cy2)) {
+        p.vy = inp.down ? Math.min(p.vy + 0.5, 3.4) : Math.max(p.vy, 2.2); // cold air drags you down
+        if (!G.flags.sinkMet) { G.flags.sinkMet = true; toast(TX.toast_sink); }
+        if (Math.random() < 0.3) spawnPart({ x: p.x + Math.random() * p.w, y: p.y, vx: 0, vy: 2 + Math.random(), t: 30, c: 'rgba(200,216,232,0.5)', s: 2 });
       }
       if (!inp.left && !inp.right) p.vx += p.face * 0.06; // forward trim, steering overrides
+      p.vx += valleyWind * 0.03; // the steady easterly nudges you along
       p.vx = Math.max(-2.8, Math.min(2.8, p.vx));
       fallStartY = p.y; // a soft landing, always
       if (Math.random() < 0.25) spawnPart({ x: p.x + (p.face > 0 ? -6 : 14), y: p.y + Math.random() * p.h, vx: -p.face * 1.5, vy: 0, t: 12, c: 'rgba(255,255,255,0.4)', s: 1.5 });
@@ -1296,6 +1307,28 @@ function drawThermals() {
       cx.stroke();
     }
     if (Math.random() < 0.25) spawnPart({ x: t.x * TILE + Math.random() * w, y: Math.min((t.y + t.h) * TILE, cam.y + VH), vx: 0, vy: -1.6 - Math.random(), t: 50, c: 'rgba(255,250,230,0.5)', s: 2 });
+  }
+  cx.restore();
+}
+function drawSink() {
+  if (!SINK.length || cam.x + VW < SINK[0].x * TILE) return;
+  cx.save();
+  for (const s of SINK) {
+    const x = s.x * TILE - cam.x, w = s.w * TILE;
+    if (x > VW || x + w < 0) continue;
+    const y0 = s.y * TILE - cam.y, y1 = (s.y + s.h) * TILE - cam.y;
+    cx.strokeStyle = 'rgba(150,170,195,0.16)'; cx.lineWidth = 1.3;
+    for (let i = 0; i < 3; i++) {
+      const px2 = x + w * (0.25 + i * 0.25);
+      cx.beginPath();
+      for (let yy = Math.max(0, y0); yy < Math.min(VH, y1); yy += 8) {
+        const sway = Math.sin(yy * 0.06 - frame * 0.06 + i * 2) * 4;
+        if (yy === Math.max(0, y0)) cx.moveTo(px2 + sway, yy); else cx.lineTo(px2 + sway, yy);
+      }
+      cx.stroke();
+    }
+    // falling motes telegraph the downdraft
+    if (Math.random() < 0.25) spawnPart({ x: s.x * TILE + Math.random() * w, y: Math.max(s.y * TILE, cam.y), vx: 0, vy: 1.4 + Math.random(), t: 50, c: 'rgba(190,206,224,0.45)', s: 2 });
   }
   cx.restore();
 }
@@ -3169,7 +3202,8 @@ cx.fillStyle = hexLerp('#3d3327', '#ffd87a', curPC.night);
       break;
     }
     case 'windsock': {
-      const wind = Math.sin(frame * 0.04 + e.x) * 0.25 + 0.75;
+      // the sock streams with the live valley breeze, fluttering a little
+      const wind = Math.max(0.18, Math.min(1, valleyWind + Math.sin(frame * 0.12 + e.x) * 0.08));
       cx.strokeStyle = '#8a8576'; cx.lineWidth = 2;
       cx.beginPath(); cx.moveTo(x, y); cx.lineTo(x, y - 26); cx.stroke();
       cx.fillStyle = '#e07b30';
@@ -6528,6 +6562,7 @@ function step() {
 
   if (G.mode === 'play') {
     G.playMin += 1 / 3600;
+    valleyWind = 0.65 + Math.sin(frame * 0.006) * 0.3; // gentle, always easterly
     moversTick();
     crumbleTick();
     stonefallTick();
@@ -6624,6 +6659,7 @@ function render() {
   drawCrumble();
   drawStones();
   drawThermals();
+  drawSink();
   for (const e of ENTITIES) drawEntity(e);
   drawRings();
   drawGams();

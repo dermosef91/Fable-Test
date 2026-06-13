@@ -192,6 +192,15 @@ const THERMALS = [
   { x: 222, y: 18, w: 4, h: 50 },
 ];
 
+// Sink pockets — cold downdrafts between the thermals. A glider caught in one
+// drops fast; dive straight through or steer around, then climb a thermal back
+// up. Placed clear of the thermal columns and the ring centres so the course
+// stays catchable but the high ring over the lake demands real altitude first.
+const SINK = [
+  { x: 192, y: 12, w: 3, h: 28 },   // a mild pocket early in the run
+  { x: 214, y: 22, w: 4, h: 36 },   // guards the high line over the lake
+];
+
 // The flying course: five rings hung in the air. [tileX, tileY of center]
 const RINGS = [[186, 36], [198, 24], [209, 46], [223, 30], [232, 55]];
 
@@ -545,6 +554,7 @@ const TX_DE = {
     ['', 'Drinnen brennt eine Kerze, die niemand brennen sehen muss. Du lässt sie brennen.'],
   ],
   toast_thermal: 'THERMIK! Die warme Luft trägt dich nach oben. · Termica!',
+  toast_sink: 'ABWIND! Kalte Luft zieht dich runter — durchtauchen oder ausweichen, dann Thermik suchen. · Aria che scende!',
   toast_ring: n => `Ring ${n}/5 · Anello ${n}/5`,
   toast_rings_done: 'ALLE RINGE! Zurück zu Vera. · Tutti gli anelli!',
 
@@ -886,6 +896,7 @@ const TX_EN = {
     ['', 'Inside burns a candle that nobody needs to see burning. You let it burn.'],
   ],
   toast_thermal: 'THERMAL! The warm air carries you upward.',
+  toast_sink: 'SINKING AIR! A cold downdraft — dive through or steer clear, then find a thermal. · Aria che scende!',
   toast_ring: n => `Ring ${n}/5!`,
   toast_rings_done: 'ALL FIVE RINGS! Back to Vera.',
 
@@ -1127,6 +1138,7 @@ const GEAR_INFO = { // icons are drawn by drawIcon(key) in game.js
 // Shift all Y coordinates of static elements by Y_OFF
 WATERFALL.y += Y_OFF;
 for (const t of THERMALS) t.y += Y_OFF;
+for (const s of SINK) s.y += Y_OFF;
 for (const r of RINGS) r[1] += Y_OFF;
 for (const m of MOVERS) { m.y += Y_OFF; m.y2 += Y_OFF; }
 for (const c of CRUMBLE) c.y += Y_OFF;
@@ -1138,5 +1150,5 @@ for (const f of FLOWERS) f[1] += Y_OFF;
 for (const r of BG_ROCK) r.y += Y_OFF;
 
 if (typeof module !== 'undefined') {
-  module.exports = { TILE, WORLD_W, WORLD_H, buildWorld, WATERFALL, THERMALS, RINGS, MOVERS, CRUMBLE, STONEFALL, ZONES, PHASES, ENTITIES, TREES, FLOWERS, BG_ROCK, TX_DE, TX_EN, GEAR_INFO };
+  module.exports = { TILE, WORLD_W, WORLD_H, buildWorld, WATERFALL, THERMALS, SINK, RINGS, MOVERS, CRUMBLE, STONEFALL, ZONES, PHASES, ENTITIES, TREES, FLOWERS, BG_ROCK, TX_DE, TX_EN, GEAR_INFO };
 }

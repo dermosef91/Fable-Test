@@ -69,7 +69,7 @@ engine's `pend*` event queue exists for exactly that.
 ## Files
 
 - `world.js` — the whole mountain as data: tile fills in `buildWorld()`,
-  force-field rects (`WATERFALL`, `THERMALS`), `MOVERS` (platforms),
+  force-field rects (`WATERFALL`, `THERMALS`, `SINK`), `MOVERS` (platforms),
   `RINGS`, `ZONES`, `ENTITIES`, and every line of text in `TX_DE` / `TX_EN`.
 - `game.js` — the engine, one file: canvas/resize, fullscreen, input,
   WebAudio (SFX + generative music + ambience), save (localStorage
@@ -187,6 +187,12 @@ engine's `pend*` event queue exists for exactly that.
   `refreshTouch()` or they stay visually "pressed". Jump/act/up edges are
   also event-queued (`pendJump`/`pendAct`/`pendUp`) so a fast tap never
   falls between frames.
+- **Glider air (Hinteres Tal):** `THERMALS` lift a glider (`inThermal`),
+  `SINK` pockets drag it down (`inSink`) — keep sink rects clear of the thermal
+  columns and ring centres (a sink over a ring soft-locks the course; asserted
+  in check-world). A gentle steady easterly (`valleyWind`) nudges a glider east
+  and drives the windsock angles; it's mild so steering overrides. Sinks must
+  stay escapable (steer/dive out, soft landing) — never a trap.
 - **Movers:** platforms in `MOVERS` are one-way landings; standing players
   are carried via `p.moverRef` (set on landing, cleared on jump/walk-off).
 - **Crumble & stonefall:** `CRUMBLE` rects (world.js) are one-way shale slabs
