@@ -22,12 +22,12 @@ worse than missing ones. Routine work doesn't belong here.
 
 - Play locally: open `index.html` in a browser, or `npm run dev`
   (http-server on port 8080).
-- Tests: `npm test` / `node test/check-world.js` — ~280 headless
+- Tests: `npm test` (or `node test/check-world.js`) — ~280 headless
   world-geometry
   assertions (floor/headroom under every entity, gear gates sealed except
   the intended route, jump arcs reachable under the real physics).
   Run after **any** change to `world.js` and before every push.
-- `node test/smoke-render.js` — stubbed-DOM crash test that drives
+- `npm run smoke` (or `node test/smoke-render.js`) — stubbed-DOM crash test that drives
   title → play → dialog → map frames; run it after renderer changes.
 - **Geometry changes and their assertions land in the same commit.** If you
   move a ledge, update the ladder/hop lists in `check-world.js` too.
@@ -53,6 +53,8 @@ needed), drive with `page.keyboard` / `page.touchscreen` (use
 any scene via `page.evaluate(() => { G.gear = {...}; player.x = …; })`.
 Real keyboard presses can fall between frames in headless runs; the
 engine's `pend*` event queue exists for exactly that.
+
+- **Add screenshots/media** to the verification/walkthrough documentation (e.g. `walkthrough.md` or PR details) for all visual, layout, or level-design changes. Use the headless browser script or manual captures to show the before/after states where feasible.
 
 ## Deploy & collaboration
 
@@ -91,6 +93,7 @@ engine's `pend*` event queue exists for exactly that.
   4 up is a deliberate set-piece. Full arcs need **~5.5 tiles of headroom**
   — a ceiling 1–2 tiles above head height silently eats jumps (carve sky,
   as over the gorge slot).
+- **Summit Headroom & Y-Shifting**: The world height is `90` tiles (originally `80`), with all level geometry shifted down by `Y_OFF = 10` tiles. This leaves a 10-tile buffer of open air above the summit. All absolute Y lookups and boundaries in `game.js` and `test/check-world.js` must be dynamically shifted by adding `Y_OFF` to match this layout.
 - **Challenge before reward:** place gear so the player meets its obstacle
   first and backtracks (lamp at the Observer Post after the dark tunnel;
   ferrata set at the Depot after the bare cable). Quest collectibles must
@@ -103,6 +106,22 @@ engine's `pend*` event queue exists for exactly that.
   Darkness is a *soft* gate (drains warmth, passable for the determined).
 - One-way drops and shortcut loops (chimney, Schartl, scree-run) are part
   of the metroidvania feel — add them when a new area would force a slog.
+- **No trapping drops/gaps:** Avoid creating deep gaps where the player can fall and get stuck. Any platforming section must have a maximum drop depth of ~4 tiles to the nearest exit/climbable platform, or have clear re-entry/escape routes (e.g. wooden planks/one-way steps, or walkable horizontal exit tunnels).
+- **Movers must be load-bearing:** if a static ledge can substitute for a
+  moving platform's ride (or sit under its track at jump height), the mover
+  is decoration — remove the ledge, not the mover.
+- **No floating rock:** every ledge/crag bonds to a face or shoulder below
+  (extend the fill down). Only deliberate openings stay pure air, and a drop
+  gap (the Scharte) must line up with its landing (the pond).
+- **The Gipfel is the highest point on the map** — no crag, wall top or
+  massif face may poke above the summit plateau (map-edge walls excepted).
+
+- **Vector Asset Design Guidelines:** For structures (like the Alm hut redesign) and visual elements, favor high-quality hand-coded details over simple blocks:
+  - *Dimensionality:* Add steep roofs, eaves/overhangs, and outline strokes (`cx.strokeStyle`) for structural depth.
+  - *Texturing:* Use pattern line-work (e.g. horizontal plank lines, brick overlays, wood grains) rather than flat fills.
+  - *Vibrant Contrast:* Accent earthy or neutral bases with high-contrast color pops (e.g., green shutters, colorful flower boxes) to guide interest.
+  - *Micro-Particles:* Attach ambient details like chimney smoke particle generators or interactive elements (e.g. sitting benches).
+
 
 ## Engine conventions (game.js)
 
@@ -149,6 +168,17 @@ engine's `pend*` event queue exists for exactly that.
   falls between frames.
 - **Movers:** platforms in `MOVERS` are one-way landings; standing players
   are carried via `p.moverRef` (set on landing, cleared on jump/walk-off).
+- **Crumble & stonefall:** `CRUMBLE` rects (world.js) are one-way shale slabs
+  that crack ~1.5 s after first landing and regrow ~4 s later; collision rides
+  the same one-way landing loop as `MOVERS`. Place them only where a fall
+  lands on recoverable ground with a tested way back. `STONEFALL` bands drop
+  telegraphed stones (dust + rattle before the drop); hits stagger
+  (`p.stunT`) and cost warmth — never a respawn. Keep bands off cable columns
+  and plank havens; ledges inside a band intercept stones, so the exposed
+  stances are the ledges themselves. Mirror both in check-world.js (open-air
+  track, sky above, recoverable fall, band placement).
+- **NPC & Animal Rendering**: Characters and animals are drawn procedurally, supporting a horizontal facing direction (`face = 1` or `-1`) via context scaling: `cx.scale(face, 1)`. When in motion (i.e. horizontal velocity `vx` is non-zero), apply a sinusoidal leg/hoof walking swing offset (`swing = Math.sin(...) * scale`) to convey movement naturally.
+- **Organic Tile Rendering:** Solid tiles (rock, scree) use coordinate-seeded pseudo-random hashes `h(seed)` in `drawTiles()` to procedurally draw stable organic edge bumps, grassy humps/blades, and rounded corners, avoiding straight rectangular bounds.
 - **Saves:** bump `SAVE_KEY` only if the save shape breaks compatibility;
   `loadSave` must tolerate missing fields from older saves (`|| {}`,
   inferred `objKey`).
