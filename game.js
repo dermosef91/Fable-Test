@@ -3890,8 +3890,8 @@ function drawPlayer() {
     if (lampOn()) {
       cx.fillStyle = 'rgba(255,235,150,0.9)';
       cx.beginPath(); cx.arc(5, -2.5 + hY, 1.8, 0, 7); cx.fill();
-      cx.fillStyle = 'rgba(255,235,150,0.15)';
-      cx.beginPath(); cx.arc(5, -2.5 + hY, 5, 0, 7); cx.fill();
+      cx.fillStyle = `rgba(255,235,150,${0.15 * lampFlicker})`;
+      cx.beginPath(); cx.arc(5, -2.5 + hY, 5 * (0.7 + 0.3 * lampFlicker), 0, 7); cx.fill();
     }
   }
 
@@ -3899,6 +3899,34 @@ function drawPlayer() {
   if (!p.gliding) rimLight(p.x + p.w / 2 - cam.x, p.y + p.h - cam.y, p.h, 6);
 }
 function lampOn() { return G.gear.lamp && (curPC.night > 0.1 || (curZone && curZone.dark)); }
+
+// ---- lamp flicker & tunnel draft ------------------------------------------
+// The lamp breathes a little wherever it's lit; in the Stollen a periodic
+// draft guts the flame — the pool of light shrinks for a beat, telegraphed by
+// a low whoosh and sideways sparks, so you wait for it to steady before a hop.
+// It never goes fully dark (clamped), so darkness stays a soft gate.
+let lampFlicker = 1, draftT = 0, draftCd = 120;
+const DRAFT_LEN = 34;
+function lampTick() {
+  let target = 0.97 + Math.sin(frame * 0.4) * 0.02 + (Math.random() - 0.5) * 0.03; // base liveliness
+  const inTunnel = lampOn() && curZone && curZone.dark;
+  if (inTunnel && draftCd > 0) draftCd--;
+  if (draftT > 0) {
+    draftT--;
+    const k = Math.sin((draftT / DRAFT_LEN) * Math.PI); // 0 → 1 → 0 across the gust
+    target = 0.97 - 0.52 * k;                            // dips to ~0.45 mid-gust
+    if (frame % 3 === 0) // sparks pulled sideways by the draft
+      spawnPart({ x: player.x + player.w / 2, y: player.y + 4, vx: -0.8 - Math.random(), vy: -0.2 - Math.random() * 0.4, g: 0.02, t: 18, c: 'rgba(255,210,130,0.7)', s: 1.4 });
+  } else if (inTunnel && draftCd <= 0 && Math.random() < 0.013) {
+    draftT = DRAFT_LEN; draftCd = 150;                   // a fresh gust through the stollen
+    noiseBurst(0.32, 0.035, 380);
+    if (!G.flags.draftMet) { G.flags.draftMet = true; toast(TX.toast_draft); }
+  } else if (!inTunnel && draftT > 0) {
+    draftT--;
+  }
+  lampFlicker += (target - lampFlicker) * 0.45;
+  lampFlicker = Math.max(0.4, Math.min(1, lampFlicker));
+}
 
 function drawParts() {
   for (const p of parts) {
@@ -4095,7 +4123,8 @@ function drawLighting(pc) {
   // lamp/fire/window both clears the gloom AND tints what it lights.
   const lights = [];
   const px = player.x + player.w / 2 - cam.x, py = player.y + 6 - cam.y;
-  lights.push([px, py, lampOn() ? 95 : 26, lampOn() ? 0.97 : 0.5, '255,226,150', lampOn() ? 0.34 : 0]);
+  const lf = lampOn() ? lampFlicker : 1; // the lamp gutters in the tunnel draft
+  lights.push([px, py, (lampOn() ? 95 : 26) * lf, lampOn() ? 0.97 : 0.5, '255,226,150', (lampOn() ? 0.34 : 0) * lf]);
   for (const id in FIRES) {
     const f = FIRES[id];
     const fx = f.x * TILE + 8 - cam.x, fy = f.r * TILE - 10 - cam.y;
@@ -6573,6 +6602,7 @@ function step() {
     gamsTick();
     npcTick();
     zoneTick();
+    lampTick();
     critterTick();
 
     // Spawn ambient water bubbles rising from bottom of water bodies in view

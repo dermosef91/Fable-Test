@@ -136,6 +136,12 @@ engine's `pend*` event queue exists for exactly that.
   cut-outs, then a `'lighter'` warm glow keyed to `amb` (so fires/lamp tint what
   they light at night/dusk but stay neutral in daylight). One `lights[]` list
   feeds both — add a source there, don't duplicate coords.
+- **Lamp flicker & tunnel draft (`lampTick`):** `lampFlicker` (0.4–1) scales the
+  player lamp's radius + warm alpha so it breathes. In the Stollen a periodic
+  draft (`draftT`) guts it — the pool shrinks for a beat (whoosh + sideways
+  sparks, one-time hint) so you wait before a hop. Clamped ≥0.4 (never a
+  blackout — darkness stays a *soft* gate). Gusts only fire while `lampOn() &&
+  curZone.dark`; the base breath applies wherever the lamp is lit.
 - **Baked textures, never asset files.** `ensureTex()` paints a 512×512 detail
   sheet once into an offscreen canvas — **4× supersampled** (64-px sub-tiles for
   16-px world tiles); `texTile`/`texRect` blit a sub-tile keyed to **world tile
