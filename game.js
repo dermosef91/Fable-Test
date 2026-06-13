@@ -1648,7 +1648,7 @@ function hexLerp(h1, h2, t) {
   const a = p(h1), b = p(h2);
   return `rgb(${a.map((v, i) => Math.round(lerp(v, b[i], t))).join(',')})`;
 }
-let phaseLerpT = 1, phasePrev = 1;
+let phaseLerpT = 1, phasePrev = 1, phaseCur = 1;
 let curPC = {
   top: PHASES[1].skyTop,
   bot: PHASES[1].skyBot,
@@ -1678,7 +1678,11 @@ let curPC = {
 };
 
 function phaseColors() {
-  if (phasePrev !== G.phase) { phaseLerpT = 0; }
+  // Edge-detect the phase change so the lerp resets exactly once. (Resetting
+  // every frame while phasePrev !== G.phase deadlocks: phaseLerpT can never
+  // reach 1, so phasePrev never catches up and transitions freeze — which is
+  // what stalled the weather/sky once `rain` started lerping through it.)
+  if (phaseCur !== G.phase) { phasePrev = phaseCur; phaseCur = G.phase; phaseLerpT = 0; }
   phaseLerpT = Math.min(1, phaseLerpT + 0.0025); // ~6.6 seconds transition at 60fps
   const a = PHASES[phasePrev] || PHASES[G.phase], b = PHASES[G.phase];
   const out = {
@@ -6335,11 +6339,10 @@ function drawTitleBg(W, H) {
 }
 
 function drawTitle() {
-  // cycle day phase on the title screen every 15 seconds
+  // cycle day phase on the title screen every 15 seconds; phaseColors() detects
+  // the change and eases the sky/weather across to the next phase
   if (frame > 0 && frame % 900 === 0) {
-    phasePrev = G.phase;
     G.phase = (G.phase % 5) + 1;
-    phaseLerpT = 0;
   }
 
   cx.save();
@@ -6503,11 +6506,13 @@ function drawTitle() {
       caption([TX.continue_caption, G.objective], 200);
     } else {
       G.phase = 1;
-      phasePrev = 1;
-      phaseLerpT = 1;
       G.mode = 'play';
       startIntro();
     }
+    // start settled on the current phase — no transition bleeding in from the
+    // title screen's phase-cycling
+    phasePrev = phaseCur = G.phase;
+    phaseLerpT = 1;
   }
 }
 let pendTitle = null;

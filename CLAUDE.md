@@ -132,6 +132,13 @@ engine's `pend*` event queue exists for exactly that.
 - **Art-direct phases from `GRADE`, not ternaries.** Each phase has one
   `{top,bot,a}` multiply wash (lerped like `phaseColors`). Tune time-of-day mood
   there instead of adding `G.phase === n ? …` branches across draw functions.
+- **Phase transitions are edge-detected in `phaseColors`** via `phaseCur` —
+  the lerp reset must fire *once* when `G.phase` changes, never every frame.
+  (Resetting each frame deadlocks: `phaseLerpT` can't reach 1, so `phasePrev`
+  never advances and sky/weather/night freeze on the old phase. Anything that
+  lerps through `phaseLerpT` — `rain`, `ambient`, `night`, `dawn`, sky colours —
+  silently stops switching.) Drive a phase change by setting `G.phase`; don't
+  poke `phasePrev`/`phaseLerpT` by hand.
 - **Lighting is two passes in `drawLighting`:** a low-res darkness overlay with
   cut-outs, then a `'lighter'` warm glow keyed to `amb` (so fires/lamp tint what
   they light at night/dusk but stay neutral in daylight). One `lights[]` list
