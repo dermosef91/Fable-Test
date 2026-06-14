@@ -104,6 +104,17 @@ engine's `pend*` event queue exists for exactly that.
   first and backtracks (lamp at the Observer Post after the dark tunnel;
   ferrata set at the Depot after the bare cable). Quest collectibles must
   require a detour, not line the critical path (Norbert's gorge chestnut).
+- **A ledge needs headroom, or it isn't a ledge.** A fill tile placed inside a
+  solid wall (the headwall) or tucked directly under another ledge is *solid
+  but unstandable* — the body can't occupy it, so the player can't land. The
+  Mine-Gallery depot climb once routed its buttress step into the headwall and
+  walled its cavern off from the rest, stranding the ferrata set entirely.
+  `reachable()` is **blind to the world** — it only does edge-to-edge arc math,
+  so a buried ledge or sealed cavern sails through it. Gear/climb routes must be
+  **flood-fill-connected from the player's entry to the actual pickup cell**;
+  `check-world.js` now flood-fills the real tiles from the Hochband to the kit,
+  and every gear route should get the same end-to-end walk, not just per-hop
+  reachable() + solidity spot-checks.
 - **Act-range vs slide gates:** `findInteract` grabs the nearest pickup within
   ~3.5 tiles (56 px), *even mid-jump*, and a jump rides a shallow scree slope
   straight up to a pickup. So scree alone won't gate a collectible: pile it
