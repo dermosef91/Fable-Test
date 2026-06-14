@@ -313,6 +313,17 @@ for (const s of STONEFALL) {
 // 14. pond crossing: bank -> log -> bank
 ok(at(145, 69 + Y_OFF) === 3 && at(146, 69 + Y_OFF) === 3, 'pond log present');
 ok(solid(at(142, 70 + Y_OFF)) && solid(at(150, 70 + Y_OFF)), 'pond banks solid');
+// 14a. the boots teaser west of the pond: a steep scree buttress on a one-way
+//      plank you pass under, rising one tile per column to the chestnut on top
+//      — kept beyond a bootless hop's reach (findInteract grabs within ~3.5
+//      tiles, and a jump can ride a shallow scree slope right up to the cap).
+ok(at(139, 68 + Y_OFF) === 3, 'scree-pile plank is one-way (passable from below)');
+ok(!solid(at(138, 69 + Y_OFF)) && !solid(at(140, 69 + Y_OFF)), 'forest path stays open under the plank');
+for (const [x, y] of [[141, 67], [140, 66], [139, 65], [138, 64], [137, 63]]) ok(at(x, y + Y_OFF) === 2, `scree step at ${x},${y + Y_OFF}`);
+ok(at(141, 66 + Y_OFF) !== 2 && at(137, 62 + Y_OFF) !== 2, 'scree pile is a clean staircase (headroom on each step)');
+ok(ENTITIES.some(e => e.t === 'chestnut' && e.x === 137 && e.r === 63 + Y_OFF), 'chestnut caps the scree pile');
+ok(ENTITIES.some(e => e.t === 'gear' && e.gear === 'boots' && e.x > 150), 'boots wait east of the pond');
+ok(ENTITIES.some(e => e.t === 'shelter' && e.x > 150), 'forest shelter sits east of the pond');
 
 // 14b. east ridge: every peak bonds to the shoulder — no floating rock
 for (const x of [142, 143, 147, 152, 158, 163]) {

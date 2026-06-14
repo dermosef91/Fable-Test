@@ -98,6 +98,14 @@ engine's `pend*` event queue exists for exactly that.
   first and backtracks (lamp at the Observer Post after the dark tunnel;
   ferrata set at the Depot after the bare cable). Quest collectibles must
   require a detour, not line the critical path (Norbert's gorge chestnut).
+- **Act-range vs slide gates:** `findInteract` grabs the nearest pickup within
+  ~3.5 tiles (56 px), *even mid-jump*, and a jump rides a shallow scree slope
+  straight up to a pickup. So scree alone won't gate a collectible: pile it
+  **steep and solid with no flat launch pad in its lee** (a one-way plank base
+  keeps the path open beneath), so every bootless hop lands on scree and slides
+  back before reaching grab range. The pond-chestnut teaser is built this way;
+  verify such gates in headless Chrome from *every* approach (the hop-up was
+  reachable bootless until the pile went steep).
 - **Late-game unlocks** invite return trips: photo spots appear after the
   finale, Ida's tin after the Zinnensprung. Gate via flags in
   `findInteract`/`drawEntity`, not by deleting entities.
