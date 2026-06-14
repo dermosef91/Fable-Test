@@ -332,6 +332,54 @@ for (const s of STONEFALL) {
   ok(solid(at(s.x, s.floor)) && solid(at(s.x + s.w - 1, s.floor)), `stonefall@x${s.x} floor row y${s.floor} is solid`);
 }
 
+// 13b. The Final Ascent (Gamskofel): reachable ON FOOT from the Hidden Valley
+// (no paraglider) and completable end-to-end up to the summit book. This route
+// shipped with its Stage-1 ledges buried in the catch floor (a 20-tile glider-
+// only cliff) and a Stage-3 chimney whose recovery ledge was capped solid and
+// whose commit plank was carved away — dead-ending the climb above the bonfire.
+// reachable() alone is blind to buried/capped ledges, so flood-fill the REAL
+// tiles from a valley-floor stand cell all the way to the summit, exactly like
+// the depot climb above.
+// First, the explicit step ladder (each stands clear, with headroom):
+for (const [x, y] of [
+  [247, 68], [251, 65], [255, 62], [259, 59], [263, 56], [267, 53], // approach staircase
+  [279, 48], [275, 45], [281, 42], [286, 39],                       // Stage 2 + BIWAK
+  [282, 36], [283, 30], [286, 27], [282, 24],                       // Stage 3 chimney
+  [289, 21], [290, 15], [296, 12], [301, 9], [305, 6],              // Stage 4-5
+]) {
+  ok(solid(at(x, y + Y_OFF)) && !solid(at(x, y - 1 + Y_OFF)) && !solid(at(x, y - 2 + Y_OFF)),
+    `Gamskofel step at ${x},${y} stands clear`);
+}
+// the bonfire (kofelbiwak) sits under the crumble slab so a slip lands home
+ok(ENTITIES.some(e => e.t === 'fire' && e.id === 'kofelbiwak'), 'Gamskofel bonfire (kofelbiwak) present');
+ok(CRUMBLE.some(c => c.x === 285 && c.y === 33 + Y_OFF && c.w === 3), 'crumble slab spans the chimney over the bonfire (x285..287, y33)');
+// flood-fill: valley floor -> summit book
+{
+  const crumbAt = (x, y) => CRUMBLE.some(c => c.y === y && x >= c.x && x < c.x + c.w);
+  const floorAt = (x, y) => { const t = at(x, y); return solid(t) || t === 3 || crumbAt(x, y); };
+  const blocks = (x, y) => solid(at(x, y));
+  const stand = (x, y) => floorAt(x, y + 1) && !blocks(x, y) && !blocks(x, y - 1);
+  const launch = (x, y, dy) => { for (let i = 1; i <= Math.min(5, dy + 1); i++) if (blocks(x, y - i)) return false; return true; };
+  const start = [244, 69 + Y_OFF];                 // standing on the valley floor west of the face
+  const seen = new Set([start.join()]);
+  const q = [start];
+  while (q.length) {
+    const [x, y] = q.shift();
+    const push = (nx, ny) => { const k = nx + ',' + ny; if (!seen.has(k)) { seen.add(k); q.push([nx, ny]); } };
+    for (const dx of [-1, 1]) for (const dy of [-1, 0, 1])
+      if (stand(x + dx, y + dy) && !blocks(x + dx, y) && !blocks(x, y + dy)) push(x + dx, y + dy);
+    for (let ny = y + 1; ny < y + 30; ny++) { if (blocks(x, ny)) break; if (stand(x, ny)) { push(x, ny); break; } }
+    for (let nx = x - 6; nx <= x + 6; nx++) for (let ny = y - 5; ny <= y + 2; ny++) {
+      if ((nx === x && ny === y) || !stand(nx, ny)) continue;
+      if (reachable(x, y, nx, ny) && launch(x, y, y - ny)) push(nx, ny);
+    }
+  }
+  const book = ENTITIES.find(e => e.t === 'book');
+  ok(seen.has(book.x + ',' + (book.r - 1)), 'summit book reachable on foot from the Hidden Valley (no glider)');
+  const biwak = ENTITIES.find(e => e.t === 'fire' && e.id === 'kofelbiwak');
+  ok(seen.has(biwak.x + ',' + (biwak.r - 1)), 'Gamskofel bonfire reachable on foot');
+}
+
 // 14. pond crossing: bank -> log -> bank
 ok(at(145, 69 + Y_OFF) === 3 && at(146, 69 + Y_OFF) === 3, 'pond log present');
 ok(solid(at(142, 70 + Y_OFF)) && solid(at(150, 70 + Y_OFF)), 'pond banks solid');
