@@ -116,17 +116,18 @@ for (const [x, y] of [[14, 25], [11, 23], [17, 21], [20, 19], [16, 15], [6, 10]]
 ok(ENTITIES.some(e => e.t === 'gear' && e.gear === 'lamp' && e.r <= 10 + Y_OFF), 'lamp waits at the observer post (above the tunnel mouth level)');
 // one-way plank adds commitment to the climb
 ok(at(20, 19 + Y_OFF) === 3, 'observer post has a one-way plank at the midpoint');
-// the depot above the tunnel's east mouth — a five-hop climb to the set
-for (const [x, y] of [[68, 26], [72, 23], [69, 21], [29, 17], [29, 13], [55, 7], [40, 15]]) ok(solid(at(x, y + Y_OFF)), `depot ledge/floor at ${x},${y + Y_OFF}`);
-ok(at(65, 19 + Y_OFF) === 3 && at(66, 19 + Y_OFF) === 3, 'depot plank at the nook mouth (one-way)');
-ok(!reachable(68, 28 + Y_OFF, 72, 23 + Y_OFF) && !reachable(68, 28 + Y_OFF, 70, 21 + Y_OFF), 'depot climb cannot be skipped from the floor');
-ok(!solid(at(42, 14 + Y_OFF)) && solid(at(42, 12 + Y_OFF)), 'depot nook carved with a roof');
-ok(!solid(at(60, 17 + Y_OFF)) && !solid(at(60, 18 + Y_OFF)), 'depot nook opens east');
-{
-  let roofOk = true;
-  for (let x = 40; x <= 60; x++) for (let y = 19 + Y_OFF; y <= 21 + Y_OFF; y++) if (!solid(at(x, y))) roofOk = false;
-  ok(roofOk, 'tunnel roof stays 3 thick under the depot');
+// the depot climb: outer buttress -> dark cavern -> mud-chimney -> gallery.
+// Each listed tile is a standable step (solid/plank/crumble) that needs open
+// headroom — a step buried in the headwall is solid but unstandable, the bug
+// that once dead-ended this climb. Headroom is checked by the flood-fill below.
+for (const [x, y] of [[66, 25], [62, 23], [67, 21], [60, 19], [56, 17], [46, 17], [48, 14], [46, 11], [55, 7], [40, 15]]) {
+  const t = at(x, y + Y_OFF);
+  ok((solid(t) || t === 3) && !solid(at(x, y - 1 + Y_OFF)), `depot step at ${x},${y + Y_OFF} stands clear`);
 }
+ok(at(65, 19 + Y_OFF) === 3 && at(66, 19 + Y_OFF) === 3, 'depot plank at the nook mouth (one-way)');
+ok(!solid(at(42, 14 + Y_OFF)) && solid(at(42, 12 + Y_OFF)), 'depot nook carved with a roof');
+ok(!solid(at(47, 12 + Y_OFF)) && !solid(at(47, 10 + Y_OFF)), 'mud-chimney carved up to the gallery (east of the divider)');
+ok(solid(at(44, 13 + Y_OFF)) && solid(at(45, 16 + Y_OFF)), 'divider keeps the kit nook sealed from the cavern');
 ok(ENTITIES.some(e => e.t === 'gear' && e.gear === 'kit' && e.r <= 19 + Y_OFF), 'ferrata set waits up at the depot');
 ok(ENTITIES.some(e => e.t === 'gear' && e.gear === 'glider' && e.r <= 11 + Y_OFF), 'paraglider waits behind the flug sign');
 ok(ENTITIES.filter(e => e.t === 'chestnut' && e.x < 60).length >= 1, 'a chestnut waits west of the Alm — the quest sends you somewhere new');
@@ -180,36 +181,38 @@ const lookoutHops = [
   [[9, 13], [8, 10]],    // off the hoist at its west end, onto the shelf
 ];
 lookoutHops.forEach(([a, b], i) => ok(reachable(...a, ...b), `lookout hop ${i} reachable`));
-const depotHops = [
-  [[68, 28], [68, 26]],   // off the Hochband floor
-  [[68, 26], [72, 23]],   // a long rising leap right
-  [[72, 23], [69, 21]],   // back left onto the one-tile perch
-  [[69, 21], [65, 19]],   // perch -> one-way plank
-  [[65, 19], [60, 19]],   // plank -> across the nook mouth (Lower Cavern entrance)
-  [[60, 19], [57, 17]],   // Lower Cavern entrance -> Plank 1 over mud
-  [[56, 17], [51, 16]],   // Plank 1 -> Plank 2 over mud
-  [[51, 16], [46, 17]],   // Plank 2 -> Plank 3 over mud
-  [[46, 17], [40, 18]],   // Plank 3 -> West Mine Shaft entrance floor
-  [[40, 18], [38, 15]],   // Mine Shaft floor -> lower crumble perch
-  [[38, 15], [34, 16]],   // lower crumble -> intermediate mine step
-  [[34, 16], [29, 17]],   // intermediate mine step -> rock step left
-  [[29, 17], [29, 13]],   // rock step left -> rock step upper left
-  [[29, 13], [33, 11]],   // rock step upper left -> upper crumble perch
-  [[33, 11], [32, 11]],   // upper crumble -> vertical ore hoist at y11
-  [[32, 7], [37, 5]],     // vertical ore hoist at y7 -> Upper Gallery entrance
-  [[37, 5], [38, 7]],     // Upper Gallery entrance -> bridge Plank 1
-  [[38, 7], [42, 8]],     // bridge Plank 1 -> bridge Plank 2
-  [[42, 8], [47, 8]],     // bridge Plank 2 -> bridge Plank 3
-  [[47, 8], [52, 7]],     // bridge Plank 3 -> bridge Plank 4
-  [[52, 7], [55, 7]],     // bridge Plank 4 -> High storage platform
-  [[55, 7], [58, 6]],     // High storage platform -> Sky Catwalk exit
-  [[58, 6], [55, 4]],     // Sky Catwalk exit -> sky Plank 1
-  [[55, 4], [50, 3]],     // sky Plank 1 -> sky Plank 2
-  [[50, 3], [45, 4]],     // sky Plank 2 -> sky Plank 3
-  [[45, 4], [42, 3]],     // sky Plank 3 -> Dropdown Shaft entrance
-  [[42, 3], [42, 15]],    // drop down the shaft onto the kit platform
-];
-depotHops.forEach(([a, b], i) => ok(reachable(...a, ...b), `depot hop ${i} reachable`));
+// the depot climb: flood-fill the REAL tiles from the Hochband to the kit.
+// reachable() alone is blind to the world — it cannot see a ledge buried in
+// solid rock or a cavern walled off from the route, the exact bugs that once
+// stranded the set. This walk does, and it fails loudly if the kit is cut off.
+{
+  const crumbAt = (x, y) => CRUMBLE.some(c => c.y === y && x >= c.x && x < c.x + c.w);
+  const moverAt = (x, y) => MOVERS.some(m => {
+    const x0 = Math.min(m.x, m.x2), x1 = Math.max(m.x, m.x2) + m.w - 1;
+    const y0 = Math.min(m.y, m.y2), y1 = Math.max(m.y, m.y2);
+    return x >= x0 && x <= x1 && y >= y0 && y <= y1;
+  });
+  const floorAt = (x, y) => { const t = at(x, y); return solid(t) || t === 3 || t === 8 || crumbAt(x, y) || moverAt(x, y); };
+  const blocks = (x, y) => solid(at(x, y));                    // body-blocking rock/scree/ice
+  const stand = (x, y) => floorAt(x, y + 1) && !blocks(x, y) && !blocks(x, y - 1);
+  const launch = (x, y, dy) => { for (let i = 1; i <= Math.min(5, dy + 1); i++) if (blocks(x, y - i)) return false; return true; };
+  const start = [66, 27 + Y_OFF];                              // a Hochband floor stand-cell
+  const seen = new Set([start.join()]);
+  const q = [start];
+  while (q.length) {
+    const [x, y] = q.shift();
+    const push = (nx, ny) => { const k = nx + ',' + ny; if (!seen.has(k)) { seen.add(k); q.push([nx, ny]); } };
+    for (const dx of [-1, 1]) for (const dy of [-1, 0, 1])           // walk / step over ±1
+      if (stand(x + dx, y + dy) && !blocks(x + dx, y) && !blocks(x, y + dy)) push(x + dx, y + dy);
+    for (let ny = y + 1; ny < y + 30; ny++) { if (blocks(x, ny)) break; if (stand(x, ny)) { push(x, ny); break; } } // fall
+    for (let nx = x - 6; nx <= x + 6; nx++) for (let ny = y - 5; ny <= y + 2; ny++) {   // jump arcs
+      if ((nx === x && ny === y) || !stand(nx, ny)) continue;
+      if (reachable(x, y, nx, ny) && launch(x, y, y - ny)) push(nx, ny);
+    }
+  }
+  const kit = ENTITIES.find(e => e.t === 'gear' && e.gear === 'kit');
+  ok(seen.has(kit.x + ',' + (kit.r - 1)), 'ferrata set is reachable on foot from the Hochband');
+}
 // ridge hops: the climb from the shoulder to the summit and down the east side
 const ridgeHops = [
   // Stage 1 — The Shoulder

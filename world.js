@@ -133,7 +133,10 @@ function buildWorld() {
 
   // --- the depot: a balcony nook above the tunnel's east mouth ------------
   // (the ferrata set waits here — the cable below sends you looking)
-  // Expanded 5x longer: Outer buttress -> Dark cavern (mud crossing) -> Mine shaft (crumble ledges) -> Ventilation chimney (vertical ore lift) -> Upper gallery (suspension bridge) -> Sky catwalks -> Dropdown to locked kit chamber.
+  // The route: Outer buttress (Hochband east face) -> Dark cavern (mud crossing)
+  // -> Mud-chimney up to the Upper gallery (suspension bridge) -> Dropdown shaft
+  // into the locked kit chamber. The West Mine Shaft + ventilation hoist are an
+  // older dead-end working off the gallery (optional, not on the kit route).
   
   // 1. Carve the expanded internal mine system inside the massif
   carve(46, 15, 15, 4);    // Lower Cavern (x: 46..60, y: 15..18, floor y: 18)
@@ -142,16 +145,21 @@ function buildWorld() {
   carve(36, 5, 25, 4);     // Upper Gallery (x: 36..60, y: 5..8, floor y: 8)
   carve(40, 5, 2, 10);     // Dropdown Shaft (x: 40..41, y: 5..14)
   carve(40, 13, 4, 6);     // Locked Depot Nook (x: 40..43, y: 13..18)
+  carve(46, 9, 4, 6);      // Mud-Chimney: lifts the cavern up to the gallery,
+                           // EAST of the divider so the kit nook stays sealed (x: 46..49, y: 9..14)
   
   // 2. Build Depot Nook & Wall
   fill(40, 15, 4, 4, 1);   // Kit Platform (floor y: 15)
   fill(44, 13, 2, 6, 1);   // Divider Wall between Nook and Caverns
   
   // 3. Stage 1: Outer Buttress Ledges (Hochband -> Cavern entrance)
-  fill(68, 26, 2, 1, 1);   // 1. first step off the Hochband
-  fill(72, 23, 2, 1, 1);   // 2. a long rising leap toward the headwall
-  fill(69, 21, 1, 1, 1);   // 3. single-tile perch — precision
-  fill(65, 19, 2, 1, 3);   // 4. one-way plank at the nook's mouth
+  // A zigzag up the open east face. Ledges must sit WEST of the headwall (x72)
+  // and clear of the belay shelf (x67..69,y21): a ledge buried in solid rock,
+  // or tucked right under another, has no headroom and cannot be stood on.
+  fill(66, 25, 2, 1, 1);   // 1. first step up off the Hochband (x66..67)
+  fill(62, 23, 2, 1, 1);   // 2. a leap back left up the buttress (x62..63)
+  // 3. the belay shelf (x67..69,y21, built with the ferrata below) is the next step
+  fill(65, 19, 2, 1, 3);   // 4. one-way plank at the nook's mouth (x65..66)
   
   // 4. Stage 2: Lower Cavern & Mud Crossing (requires Stirnlampe)
   fill(45, 18, 8, 1, 8);   // Mud pit on the floor (x: 45..52, y: 18)
@@ -159,7 +167,11 @@ function buildWorld() {
   fill(51, 16, 2, 1, 3);   // Plank 2 over mud (x: 51..52, y: 16)
   fill(46, 17, 2, 1, 3);   // Plank 3 over mud (x: 46..47, y: 17)
   
-  // 5. Stage 3: West Mine Shaft & Chimney Climb
+  // 5. Stage 3: Mud-Chimney handholds — the dripping climb out of the cavern,
+  // off the last mud plank, up to the suspension bridge in the gallery.
+  fill(48, 14, 2, 1, 1);   // lower handhold (x: 48..49, y: 14)
+  fill(46, 11, 2, 1, 1);   // upper handhold (x: 46..47, y: 11) — one hop onto the bridge
+  // West Mine Shaft pocket (an old dead-end working, reachable from the gallery):
   fill(29, 17, 2, 1, 1);   // Rock step left (x: 29..30, y: 17)
   fill(34, 16, 2, 1, 1);   // Intermediate mine step (x: 34..35, y: 16)
   fill(29, 13, 2, 1, 1);   // Rock step upper left (x: 29..30, y: 13)
