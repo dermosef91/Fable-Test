@@ -158,9 +158,16 @@ engine's `pend*` event queue exists for exactly that.
   resamples the high-res grain cleanly — without that, nearest-neighbour
   magnifies the sheet into blocks. A subtle per-tile colour jitter (`hexLerp`
   ~0.15) keeps the flat fill from reading as one slab; `drawRockDecor` adds
-  *rare* off-grid accents (lichen, moss, veins, quartz). (A pass of larger
-  hand-drawn boulder/vegetation *objects* on top was tried and reverted — keep
-  the look to baked grain + sparse decals.)
+  *rare* off-grid accents (lichen, moss, veins, quartz, the odd embedded
+  boulder).
+- **Decorative rocks & plants (`drawWallVeg`):** hand-drawn objects — boulders
+  resting on ledges, shrubs, grass tufts on faces, hanging vines, crevice
+  flowers — sprinkled *very* sparsely (gates ~1/10 of a normal pass) over the
+  baked grain so they're occasional accents, never a carpet. Keyed to the
+  `upAir/downAir/leftAir/rightAir` flags, drawn after the edge bumps; density
+  scales by biome (`vegK`: lush valley/alm, sparse ridge). `drawBoulder`/
+  `drawBush` are the shared shaded-object helpers. (A *dense* version of this
+  pass was tried and dialed back — keep it rare.)
 - **Edge AO:** thin dark strips on air-facing tile sides + a band under the
   grass cap carve depth; keep them subtle so they don't fight the organic edge
   bumps.

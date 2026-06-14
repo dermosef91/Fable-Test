@@ -2031,6 +2031,94 @@ function drawRockDecor(x, y, h, bio) {
     cx.fillStyle = 'rgba(255,255,250,0.65)';
     cx.fillRect(x + h(97) * TILE, y + h(98) * TILE, 1.4, 1.4);
   }
+  if (h(100) > 0.985) {                                 // embedded boulder (rare accent)
+    drawBoulder(x + 3 + h(101) * (TILE - 6), y + 4 + h(102) * (TILE - 8), 2.4 + h(103) * 2.4, h, 104, 120 + h(105) * 24, false);
+  }
+}
+
+// Decorative rock & plant objects, sprinkled ~1/10 as often as the original
+// pass so they read as occasional accents over the baked grain, not a carpet.
+// Keyed to the per-tile hash + air flags, drawn over the edge bumps so they sit
+// on the silhouette. Vegetation thins out with altitude (vegK).
+function drawWallVeg(x, y, h, bio, upAir, downAir, leftAir, rightAir) {
+  const vegK = bio === 'valley' ? 1 : bio === 'alm' ? 0.95 : bio === 'high' ? 0.5 : 0.22;
+  const gcol = bio === 'valley' ? '#5d9148' : bio === 'alm' ? '#6fae57' : bio === 'high' ? '#7e8f5e' : '#8a9468';
+  if (upAir && h(150) > 0.99) {                         // boulder resting on a ledge
+    const r = 3 + h(151) * 3.2;
+    drawBoulder(x + 3 + h(152) * (TILE - 6), y - r * 0.55, r, h, 153, 150 + h(154) * 26, true);
+  }
+  if (upAir && h(155) > 1 - 0.034 * vegK) {             // shrub on a ledge
+    const bcol = bio === 'valley' ? '#4d7d3c' : bio === 'alm' ? '#5a9446' : '#647a4e';
+    drawBush(x + 3 + h(156) * (TILE - 6), y + 1, 2.6 + h(157) * 2.4, h, 158, bcol);
+  }
+  if (leftAir && h(120) > 1 - 0.034 * vegK) drawTuft(x + 0.5, y + 3 + h(121) * (TILE - 6), -1, 0.9 + h(122) * 0.4, gcol, h, 123);
+  if (rightAir && h(126) > 1 - 0.034 * vegK) drawTuft(x + TILE - 0.5, y + 3 + h(127) * (TILE - 6), 1, 0.9 + h(128) * 0.4, gcol, h, 129);
+  if (downAir && h(132) > 1 - 0.03 * vegK) {            // hanging vine under an overhang
+    const vcol = (bio === 'valley' || bio === 'alm') ? 'rgba(86,118,68,0.85)' : 'rgba(96,104,72,0.8)';
+    drawVine(x + 2 + h(133) * (TILE - 4), y + TILE, 4 + h(134) * 7, vcol, h, 135);
+  }
+  if ((leftAir || rightAir || upAir) && h(138) > 0.993) {  // alpine flower in a crevice / on a ledge
+    const fx = x + (leftAir ? 2 : rightAir ? TILE - 2 : 3 + h(139) * (TILE - 6));
+    const fy = y + (upAir ? 0 : 3 + h(140) * (TILE - 6));
+    cx.fillStyle = h(141) > 0.5 ? '#d9577a' : '#5a7fd0';   // alpenrose / gentian
+    cx.beginPath(); cx.arc(fx, fy, 1.5, 0, 7); cx.fill();
+    cx.fillStyle = '#e9c84a'; cx.beginPath(); cx.arc(fx, fy, 0.6, 0, 7); cx.fill();
+  }
+}
+// a shaded, lit rounded boulder. by = vertical centre; resting adds a contact
+// shadow and means it's sitting on the surface rather than set into the face.
+function drawBoulder(bx, by, r, h, seed, tone, resting) {
+  if (resting) { cx.fillStyle = 'rgba(18,22,28,0.18)'; cx.beginPath(); cx.ellipse(bx, by + r * 0.82, r * 1.05, r * 0.32, 0, 0, 7); cx.fill(); }
+  const t = Math.round(tone);
+  cx.fillStyle = `rgb(${t},${t - 5},${t - 13})`;
+  cx.beginPath();
+  const pts = 8;
+  for (let i = 0; i < pts; i++) {
+    const a = i / pts * 6.283, rr = r * (0.8 + h(seed + i) * 0.3);
+    const px = bx + Math.cos(a) * rr, py = by + Math.sin(a) * rr * 0.9;
+    i ? cx.lineTo(px, py) : cx.moveTo(px, py);
+  }
+  cx.closePath(); cx.fill();
+  cx.fillStyle = 'rgba(255,255,255,0.13)';
+  cx.beginPath(); cx.ellipse(bx - r * 0.25, by - r * 0.36, r * 0.5, r * 0.3, -0.4, 0, 7); cx.fill();
+  cx.fillStyle = 'rgba(0,0,0,0.2)';
+  cx.beginPath(); cx.ellipse(bx + r * 0.1, by + r * 0.4, r * 0.7, r * 0.3, 0, 0, 7); cx.fill();
+  cx.strokeStyle = 'rgba(0,0,0,0.22)'; cx.lineWidth = 0.6;
+  cx.beginPath(); cx.moveTo(bx - r * 0.35, by - r * 0.12); cx.lineTo(bx + r * 0.05, by + r * 0.12); cx.lineTo(bx + r * 0.18, by + r * 0.42); cx.stroke();
+}
+// a leafy shrub sitting on (bx, baseY) — overlapping blobs, base shadow + top light
+function drawBush(bx, baseY, r, h, seed, col) {
+  cx.fillStyle = 'rgba(18,22,28,0.14)'; cx.beginPath(); cx.ellipse(bx, baseY, r * 1.1, r * 0.3, 0, 0, 7); cx.fill();
+  cx.fillStyle = col;
+  for (let i = 0; i < 4; i++) {
+    const a = i / 4 * 6.283;
+    cx.beginPath(); cx.arc(bx + Math.cos(a) * r * 0.45, baseY - r * 0.5 + Math.sin(a) * r * 0.35, r * (0.55 + h(seed + i) * 0.25), 0, 7); cx.fill();
+  }
+  cx.fillStyle = 'rgba(255,255,255,0.13)';
+  cx.beginPath(); cx.arc(bx - r * 0.2, baseY - r * 0.85, r * 0.4, 0, 7); cx.fill();
+}
+function drawTuft(ax, ay, dir, scale, col, h, seed) {
+  cx.strokeStyle = col; cx.lineWidth = 0.8;
+  const n = 3 + Math.floor(h(seed) * 3);
+  for (let i = 0; i < n; i++) {
+    const t = i / Math.max(1, n - 1) - 0.5;
+    const len = (3 + h(seed + 1 + i) * 3.5) * scale;
+    cx.beginPath(); cx.moveTo(ax, ay + t * 2);
+    cx.quadraticCurveTo(ax + dir * 2 + t, ay - len * 0.5, ax + dir * (2 + Math.abs(t) * 2.5) + t * 1.5, ay - len + Math.abs(t) * 1.5);
+    cx.stroke();
+  }
+}
+function drawVine(ax, ay, len, col, h, seed) {
+  cx.strokeStyle = col; cx.lineWidth = 0.9;
+  const sway = (h(seed) - 0.5) * 5;
+  cx.beginPath(); cx.moveTo(ax, ay);
+  cx.quadraticCurveTo(ax + sway * 0.5, ay + len * 0.5, ax + sway, ay + len);
+  cx.stroke();
+  cx.fillStyle = col;
+  for (let i = 1; i <= 2; i++) {
+    const f = i / 3, lx = ax + sway * f, ly = ay + len * f;
+    cx.beginPath(); cx.ellipse(lx + (i % 2 ? 1.6 : -1.6), ly, 1.7, 0.9, i % 2 ? 0.6 : -0.6, 0, 7); cx.fill();
+  }
 }
 
 function drawTiles() {
@@ -2164,6 +2252,9 @@ function drawTiles() {
             cx.fillRect(x + 8 + (ty % 4) * 2, y + TILE, 2, 2 + (ty % 3) * 2);
           }
         }
+
+        // rare decorative rocks & plants, drawn last so they sit on the silhouette
+        if (upAir || downAir || leftAir || rightAir) drawWallVeg(x, y, h, bio, upAir, downAir, leftAir, rightAir);
       } else if (t === 2) {
         const dh = Math.abs(Math.sin(tx * 41.3 + ty * 9.71) * 4117.7) % 1;
         const rockColor = hexLerp('#b3a88e', dh > 0.5 ? '#c6bca2' : '#928871', Math.abs(dh - 0.5) * 0.2);
