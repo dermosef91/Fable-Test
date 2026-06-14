@@ -60,10 +60,10 @@ Stocky man, middle-aged. Warm skin (#e8b88a). Dark moss-green shirt or loden jac
 ## Vera
 
 **Background**
-Runs the one-woman Flugschule Gamstal (flight school) in the hidden valley behind the summit. Saw Rosa's paraglider over the Gamstal as a child and never forgot it.
+Runs the one-woman Flugschule Gamstal (flight school) in the hidden valley beyond the ridge sub-summit. The player reaches her by climbing down the cable from the slip behind the old summit. Vera grants the paraglider on first meeting — the mountain taught you to walk, now she teaches you to fly. Saw Rosa's paraglider over the Gamstal as a child and never forgot it.
 
 **Character**
-Confident, wry, a little wild. Lives at the edge of the map where the mountain "isn't finished yet." Challenges the player to fly five rings and awards a tongue-in-cheek diploma. Underneath the bravado she clearly loved Rosa — her voice catches for half a sentence before she covers it up.
+Confident, wry, a little wild. Lives at the edge of the map where the mountain "isn't finished yet." Grants the glider as a mid-game unlock, challenges the player to fly five rings, and awards a tongue-in-cheek diploma. Underneath the bravado she clearly loved Rosa — her voice catches for half a sentence before she covers it up.
 
 **Visual description**
 Athletic woman, late 20s–30s. Warm skin (#e8b88a). Deep rust-red flight suit or jumpsuit (#b8483a). White half-dome flight helmet covering the top of her head (#fff). Aviator-style dark sunglasses — a single horizontal line across the eyes (#888). Dark brown-black boots (#3d3327). Lean, upright posture — she looks like she could step off a cliff and enjoy it.

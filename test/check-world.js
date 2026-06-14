@@ -117,7 +117,7 @@ ok(ENTITIES.some(e => e.t === 'gear' && e.gear === 'lamp' && e.r <= 10 + Y_OFF),
 // one-way plank adds commitment to the climb
 ok(at(20, 19 + Y_OFF) === 3, 'observer post has a one-way plank at the midpoint');
 // the depot above the tunnel's east mouth — a five-hop climb to the set
-for (const [x, y] of [[66, 26], [72, 23], [69, 21], [51, 17], [46, 15], [40, 15]]) ok(solid(at(x, y + Y_OFF)), `depot ledge/floor at ${x},${y + Y_OFF}`);
+for (const [x, y] of [[66, 26], [72, 23], [69, 21], [29, 17], [29, 13], [55, 7], [40, 15]]) ok(solid(at(x, y + Y_OFF)), `depot ledge/floor at ${x},${y + Y_OFF}`);
 ok(at(63, 19 + Y_OFF) === 3 && at(64, 19 + Y_OFF) === 3, 'depot plank at the nook mouth (one-way)');
 ok(!reachable(68, 28 + Y_OFF, 72, 23 + Y_OFF) && !reachable(68, 28 + Y_OFF, 70, 21 + Y_OFF), 'depot climb cannot be skipped from the floor');
 ok(!solid(at(42, 14 + Y_OFF)) && solid(at(42, 12 + Y_OFF)), 'depot nook carved with a roof');
@@ -181,14 +181,32 @@ const lookoutHops = [
 ];
 lookoutHops.forEach(([a, b], i) => ok(reachable(...a, ...b), `lookout hop ${i} reachable`));
 const depotHops = [
-  [[68, 28], [67, 26]],   // off the Hochband floor
-  [[68, 26], [72, 23]],   // a long rising leap right
-  [[72, 23], [70, 21]],   // back left onto the one-tile perch
-  [[69, 21], [65, 19]],   // perch -> one-way plank
-  [[63, 19], [61, 19]],   // plank -> across the nook mouth
-  [[56, 19], [52, 17]],   // nook floor -> Ledge A
-  [[51, 17], [47, 15]],   // Ledge A -> Ledge B
-  [[46, 15], [43, 15]],   // Ledge B -> Ledge C (kit)
+  [[68, 28], [66, 26]],   // off the Hochband floor
+  [[66, 26], [72, 23]],   // a long rising leap right
+  [[72, 23], [69, 21]],   // back left onto the one-tile perch
+  [[69, 21], [63, 19]],   // perch -> one-way plank
+  [[63, 19], [60, 19]],   // plank -> across the nook mouth (Lower Cavern entrance)
+  [[60, 19], [57, 17]],   // Lower Cavern entrance -> Plank 1 over mud
+  [[56, 17], [51, 16]],   // Plank 1 -> Plank 2 over mud
+  [[51, 16], [46, 17]],   // Plank 2 -> Plank 3 over mud
+  [[46, 17], [40, 18]],   // Plank 3 -> West Mine Shaft entrance floor
+  [[40, 18], [38, 15]],   // Mine Shaft floor -> lower crumble perch
+  [[38, 15], [29, 17]],   // lower crumble -> rock step left
+  [[29, 17], [29, 13]],   // rock step left -> rock step upper left
+  [[29, 13], [33, 11]],   // rock step upper left -> upper crumble perch
+  [[33, 11], [32, 11]],   // upper crumble -> vertical ore hoist at y11
+  [[32, 7], [37, 5]],     // vertical ore hoist at y7 -> Upper Gallery entrance
+  [[37, 5], [38, 7]],     // Upper Gallery entrance -> bridge Plank 1
+  [[38, 7], [42, 8]],     // bridge Plank 1 -> bridge Plank 2
+  [[42, 8], [47, 8]],     // bridge Plank 2 -> bridge Plank 3
+  [[47, 8], [52, 7]],     // bridge Plank 3 -> bridge Plank 4
+  [[52, 7], [55, 7]],     // bridge Plank 4 -> High storage platform
+  [[55, 7], [58, 6]],     // High storage platform -> Sky Catwalk exit
+  [[58, 6], [55, 4]],     // Sky Catwalk exit -> sky Plank 1
+  [[55, 4], [50, 3]],     // sky Plank 1 -> sky Plank 2
+  [[50, 3], [45, 4]],     // sky Plank 2 -> sky Plank 3
+  [[45, 4], [42, 3]],     // sky Plank 3 -> Dropdown Shaft entrance
+  [[42, 3], [42, 15]],    // drop down the shaft onto the kit platform
 ];
 depotHops.forEach(([a, b], i) => ok(reachable(...a, ...b), `depot hop ${i} reachable`));
 // ridge hops: the climb from the shoulder to the summit and down the east side

@@ -158,7 +158,8 @@ function loadSave() {
       visited: d.visited, playMin: d.playMin,
     });
     if (!G.objKey) { // older saves: infer progress
-      G.objKey = G.flags.finale ? 'free' : G.flags.biwakDone ? 'summit' : G.gear.kit ? 'biwak'
+      G.objKey = G.flags.finale ? 'free' : G.gear.glider ? 'peak' : G.flags.reachedSubsummit ? 'valley'
+        : G.flags.biwakDone ? 'summit' : G.gear.kit ? 'biwak'
         : G.gear.lamp ? 'tunnel' : G.gear.jacket ? 'jacket' : G.chestnutsDone ? 'jacket'
         : G.gear.boots ? 'alm' : G.flags.tentOpened ? 'boots' : 'start';
     }
@@ -829,7 +830,7 @@ function physTick() {
     if (onIce && p.grounded && !p.swim) {
       // Blankeis: slow to build speed, but you can dig the edges in to brake
       const braking = want !== 0 && Math.sign(p.vx) === -want && Math.abs(p.vx) > 0.2;
-      acc = braking ? 0.30 : 0.11;
+      acc = braking ? 0.10 : 0.037;
     }
     if (want !== 0 && p.grounded && !onIce && Math.sign(p.vx) === -want && Math.abs(p.vx) > 1.4) {
       acc = 0.95; // skid (no biting edge on ice)
@@ -837,7 +838,7 @@ function physTick() {
     }
     if (want < 0) { p.vx = Math.max(p.vx - acc, -mx); p.face = -1; }
     if (want > 0) { p.vx = Math.min(p.vx + acc, mx); p.face = 1; }
-    if (want === 0 && !gliss) p.vx *= p.grounded ? (onIce ? 0.993 : 0.72) : 0.94; // ice barely slows you
+    if (want === 0 && !gliss) p.vx *= p.grounded ? (onIce ? 0.9977 : 0.72) : 0.94; // ice barely slows you
 
     // scree surface: the boots gate, or — with boots + DOWN — the scree-run
     p.sliding = 0;
@@ -931,10 +932,18 @@ function physTick() {
       }
     }
 
-    // the slip into the Hinteres Tal is glider-only
-    if (!G.gear.glider && p.x + p.w > 189.6 * TILE && p.y < (14 + Y_OFF) * TILE) {
-      p.x = 189.6 * TILE - p.w; p.vx = 0;
-      if (gateToastCd <= 0) { toast(TX.gate_flug); gateToastCd = 240; }
+    // horizontal air gusts on the Gamskofel
+    if (typeof GUSTS !== 'undefined') {
+      for (const gu of GUSTS) {
+        const gx = gu.x * TILE, gy = gu.y * TILE;
+        const gw = gu.w * TILE, gh = gu.h * TILE;
+        if (p.x + p.w > gx && p.x < gx + gw && p.y + p.h > gy && p.y < gy + gh) {
+          if (!p.grounded) p.vx += gu.dir * gu.force * 0.15;
+          else p.vx += gu.dir * gu.force * 0.05;
+          // gust particles
+          if (Math.random() < 0.3) spawnPart({ x: gx + Math.random() * gw, y: gy + Math.random() * gh, vx: gu.dir * 3, vy: (Math.random() - 0.5) * 0.5, t: 18, c: 'rgba(220,240,255,0.5)', s: 1.5 });
+        }
+      }
     }
 
     // waterfall force
@@ -1120,7 +1129,7 @@ function findInteract() {
     if (!types.includes(e.t) || e.present === false) continue;
     if (e.t === 'photo' && !G.flags.finale) continue; // the photo hunt unlocks at the summit
     if (e.t === 'tin' && !G.flags.zinnensprung) continue; // the silt keeps its secret until the jump
-    if (e.gear === 'glider' && !G.flags.finale) continue; // the glider is hidden until the summit/finale
+    if (e.gear === 'glider') continue; // Vera grants the glider directly
     const d = Math.hypot(e.x * TILE + 8 - px, e.r * TILE - 14 - py);
     if (d < best) { best = d; nearInteract = e; }
   }
@@ -1258,7 +1267,14 @@ function talkTo(who) {
     const t = TX.vera;
     const n = Object.keys(G.rings).length;
     if (G.flags.flugschein) say(t.after);
-    else if (!G.flags.veraMet) { G.flags.veraMet = true; say(t.first); }
+    else if (!G.flags.veraMet) {
+      G.flags.veraMet = true;
+      say(t.first, () => {
+        G.gear.glider = true;
+        setObjective('peak');
+        save();
+      });
+    }
     else if (n >= 5) {
       say(t.done, () => {
         G.flags.flugschein = true;
@@ -1341,6 +1357,23 @@ function drawSink() {
     if (Math.random() < 0.25) spawnPart({ x: s.x * TILE + Math.random() * w, y: Math.max(s.y * TILE, cam.y), vx: 0, vy: 1.4 + Math.random(), t: 50, c: 'rgba(190,206,224,0.45)', s: 2 });
   }
   cx.restore();
+}
+function drawGusts() {
+  if (typeof GUSTS === 'undefined') return;
+  for (const gu of GUSTS) {
+    const gx = gu.x * TILE - cam.x, gy = gu.y * TILE - cam.y;
+    const gw = gu.w * TILE, gh = gu.h * TILE;
+    if (gx > VW || gx + gw < 0) continue;
+    // subtle directional streaks
+    cx.globalAlpha = 0.15;
+    cx.strokeStyle = '#d0e8f8'; cx.lineWidth = 1;
+    for (let i = 0; i < 5; i++) {
+      const sy = gy + (i * gh / 5) + Math.sin(frame * 0.1 + i) * 8;
+      const sx = gx + ((frame * gu.dir * 2 + i * 40) % gw);
+      cx.beginPath(); cx.moveTo(sx, sy); cx.lineTo(sx + gu.dir * 20, sy); cx.stroke();
+    }
+    cx.globalAlpha = 1;
+  }
 }
 
 // ---- NPC day schedules ------------------------------------------------------
@@ -1454,7 +1487,7 @@ function npcTick() {
 // ---- the Gams: appears near your next objective, bounds away when crowded --
 const gams = { x: 0, y: 0, stage: '', fleeT: 0, hidden: false, met: false, restSaid: false };
 function gamsSpot() {
-  if (G.flags.finale) return { x: 160, r: 9 + Y_OFF, stage: 'rest' };
+  if (G.flags.finale) return { x: 314, r: 1 + Y_OFF, stage: 'rest' };
   if (!G.gear.boots) return player.x < 94 * TILE ? { x: 84, r: 70 + Y_OFF, stage: 'boots1' } : null;
   if (!G.chestnutsDone) return { x: 88, r: 48 + Y_OFF, stage: 'alm' };
   // once you're up at the Stellung, she waits at the base of the observer-post climb
@@ -1604,6 +1637,11 @@ function zoneTick() {
     if (z.id === 'grat' || z.id === 'gipfel') { if (G.phase === 3) setPhase(4); }
   }
   if (z && (z.id === 'grat' || z.id === 'gipfel') && G.phase < 4) setPhase(4);
+  if (z && z.id === 'gipfel' && !G.flags.reachedSubsummit) {
+    G.flags.reachedSubsummit = true;
+    setObjective('valley');
+  }
+  if (z && (z.id === 'aufstieg' || z.id === 'gamskofel') && G.phase < 5) setPhase(5);
   if (bannerT > 0) bannerT--;
 }
 
@@ -3084,7 +3122,7 @@ cx.fillStyle = hexLerp('#3d3327', '#ffd87a', curPC.night);
     }
     case 'gear': {
       if (taken) return;
-      if (e.gear === 'glider' && !G.flags.finale) return;
+      if (e.gear === 'glider') return; // Vera grants the glider directly
       const gy = y - 10 + bob;
       cx.fillStyle = 'rgba(255,255,255,0.2)'; cx.beginPath(); cx.arc(x, gy, 10, 0, 7); cx.fill();
       if (e.gear === 'boots') {
@@ -5966,7 +6004,8 @@ function drawMap() {
   }
   if (G.visited.schlucht) drawIcon('drop', ox + 26 * sc, oy + 52 * sc, 11);
   if (G.visited.ferrata) drawIcon('cable', ox + 95 * sc, oy + 20 * sc, 11);
-  if (G.visited.gipfel) drawIcon('cross', ox + 161 * sc, oy + 9 * sc, 11);
+  if (G.visited.gipfel) drawIcon('cross', ox + 137 * sc, oy + 3 * sc, 8); // sub-summit cairn (smaller)
+  if (G.visited.gamskofel) drawIcon('cross', ox + 312 * sc, oy + 1 * sc, 11); // true summit
 
   // Player pulsing beacon
   const px_x = ox + (player.x / TILE) * sc;
@@ -6966,6 +7005,7 @@ function render() {
   drawStones();
   drawThermals();
   drawSink();
+  drawGusts();
   for (const e of ENTITIES) drawEntity(e);
   drawRings();
   drawGams();

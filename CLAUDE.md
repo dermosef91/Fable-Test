@@ -1,7 +1,8 @@
 # CLAUDE.md
 
-GIPFELBUCH — a story-driven 2D metroidvania set on one mountain in Südtirol
-(plus a hidden glider valley). Plain HTML5 canvas + vanilla JS. **No build
+GIPFELBUCH — a story-driven 2D metroidvania set on one mountain in Südtirol,
+a hidden glider valley, and a final ascent to the Gamskofel — the true summit.
+Plain HTML5 canvas + vanilla JS. **No build
 step, no runtime dependencies, no image or audio assets** — everything is
 drawn and synthesized procedurally. Keep it that way. Test/dev-only tooling
 (puppeteer, http-server) is fine but must never be needed to play.
@@ -69,12 +70,13 @@ engine's `pend*` event queue exists for exactly that.
 ## Files
 
 - `world.js` — the whole mountain as data: tile fills in `buildWorld()`,
-  force-field rects (`WATERFALL`, `THERMALS`, `SINK`), `MOVERS` (platforms),
+  force-field rects (`WATERFALL`, `THERMALS`, `GUSTS`), `MOVERS` (platforms),
   `RINGS`, `ZONES`, `ENTITIES`, and every line of text in `TX_DE` / `TX_EN`.
 - `game.js` — the engine, one file: canvas/resize, fullscreen, input,
   WebAudio (SFX + generative music + ambience), save (localStorage
-  `gipfelbuch_v1`), physics, NPCs/critters/Gams, rendering, lighting,
-  `drawIcon`, HUD, map/album/photo/title/end screens, main loop.
+  `gipfelbuch_v1`), physics (including crumbling/ice tile mechanics),
+  NPCs/critters/Gams, rendering, lighting, `drawIcon`, HUD,
+  map/album/photo/title/end screens, main loop.
 - `test/check-world.js` — must stay green; CI blocks deploy on failure.
 
 ## Localization
@@ -88,6 +90,10 @@ engine's `pend*` event queue exists for exactly that.
 
 ## Level-design rules (hard-won)
 
+- **Tile types:** 0 air · 1 rock · 2 scree · 3 one-way plank · 4 water ·
+  5 ferrata cable · 6 nettles · 7 hard ice (Blankeis: solid, glassy, slippery).
+  Crumbling rock ledges are overlays defined in the `CRUMBLE` array, not tile types.
+  Gusts are force-field rects (`GUSTS`), not tiles.
 - **Jump budget:** v0 8.4, gravity 0.42 up / 0.5 down, apex hang. Between
   ledge *edges*: at most **3 tiles up and ~4 across** is comfortable;
   4 up is a deliberate set-piece. Full arcs need **~5.5 tiles of headroom**
@@ -121,8 +127,16 @@ engine's `pend*` event queue exists for exactly that.
 - **No floating rock:** every ledge/crag bonds to a face or shoulder below
   (extend the fill down). Only deliberate openings stay pure air, and a drop
   gap (the Scharte) must line up with its landing (the pond).
-- **The Gipfel is the highest point on the map** — no crag, wall top or
-  massif face may poke above the summit plateau (map-edge walls excepted).
+- **The Gamskofel (y1) is the highest point on the map** — above the old
+  ridge pinnacle (y2). The old summit is now the "Vorgipfel" (sub-summit);
+  the finale, cross, and Gipfelbuch sit on the Gamskofel east of the valley.
+- **Game flow:** camp → gorge → tunnel → ridge (sub-summit / Vorgipfel) →
+  climb down the cable into the Hidden Valley → meet Vera, get the glider
+  (mid-game unlock), fly the thermals/rings → walk east to the Gamskofel
+  base → long hard ascent (crumbling, ice, gusts) → TRUE peak (finale).
+- The **Hidden Valley** is mid-game (between sub-summit and final ascent),
+  not post-finale. The glider is granted by Vera on first meeting, not
+  hidden behind `G.flags.finale`.
 
 - **Vector Asset Design Guidelines:** For structures (like the Alm hut redesign) and visual elements, favor high-quality hand-coded details over simple blocks:
   - *Dimensionality:* Add steep roofs, eaves/overhangs, and outline strokes (`cx.strokeStyle`) for structural depth.
@@ -240,8 +254,8 @@ engine's `pend*` event queue exists for exactly that.
   — but any new scree must keep downhill = east or the run/gate breaks.
 - **Blankeis (hard ice, tile 7):** a glaze on a rock body — counts as `SOLID`,
   drawn glassy in `drawTiles`, detected via `onIce`. Almost no friction
-  (`vx *= 0.993` idle) and sluggish accel (0.11), but you can dig the edges in
-  to brake (acc 0.30 when pressing opposite to motion); no gear gate — a skill
+  (`vx *= 0.9977` idle) and sluggish accel (0.037), but you can dig the edges in
+  to brake (acc 0.10 when pressing opposite to motion); no gear gate — a skill
   test, not a lock. Place only as small stances where a slip lands on
   recoverable ground (the ridge saddles drop to the catch band). Mirror in
   check-world (`solid()` must include 7; assert ice-on-rock + recoverable slip).

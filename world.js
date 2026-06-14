@@ -7,7 +7,7 @@
 
 const TILE = 16;
 
-const WORLD_W = 240;   // x 0..167 the Gamstal · x 168.. the Hinteres Tal (glider country)
+const WORLD_W = 330;   // x 0..167 the Gamstal · x 168..240 the Hinteres Tal · x 264..316 the Gamskofel
 const WORLD_H = 90;    // Increased from 80 to 90 to prevent the artificial ceiling at the top
 const Y_OFF = 10;      // Shift offset to push level geometry down
 
@@ -133,16 +133,50 @@ function buildWorld() {
 
   // --- the depot: a balcony nook above the tunnel's east mouth ------------
   // (the ferrata set waits here — the cable below sends you looking)
-  // Five airy hops up the east face: the set is earned, not found. Only the
-  // first step is reachable from the Hochband floor — no skipping ahead.
-  carve(40, 13, 21, 6);    // east-facing nook, floor y19, tunnel roof stays 3 thick
-  fill(40, 15, 4, 4, 1);   // Ledge C (kit platform)
-  fill(46, 15, 2, 4, 1);   // Ledge B
-  fill(51, 17, 2, 2, 1);   // Ledge A
+  // Expanded 5x longer: Outer buttress -> Dark cavern (mud crossing) -> Mine shaft (crumble ledges) -> Ventilation chimney (vertical ore lift) -> Upper gallery (suspension bridge) -> Sky catwalks -> Dropdown to locked kit chamber.
+  
+  // 1. Carve the expanded internal mine system inside the massif
+  carve(46, 15, 15, 4);    // Lower Cavern (x: 46..60, y: 15..18, floor y: 18)
+  carve(28, 11, 18, 8);    // West Mine Shaft (x: 28..45, y: 11..18, floor y: 18)
+  carve(32, 5, 4, 10);     // Ventilation Chimney (x: 32..35, y: 5..14)
+  carve(36, 5, 25, 4);     // Upper Gallery (x: 36..60, y: 5..8, floor y: 8)
+  carve(41, 5, 3, 10);     // Dropdown Shaft (x: 41..43, y: 5..14)
+  carve(40, 13, 4, 6);     // Locked Depot Nook (x: 40..43, y: 13..18)
+  
+  // 2. Build Depot Nook & Wall
+  fill(40, 15, 4, 4, 1);   // Kit Platform (floor y: 15)
+  fill(44, 13, 2, 6, 1);   // Divider Wall between Nook and Caverns
+  
+  // 3. Stage 1: Outer Buttress Ledges (Hochband -> Cavern entrance)
   fill(66, 26, 2, 1, 1);   // 1. first step off the Hochband
   fill(72, 23, 2, 1, 1);   // 2. a long rising leap toward the headwall
   fill(69, 21, 1, 1, 1);   // 3. single-tile perch — precision
   fill(63, 19, 2, 1, 3);   // 4. one-way plank at the nook's mouth
+  
+  // 4. Stage 2: Lower Cavern & Mud Crossing (requires Stirnlampe)
+  fill(45, 18, 8, 1, 8);   // Mud pit on the floor (x: 45..52, y: 18)
+  fill(56, 17, 2, 1, 3);   // Plank 1 over mud (x: 56..57, y: 17)
+  fill(51, 16, 2, 1, 3);   // Plank 2 over mud (x: 51..52, y: 16)
+  fill(46, 17, 2, 1, 3);   // Plank 3 over mud (x: 46..47, y: 17)
+  
+  // 5. Stage 3: West Mine Shaft & Chimney Climb
+  fill(29, 17, 2, 1, 1);   // Rock step left (x: 29..30, y: 17)
+  fill(34, 16, 2, 1, 1);   // Intermediate mine step (x: 34..35, y: 16)
+  fill(29, 13, 2, 1, 1);   // Rock step upper left (x: 29..30, y: 13)
+  // (Note: Crumble ledges are defined in the CRUMBLE array at x: 38, y: 15 and x: 33, y: 11)
+  
+  // 6. Stage 4: Upper Gallery & Suspension Bridge
+  fill(38, 7, 2, 1, 3);    // Swaying bridge plank 1 (x: 38..39, y: 7)
+  fill(42, 8, 3, 1, 3);    // Swaying bridge plank 2 (x: 42..44, y: 8)
+  fill(47, 8, 3, 1, 3);    // Swaying bridge plank 3 (x: 47..49, y: 8)
+  fill(52, 7, 2, 1, 3);    // Swaying bridge plank 4 (x: 52..53, y: 7)
+  fill(55, 7, 3, 1, 1);    // High storage platform (x: 55..57, y: 7)
+  
+  // 7. Stage 5: Sky Catwalks (exposed scaffolding above the massif)
+  fill(58, 6, 2, 1, 3);    // Exit to sky (x: 58..59, y: 6)
+  fill(55, 4, 2, 1, 3);    // Plank in sky (x: 55..56, y: 4)
+  fill(50, 3, 2, 1, 3);    // Plank in sky (x: 50..51, y: 3)
+  fill(45, 4, 2, 1, 3);    // Plank in sky (x: 45..46, y: 4)
 
   // --- tunnel furniture ----------------------------------------------------
   fill(34, 26, 3, 2, 1);   // low rubble pile near the west mouth — hop over
@@ -190,6 +224,54 @@ function buildWorld() {
   fill(207, 70, 8, 3, 4);        // the lake (carved into valley floor)
   fill(WORLD_W - 2, 0, 2, WORLD_H, 1);  // east wall
 
+  // --- Final Ascent: the Gamskofel (x264..316) --------------------------------
+  // The hardest climb in the game. Thin ledges, crumbling rock, ice, air gusts,
+  // and a one-way commit chimney. Summit at y1 — the highest point in the game.
+
+  // Solid ground to catch falls in the lower half
+  fill(264, 50, 52, 20, 1);   // catch floor x264..315, y50..69
+
+  // Stage 1 — The Approach: valley floor up to the face
+  fill(264, 66, 4, 4, 1);     // entry ramp (x264..267, y66..69)
+  fill(270, 63, 3, 3, 1);     // ledge (x270..272, y63..65)
+  fill(266, 60, 3, 2, 1);     // zig left (x266..268, y60..61)
+  fill(272, 57, 3, 2, 1);     // zag right (x272..274, y57..58)
+  fill(268, 54, 4, 2, 1);     // wider shelf (x268..271, y54..55)
+
+  // Stage 2 — The Lower Face
+  fill(274, 51, 3, 1, 1);     // narrow ledge (x274..276, y51)
+  fill(278, 48, 3, 1, 1);     // ledge (x278..280, y48)
+  fill(274, 45, 3, 1, 1);     // zig back (x274..276, y45)
+  fill(280, 42, 3, 2, 1);     // pre-biwak ledge (x280..282, y42..43)
+  fill(284, 39, 5, 2, 1);     // BIWAK shelf (x284..288, y39..40) — checkpoint
+
+  // Stage 3 — The Ice Chimney: crumbling rock + ice + one-way commit
+  fill(281, 36, 3, 1, 1);     // ledge (x281..283, y36)
+  // x286..287, y33: CRUMBLING ledge — see CRUMBLE array (overlay, not tile)
+  fill(282, 30, 3, 1, 1);     // recovery ledge (x282..284, y30)
+  fill(287, 27, 2, 1, 3);     // ONE-WAY PLANK commit (x287..288, y27)
+  fill(283, 24, 4, 1, 1);     // exit shelf (x283..286, y24)
+
+  // Upper catch floor + re-entry plank
+  fill(278, 25, 30, 5, 1);    // upper catch floor x278..307, y25..29
+  carve(285, 25, 4, 8);       // carve chimney shaft through catch floor and above crumble (x285..288, y25..32)
+  carve(283, 24, 4, 1);       // keep the exit shelf clear above the catch floor
+  fill(281, 24, 2, 1, 3);     // re-entry plank from catch floor to route
+
+  // Stage 4 — The Wind Ridge: exposed, air currents, ice
+  fill(288, 21, 3, 1, 1);     // ledge (x288..290, y21)
+  fill(293, 18, 2, 1, 7);     // ICE ledge (x293..294, y18) — slippery!
+  fill(289, 15, 3, 1, 1);     // ledge (x289..291, y15)
+  fill(295, 12, 3, 1, 1);     // ledge past the gust (x295..297, y12)
+  fill(300, 9, 3, 1, 1);      // pre-summit shelf (x300..302, y9)
+  fill(308, 9, 6, 1, 1);      // pre-summit catch shelf to support final crumble falls (x308..313, y9)
+
+  // Stage 5 — The Summit Push
+  fill(305, 6, 2, 1, 1);      // narrow perch (x305..306, y6)
+  // x310..311, y3: CRUMBLING ledge — see CRUMBLE array (overlay, not tile)
+  fill(308, 1, 8, 2, 1);      // THE SUMMIT (x308..315, y1..2) — highest point!
+  carve(310, 1, 2, 2);        // carve gap for climbing through the summit (x310..311, y1..2)
+
   return g;
 }
 
@@ -201,6 +283,12 @@ const THERMALS = [
   { x: 183, y: 16, w: 4, h: 52 },
   { x: 202, y: 14, w: 4, h: 54 },
   { x: 222, y: 18, w: 4, h: 50 },
+];
+
+// Horizontal air gusts on the Gamskofel — push the player sideways.
+const GUSTS = [
+  { x: 290, y: 10, w: 6, h: 10, dir: 1, force: 1.8 },  // pushes right
+  { x: 296, y: 4, w: 5, h: 8, dir: -1, force: 1.5 },   // pushes left near summit
 ];
 
 // Sink pockets — cold downdrafts between the thermals. A glider caught in one
@@ -224,6 +312,7 @@ const MOVERS = [
   { x: 13, y: 40, x2: 18, y2: 40, w: 3, period: 300 },
   { x: 114, y: 6, x2: 118, y2: 6, w: 3, period: 260 },
   { x: 9, y: 13, x2: 13, y2: 13, w: 2, period: 220 },
+  { x: 32, y: 14, x2: 32, y2: 7, w: 2, period: 240 }, // mine vertical hoist
 ];
 
 // Crumbling ledges (brüchiger Fels) — one-way shale slabs on the ridge that
@@ -234,6 +323,10 @@ const MOVERS = [
 const CRUMBLE = [
   { x: 86,  y: 8, w: 3 },   // Knife Edge ledge (x86..88)
   { x: 107, y: 5, w: 3 },   // Summit Block ledge (x107..109)
+  { x: 286, y: 33, w: 2 },  // Gamskofel Ice Chimney (x286..287)
+  { x: 310, y: 3, w: 2 },   // Gamskofel near-summit (x310..311) — last test!
+  { x: 38,  y: 15, w: 2 },  // Mine Shaft lower crumble (x:38..39, y:15)
+  { x: 33,  y: 11, w: 3 },  // Mine Shaft upper crumble (x:33..35, y:11)
 ];
 
 // Stonefall bands (Steinschlag) — loose rock rattles down these columns at
@@ -249,8 +342,11 @@ const STONEFALL = [
 // First match wins; specific before general.
 // =========================================================================
 const ZONES = [
+  { id: 'gamskofel', x: 304, y: 0, w: 26, h: 14, en: 'The True Summit', de: 'Der Gamskofel', it: 'Il Gamskofel', outdoor: true },
+  { id: 'aufstieg', x: 262, y: 0, w: 66, h: 72, en: 'The Final Ascent', de: 'Der Schlussanstieg', it: "L'ultima salita", outdoor: true },
   { id: 'wache',    x: 2,   y: 2,  w: 26, h: 15, en: 'Observer Post',         de: 'Beobachterstand',       it: 'Posto di vedetta',      outdoor: true },
-  { id: 'depot',    x: 40,  y: 11, w: 22, h: 9,  en: 'The Depot',             de: 'Das Materialdepot',     it: 'Il deposito',           outdoor: true },
+  { id: 'depot',    x: 40,  y: 13, w: 4,  h: 6,  en: 'The Depot',             de: 'Das Materialdepot',     it: 'Il deposito',           outdoor: true },
+  { id: 'mine',     x: 28,  y: 5,  w: 32, h: 14, en: 'Mine Gallery',          de: 'Stollen-Galerie',       it: 'Galleria delle miniere', dark: true, covered: true },
   { id: 'start',    x: 164, y: 0,  w: 12, h: 14, en: 'Launch Site',           de: 'Startplatz',            it: 'Decollo',               outdoor: true },
   { id: 'hintertal', x: 168, y: 0, w: 72, h: 80, en: 'The Hidden Valley',     de: 'Hinteres Tal',          it: 'Valle nascosta',        outdoor: true },
   { id: 'gipfel',   x: 126, y: 0,  w: 24, h: 19, en: 'The Summit',            de: 'Gipfel',                it: 'Cima Gamsblick',        outdoor: true },
@@ -410,8 +506,9 @@ const ENTITIES = [
   { t: 'sign',     x: 144, r: 4, key: 'sign_notch' },
   { t: 'fence',    x: 147, r: 7 },
   { t: 'fence',    x: 150, r: 7 },
-  { t: 'cross',    x: 137, r: 1 },
-  { t: 'book',     x: 135, r: 1 },
+  { t: 'cross',    x: 312, r: 1 },
+  { t: 'book',     x: 310, r: 1 },
+  { t: 'sign',     x: 137, r: 1, key: 'sign_vorgipfel' },
   { t: 'photo',    x: 158, r: 9, n: 5 },
   { t: 'bench',    x: 159, r: 9 },
   { t: 'sign',     x: 162, r: 11, key: 'sign_flug' },
@@ -424,6 +521,11 @@ const ENTITIES = [
   { t: 'windsock', x: 186, r: 70 },
   { t: 'chapel',   x: 222, r: 66 },
   { t: 'sign',     x: 232, r: 70, key: 'sign_talende' },
+
+  // -- Gamskofel (Final Ascent) -------------------------------------------------
+  { t: 'fire', x: 286, r: 39, id: 'kofelbiwak', name: 'Biwak am Kofel' },
+  { t: 'bench', x: 307, r: 1 },
+  { t: 'sign', x: 302, r: 9, key: 'sign_kofel' },
 ];
 
 // page 1 lives inside the tent; page 7 inside the Gipfelbuch.
@@ -441,7 +543,7 @@ const TREES = [
 const FLOWERS = [ // alpenrose & friends on the Alm, edelweiss up top
   [46, 48, 'rose'], [58, 48, 'rose'], [76, 48, 'rose'], [84, 48, 'rose'],
   [92, 6, 'gent'], [112, 4, 'gent'], [123, 5, 'gent'],
-  [137, 1, 'edel'], [134, 1, 'edel'],
+  [309, 1, 'edel'], [313, 1, 'edel'],
   [191, 70, 'gent'], [197, 68, 'rose'], [204, 70, 'gent'], [223, 66, 'gent'], [229, 70, 'rose'],
 ];
 
@@ -452,6 +554,7 @@ const BG_ROCK = [
   { x: 2,  y: 37, w: 31, h: 33 },             // gorge wall
   { x: 2,  y: 0,  w: 26, h: 28 },             // shoulder above the Stellung
   { x: 27, y: 17, w: 35, h: 13, cave: true }, // backwall of the Stollen
+  { x: 264, y: 20, w: 56, h: 50 },            // the great south face of the Gamskofel
 ];
 
 // =========================================================================
@@ -550,6 +653,8 @@ const TX_DE = {
   sign_grat:    ['„Gipfel / Cima 20 min →“', 'Darunter, eingeritzt und fast verwittert: „R + I 1974“'],
   sign_notch:   ['„ACHTUNG SCHARTE! / ATTENZIONE!“', 'Kleiner, in Bleistift: „Der Zinnensprung. Unten ist der Teich. Angeblich.“'],
   sign_flug:    ['„Flugschule Gamstal — demnächst / prossimamente.“', 'Der Berg ist hier noch nicht fertig.'],
+  sign_vorgipfel: ['„Vorgipfel — Rosa & Ida, 1974.“', 'Ein Steinmann markiert den alten Gipfel. Von hier ging es damals zurück. Du gehst weiter.'],
+  sign_kofel:     ['„Gamskofel ↑ — Nur für Ausdauernde. / Solo per i tenaci.“', 'Das Holz ist neu, die Schrauben glänzen. Den Weg gibt es noch nicht lange.'],
 
   flug_unlock: [
     'Hinter dem Schild lehnt ein Paket in Wachstuch. Ein Zettel:',
@@ -558,7 +663,7 @@ const TX_DE = {
     'GLEITSCHIRM — halte SPRINGEN in der Luft, RUNTER zum Sturzflug.',
     'Und: hinterm Schild ist ein schmaler Durchschlupf frei. Dahinter wartet das Hintere Tal.',
   ],
-  gate_flug: 'Hinterm Schild geht es nur noch hinunter. Ohne Gleitschirm wäre das ein Abschied.',
+  gate_flug: 'Der Fels bricht hier ab. Ein schmaler Durchschlupf — mutig sein.',
   sign_talende: ['„Talende. / Fine valle.“', 'Kleiner, in Kreide: „Wer bis hierher fliegt, hat es verdient, kurz zu sitzen.“'],
   chapel: [
     ['', 'Eine winzige Kapelle, kaum größer als ein Heuschober.'],
@@ -571,8 +676,10 @@ const TX_DE = {
 
   vera: {
     first: [
-      ['Vera', 'Na sowas. Rosas Schirm! Den hab ich zuletzt überm Gamstal gesehen, da war ich zehn.'],
+      ['Vera', 'Na sowas — bist du durchs Felsfenster geklettert? Ohne Schirm? Respekt.'],
       ['Vera', 'Vera. Flugschule Gamstal — bis jetzt bestand die aus mir und dem Windsack.'],
+      ['Vera', 'Hier, nimm den. War mal Rosas. Der Berg hat dir das Gehen gezeigt — jetzt lernst du fliegen.'],
+      ['Vera', 'GLEITSCHIRM — halte SPRINGEN in der Luft, RUNTER zum Sturzflug.'],
       ['Vera', 'Hier hinten steigt die warme Luft in Säulen. Thermik. Flieg hinein und kreise — sie trägt dich nach oben.'],
       ['Vera', 'Magst eine Übung? Fünf Ringe hängen im Tal. Alle fünf, und du bist offiziell meine erste Flugschülerin.'],
     ],
@@ -735,6 +842,7 @@ const TX_DE = {
   toast_slip: 'Du rutschst ab! Ohne feste Schuhe kein Halt im Geröll. · Si scivola!',
   toast_glissade: 'GERÖLLRUTSCH! Halte RUNTER, lehn dich rein — der Hang trägt dich. LINKS bremst. · Che discesa!',
   toast_ice: 'BLANKEIS! Glashart und glatt — kaum Halt, langsam bremsen. · Ghiaccio vivo!',
+  toast_mud: 'NASSES MOOR! Zäher Schlamm bremst dich aus und zieht dich runter. · Fango!',
   toast_fall_water: 'Ohne Jacke drückt dich der Wasserfall einfach hinunter.',
   toast_dark: 'Stockfinster. Ohne Licht traust du dich kaum einen Schritt.',
   toast_draft: 'Ein Luftzug lässt die Lampe flackern — warte, bis die Flamme ruhig brennt, bevor du springst. · Spiffero!',
@@ -1072,6 +1180,7 @@ const TX_EN = {
   toast_slip: 'You slip! No grip on scree without proper boots.',
   toast_glissade: 'SCREE-RUN! Hold DOWN and lean in — the slope carries you. LEFT digs in to brake. · Che discesa!',
   toast_ice: 'BLANKEIS! Glass-hard and slick — almost no grip, brake early. · Ghiaccio vivo!',
+  toast_mud: 'WET MUD! Thick bog slows you down and dampens your jumps. · Fango!',
   toast_fall_water: 'Without a jacket, the waterfall simply hammers you down.',
   toast_dark: 'Pitch black. Without a light you hardly dare take a step.',
   toast_draft: 'A draft gutters your lamp — wait for the flame to steady before you leap. · Spiffero!',
