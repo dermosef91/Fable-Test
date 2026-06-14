@@ -149,27 +149,21 @@ engine's `pend*` event queue exists for exactly that.
   sparks, one-time hint) so you wait before a hop. Clamped ≥0.4 (never a
   blackout — darkness stays a *soft* gate). Gusts only fire while `lampOn() &&
   curZone.dark`; the base breath applies wherever the lamp is lit.
-- **Baked textures, never asset files.** `ensureTex()` paints a 512×512 detail
-  sheet once into an offscreen canvas — **4× supersampled** (64-px sub-tiles for
-  16-px world tiles); `texTile`/`texRect` blit a sub-tile keyed to **world tile
-  index** (`tx%8,ty%8`) so grain is world-locked and never swims with the camera.
-  Blit it with **`imageSmoothingEnabled = true`** (scoped to `drawTiles`/`texRect`,
-  restored to `false` after) so the world's ZOOM upscale resamples the high-res
-  grain cleanly — without that, nearest-neighbour magnifies the sheet into blocks
-  and the texture looks low-res. Source crop is inset 0.5px to stop bilinear
-  bleed across sub-tiles. Extend the sheet, don't load images.
-- **Break tile uniformity at three scales, never per-tile decoration grids.**
-  Large tonal variation lives in the *baked sheet* (broad blotches) + a subtle
-  per-tile colour jitter (`hexLerp` ~0.15, stronger reveals the grid); small
-  accents (lichen, moss, veins, quartz, embedded boulders, mineral streaks) come
-  from `drawRockDecor`, gated *rare* (`h(seed) > ~0.85`) and offset off-grid. A
-  frequent per-tile element (one oval per tile) just re-creates the grid you
-  were hiding — keep those in the sheet.
-- **Edge-aware wall vegetation (`drawWallVeg`):** grass tufts on vertical faces,
-  vines/roots under overhangs, alpine flowers in crevices — keyed to the
-  `upAir/downAir/leftAir/rightAir` flags and drawn *after* the edge bumps so
-  plants sit on the silhouette. Scale density by biome (`vegK`: lush in
-  valley/alm, sparse on the high ridge) so the mountain dries out with altitude.
+- **Rock detail is hand-drawn vector objects, not baked textures.** Tiles are a
+  flat biome fill (`ROCKC`) + organic edges; all surface interest comes from
+  discrete drawn elements layered on top, gated by the per-tile hash `h(seed)`
+  so the spread is world-stable and varied (never a grid). (A baked grain-sheet
+  approach was tried and removed — it read as low-res noise; keep detail as
+  objects.)
+  - `drawRockDecor` (face decals, under the edge bumps): lichen, moss, mineral
+    veins, quartz flecks, branching cracks, embedded boulders, water streaks.
+  - `drawWallVeg` (objects over the bumps, so they sit on the silhouette):
+    boulders resting on ledges, shrubs, grass tufts on vertical faces, vines
+    under overhangs, crevice flowers. Keyed to `upAir/downAir/leftAir/rightAir`.
+    Scale vegetation density by biome (`vegK`: lush in valley/alm, sparse on the
+    high ridge) so the mountain dries out with altitude.
+  - `drawBoulder`/`drawBush` are the shared shaded-object helpers (lit top,
+    shadowed underside, contact shadow when resting on a surface).
 - **Edge AO:** thin dark strips on air-facing tile sides + a band under the
   grass cap carve depth; keep them subtle so they don't fight the organic edge
   bumps.
