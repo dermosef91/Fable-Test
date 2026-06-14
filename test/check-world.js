@@ -117,8 +117,8 @@ ok(ENTITIES.some(e => e.t === 'gear' && e.gear === 'lamp' && e.r <= 10 + Y_OFF),
 // one-way plank adds commitment to the climb
 ok(at(20, 19 + Y_OFF) === 3, 'observer post has a one-way plank at the midpoint');
 // the depot above the tunnel's east mouth — a five-hop climb to the set
-for (const [x, y] of [[66, 26], [72, 23], [69, 21], [29, 17], [29, 13], [55, 7], [40, 15]]) ok(solid(at(x, y + Y_OFF)), `depot ledge/floor at ${x},${y + Y_OFF}`);
-ok(at(63, 19 + Y_OFF) === 3 && at(64, 19 + Y_OFF) === 3, 'depot plank at the nook mouth (one-way)');
+for (const [x, y] of [[68, 26], [72, 23], [69, 21], [29, 17], [29, 13], [55, 7], [40, 15]]) ok(solid(at(x, y + Y_OFF)), `depot ledge/floor at ${x},${y + Y_OFF}`);
+ok(at(65, 19 + Y_OFF) === 3 && at(66, 19 + Y_OFF) === 3, 'depot plank at the nook mouth (one-way)');
 ok(!reachable(68, 28 + Y_OFF, 72, 23 + Y_OFF) && !reachable(68, 28 + Y_OFF, 70, 21 + Y_OFF), 'depot climb cannot be skipped from the floor');
 ok(!solid(at(42, 14 + Y_OFF)) && solid(at(42, 12 + Y_OFF)), 'depot nook carved with a roof');
 ok(!solid(at(60, 17 + Y_OFF)) && !solid(at(60, 18 + Y_OFF)), 'depot nook opens east');
@@ -181,17 +181,18 @@ const lookoutHops = [
 ];
 lookoutHops.forEach(([a, b], i) => ok(reachable(...a, ...b), `lookout hop ${i} reachable`));
 const depotHops = [
-  [[68, 28], [66, 26]],   // off the Hochband floor
-  [[66, 26], [72, 23]],   // a long rising leap right
+  [[68, 28], [68, 26]],   // off the Hochband floor
+  [[68, 26], [72, 23]],   // a long rising leap right
   [[72, 23], [69, 21]],   // back left onto the one-tile perch
-  [[69, 21], [63, 19]],   // perch -> one-way plank
-  [[63, 19], [60, 19]],   // plank -> across the nook mouth (Lower Cavern entrance)
+  [[69, 21], [65, 19]],   // perch -> one-way plank
+  [[65, 19], [60, 19]],   // plank -> across the nook mouth (Lower Cavern entrance)
   [[60, 19], [57, 17]],   // Lower Cavern entrance -> Plank 1 over mud
   [[56, 17], [51, 16]],   // Plank 1 -> Plank 2 over mud
   [[51, 16], [46, 17]],   // Plank 2 -> Plank 3 over mud
   [[46, 17], [40, 18]],   // Plank 3 -> West Mine Shaft entrance floor
   [[40, 18], [38, 15]],   // Mine Shaft floor -> lower crumble perch
-  [[38, 15], [29, 17]],   // lower crumble -> rock step left
+  [[38, 15], [34, 16]],   // lower crumble -> intermediate mine step
+  [[34, 16], [29, 17]],   // intermediate mine step -> rock step left
   [[29, 17], [29, 13]],   // rock step left -> rock step upper left
   [[29, 13], [33, 11]],   // rock step upper left -> upper crumble perch
   [[33, 11], [32, 11]],   // upper crumble -> vertical ore hoist at y11

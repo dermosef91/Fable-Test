@@ -137,10 +137,10 @@ function buildWorld() {
   
   // 1. Carve the expanded internal mine system inside the massif
   carve(46, 15, 15, 4);    // Lower Cavern (x: 46..60, y: 15..18, floor y: 18)
-  carve(28, 11, 18, 8);    // West Mine Shaft (x: 28..45, y: 11..18, floor y: 18)
+  carve(28, 11, 12, 8);    // West Mine Shaft (x: 28..39, y: 11..18, floor y: 18)
   carve(32, 5, 4, 10);     // Ventilation Chimney (x: 32..35, y: 5..14)
   carve(36, 5, 25, 4);     // Upper Gallery (x: 36..60, y: 5..8, floor y: 8)
-  carve(41, 5, 3, 10);     // Dropdown Shaft (x: 41..43, y: 5..14)
+  carve(40, 5, 2, 10);     // Dropdown Shaft (x: 40..41, y: 5..14)
   carve(40, 13, 4, 6);     // Locked Depot Nook (x: 40..43, y: 13..18)
   
   // 2. Build Depot Nook & Wall
@@ -148,10 +148,10 @@ function buildWorld() {
   fill(44, 13, 2, 6, 1);   // Divider Wall between Nook and Caverns
   
   // 3. Stage 1: Outer Buttress Ledges (Hochband -> Cavern entrance)
-  fill(66, 26, 2, 1, 1);   // 1. first step off the Hochband
+  fill(68, 26, 2, 1, 1);   // 1. first step off the Hochband
   fill(72, 23, 2, 1, 1);   // 2. a long rising leap toward the headwall
   fill(69, 21, 1, 1, 1);   // 3. single-tile perch — precision
-  fill(63, 19, 2, 1, 3);   // 4. one-way plank at the nook's mouth
+  fill(65, 19, 2, 1, 3);   // 4. one-way plank at the nook's mouth
   
   // 4. Stage 2: Lower Cavern & Mud Crossing (requires Stirnlampe)
   fill(45, 18, 8, 1, 8);   // Mud pit on the floor (x: 45..52, y: 18)
@@ -507,7 +507,7 @@ const ENTITIES = [
   { t: 'fence',    x: 147, r: 7 },
   { t: 'fence',    x: 150, r: 7 },
   { t: 'cross',    x: 312, r: 1 },
-  { t: 'book',     x: 310, r: 1 },
+  { t: 'book',     x: 314, r: 1 },
   { t: 'sign',     x: 137, r: 1, key: 'sign_vorgipfel' },
   { t: 'photo',    x: 158, r: 9, n: 5 },
   { t: 'bench',    x: 159, r: 9 },
@@ -524,7 +524,7 @@ const ENTITIES = [
 
   // -- Gamskofel (Final Ascent) -------------------------------------------------
   { t: 'fire', x: 286, r: 39, id: 'kofelbiwak', name: 'Biwak am Kofel' },
-  { t: 'bench', x: 307, r: 1 },
+  { t: 'bench', x: 308, r: 1 },
   { t: 'sign', x: 302, r: 9, key: 'sign_kofel' },
 ];
 
