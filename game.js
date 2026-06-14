@@ -1897,7 +1897,6 @@ function drawBgRock(pc) {
     else { gr.addColorStop(0, pc.bgRockColor0); gr.addColorStop(1, pc.bgRockColor1); }
     cx.fillStyle = gr;
     cx.fillRect(x, y, w, h);
-    texRect(ensureTex().rock, x, y, w, h);
     // strata
     cx.strokeStyle = 'rgba(0,0,0,0.08)'; cx.lineWidth = 1;
     for (let i = 1; i < 6; i++) {
@@ -1919,80 +1918,6 @@ function biomeAt(tx, ty) {
 const GRASS = { ridge: '#9fae7e', high: '#8fa37a', alm: '#6fae57', valley: '#5d9148' };
 const ROCKC = { ridge: '#b8b2a4', high: '#a8a094', alm: '#97907f', valley: '#8c8577' };
 
-// ----- baked procedural surface textures (no asset files; drawn once) -----
-// A 512×512 detail sheet is 8×8 tiles of organic grain, supersampled at 4× (each
-// sub-tile is 64px of source for a 16px world tile). We blit a sub-tile per
-// terrain tile keyed to its world index, so detail is world-locked and never
-// swims with the camera, and the 8×8 spread means the base grain only repeats
-// every 8 tiles. Blitted with smoothing ON (see drawTiles/texRect) so the world's
-// ZOOM upscale resamples the high-res grain cleanly instead of nearest-neighbour
-// magnifying a low-res sheet into blocks. Translucent over the biome fill; the
-// per-tile colour jitter + drawRockDecor break up whatever periodicity is left.
-let TEX = null;
-function ensureTex() {
-  if (TEX) return TEX;
-  const SS = 4, SUB = 16 * SS, SZ = SUB * 8;   // 64-px sub-tiles, 512² sheet
-  const mk = paint => {
-    const c = document.createElement('canvas'); c.width = SZ; c.height = SZ;
-    paint(c.getContext('2d')); return c;
-  };
-  const R = Math.random;
-  TEX = {
-    SUB,
-    rock: mk(g => {
-      // broad soft blotches — large-scale tonal variation (scaled with SS)
-      for (let i = 0; i < 100; i++) {
-        const x = R() * SZ, y = R() * SZ, r = (4 + R() * 12) * SS;
-        g.fillStyle = R() < 0.5 ? `rgba(0,0,0,${0.03 + R() * 0.05})` : `rgba(255,255,255,${0.02 + R() * 0.04})`;
-        g.beginPath(); g.ellipse(x, y, r, r * (0.55 + R() * 0.4), R() * 3, 0, 7); g.fill();
-      }
-      g.lineWidth = 1.3;                                               // cracks
-      for (let i = 0; i < 360; i++) {
-        g.strokeStyle = `rgba(0,0,0,${0.1 + R() * 0.08})`;
-        const x = R() * SZ, y = R() * SZ;
-        g.beginPath(); g.moveTo(x, y);
-        g.lineTo(x + (R() - 0.5) * 22 * SS, y + (R() - 0.5) * 22 * SS);
-        g.lineTo(x + (R() - 0.5) * 30 * SS, y + (R() - 0.5) * 30 * SS); g.stroke();
-      }
-      for (let i = 0; i < 5600; i++) {                                 // fine pits + flecks
-        const x = R() * SZ, y = R() * SZ, s = R() < 0.62 ? 1 : 2;
-        g.fillStyle = R() < 0.62 ? `rgba(0,0,0,${0.05 + R() * 0.1})` : `rgba(255,255,255,${0.04 + R() * 0.08})`;
-        g.fillRect(x, y, s, s);
-      }
-    }),
-    dirt: mk(g => {
-      for (let i = 0; i < 8800; i++) {                                 // grain
-        const x = R() * SZ, y = R() * SZ, s = R() < 0.72 ? 1 : 2;
-        g.fillStyle = R() < 0.55 ? `rgba(58,44,28,${0.06 + R() * 0.1})` : `rgba(232,222,196,${0.05 + R() * 0.1})`;
-        g.fillRect(x, y, s, s);
-      }
-      g.fillStyle = 'rgba(120,104,80,0.28)';                           // pebbles
-      for (let i = 0; i < 190; i++) { g.beginPath(); g.arc(R() * SZ, R() * SZ, (1 + R() * 1.4) * SS * 0.6, 0, 7); g.fill(); }
-    }),
-  };
-  return TEX;
-}
-function texTile(sheet, tx, ty, x, y) {
-  const SUB = TEX.SUB, cols = sheet.width / SUB;
-  // 0.5px inset so bilinear sampling never bleeds across sub-tile boundaries
-  cx.drawImage(sheet, (tx % cols + cols) % cols * SUB + 0.5, (ty % cols + cols) % cols * SUB + 0.5, SUB - 1, SUB - 1, x, y, TILE, TILE);
-}
-// cover a big background rect (cliff face) with world-locked detail, clipped to
-// the rect and clamped to the viewport so the cost stays bounded
-function texRect(sheet, sx, sy, w, h) {
-  const vx0 = Math.max(sx, 0), vy0 = Math.max(sy, 0);
-  const vx1 = Math.min(sx + w, VW), vy1 = Math.min(sy + h, VH);
-  if (vx1 <= vx0 || vy1 <= vy0) return;
-  cx.save();
-  cx.imageSmoothingEnabled = true; // resample the high-res grain cleanly (restored by restore())
-  cx.beginPath(); cx.rect(sx, sy, w, h); cx.clip();
-  const tx0 = Math.floor((vx0 + cam.x) / TILE), ty0 = Math.floor((vy0 + cam.y) / TILE);
-  const tx1 = Math.ceil((vx1 + cam.x) / TILE), ty1 = Math.ceil((vy1 + cam.y) / TILE);
-  for (let ty = ty0; ty < ty1; ty++)
-    for (let tx = tx0; tx < tx1; tx++)
-      texTile(sheet, tx, ty, tx * TILE - cam.x, ty * TILE - cam.y);
-  cx.restore();
-}
 // soft elliptical contact shadow at a floor line (screen space) — grounds
 // characters and loose objects so they read as resting on the terrain
 function groundShadow(x, floorY, hw, a) {
@@ -2003,9 +1928,9 @@ const SHADOW_ENTS = new Set(['npc', 'dog', 'cow', 'marmot', 'gear', 'chestnut', 
 
 // Per-tile rock decoration keyed to a world-stable hash so the spread is
 // non-repeating: large mottling, lichen rosettes, moss, mineral veins, quartz.
-// Sparse, world-stable decoration. Broad tonal variation comes from the baked
-// sheet + per-tile colour jitter; these are the *rare* accents (rosettes, moss,
-// veins, sparkle), gated low and offset off-grid so they never read as a grid.
+// Hand-drawn rock decoration — discrete vector objects layered over the flat
+// tile fill (no baked texture). Each is world-stable (keyed to the per-tile
+// hash) and gated so the spread reads varied, not like a grid.
 // Face decals — drawn under the edge bumps, on the rock surface itself.
 function drawRockDecor(x, y, h, bio, upAir) {
   if (h(70) > 0.9) {                                    // lichen rosette
@@ -2019,12 +1944,12 @@ function drawRockDecor(x, y, h, bio, upAir) {
     }
     cx.fillStyle = `rgba(${col},0.2)`; cx.beginPath(); cx.arc(lx, ly, 1.2, 0, 7); cx.fill();
   }
-  if (h(80) > 0.92) {                                   // moss tuft
+  if (h(80) > 0.91) {                                   // moss tuft
     cx.fillStyle = 'rgba(74,104,60,0.3)';
     const mx = x + h(81) * TILE, my = y + h(82) * TILE;
     for (let i = 0; i < 3; i++) { cx.beginPath(); cx.arc(mx + (h(83 + i) - 0.5) * 6, my + (h(86 + i) - 0.5) * 5, 1.2 + h(89 + i) * 1.2, 0, 7); cx.fill(); }
   }
-  if (h(92) > 0.91) {                                   // mineral vein (can run off-tile)
+  if (h(92) > 0.9) {                                    // mineral vein (can run off-tile)
     cx.strokeStyle = 'rgba(222,216,198,0.45)'; cx.lineWidth = 0.8;
     const vy0 = y + h(93) * TILE;
     cx.beginPath(); cx.moveTo(x - 2, vy0); cx.lineTo(x + TILE + 2, vy0 + (h(94) - 0.5) * TILE * 1.6); cx.stroke();
@@ -2033,16 +1958,18 @@ function drawRockDecor(x, y, h, bio, upAir) {
     cx.fillStyle = 'rgba(255,255,250,0.65)';
     cx.fillRect(x + h(97) * TILE, y + h(98) * TILE, 1.4, 1.4);
   }
-  // embedded boulder / cobble — large-scale interest that breaks the flat face
-  if (h(100) > 0.86) {
-    const bx = x + 3 + h(101) * (TILE - 6), by = y + 3 + h(102) * (TILE - 6), r = 2.4 + h(103) * 2.6;
-    cx.fillStyle = `rgba(58,54,46,${0.14 + h(104) * 0.1})`;
-    cx.beginPath(); cx.ellipse(bx, by, r, r * (0.7 + h(105) * 0.25), h(106) * 3, 0, 7); cx.fill();
-    cx.lineWidth = 0.6;
-    cx.strokeStyle = 'rgba(255,255,255,0.12)';
-    cx.beginPath(); cx.arc(bx, by, r * 0.92, Math.PI * 1.15, Math.PI * 1.85); cx.stroke();
-    cx.strokeStyle = 'rgba(0,0,0,0.16)';
-    cx.beginPath(); cx.arc(bx, by, r * 0.92, Math.PI * 0.15, Math.PI * 0.85); cx.stroke();
+  if (h(160) > 0.8) {                                   // branching crack
+    cx.strokeStyle = 'rgba(0,0,0,0.13)'; cx.lineWidth = 0.7;
+    const cx0 = x + h(161) * TILE, cy0 = y + h(162) * TILE, ang = h(163) * 6.28;
+    const mx = cx0 + Math.cos(ang) * 5, my = cy0 + Math.sin(ang) * 5;
+    cx.beginPath(); cx.moveTo(cx0, cy0); cx.lineTo(mx, my);
+    cx.lineTo(mx + Math.cos(ang + 0.8) * 3.5, my + Math.sin(ang + 0.8) * 3.5);
+    cx.moveTo(mx, my); cx.lineTo(mx + Math.cos(ang - 0.7) * 3, my + Math.sin(ang - 0.7) * 3);
+    cx.stroke();
+  }
+  // embedded boulder — a stone set into the face, darker than the wall
+  if (h(100) > 0.85) {
+    drawBoulder(x + 3 + h(101) * (TILE - 6), y + 4 + h(102) * (TILE - 8), 2.4 + h(103) * 2.4, h, 104, 120 + h(105) * 24, false);
   }
   // vertical mineral / water streaks down a tall face (only where rock above)
   if (!upAir && h(108) > 0.84) {
@@ -2056,24 +1983,67 @@ function drawRockDecor(x, y, h, bio, upAir) {
   }
 }
 
-// Edge vegetation — drawn over the bumps/grass so plants sit on the silhouette.
-// Greener and denser lower down (alm/valley), sparse and dry on the high ridge.
+// Objects that sit on the rock surface — boulders resting on ledges, bushes,
+// clinging tufts, hanging vines, crevice flowers. Drawn over the edge bumps so
+// they land on the silhouette. Vegetation thins out with altitude (vegK).
 function drawWallVeg(x, y, h, bio, upAir, downAir, leftAir, rightAir) {
   const vegK = bio === 'valley' ? 1 : bio === 'alm' ? 0.95 : bio === 'high' ? 0.5 : 0.22;
   const gcol = bio === 'valley' ? '#5d9148' : bio === 'alm' ? '#6fae57' : bio === 'high' ? '#7e8f5e' : '#8a9468';
-  if (leftAir && h(120) > 1 - 0.32 * vegK) drawTuft(x + 0.5, y + 3 + h(121) * (TILE - 6), -1, 0.9 + h(122) * 0.4, gcol, h, 123);
-  if (rightAir && h(126) > 1 - 0.32 * vegK) drawTuft(x + TILE - 0.5, y + 3 + h(127) * (TILE - 6), 1, 0.9 + h(128) * 0.4, gcol, h, 129);
-  if (downAir && h(132) > 1 - 0.28 * vegK) {
+  // a boulder resting on a flat ledge — a clear standalone rock object
+  if (upAir && h(150) > 0.9) {
+    const r = 3 + h(151) * 3.2;
+    drawBoulder(x + 3 + h(152) * (TILE - 6), y - r * 0.55, r, h, 153, 150 + h(154) * 26, true);
+  }
+  // a small shrub / bush tucked on a ledge
+  if (upAir && h(155) > 1 - 0.34 * vegK) {
+    const bcol = bio === 'valley' ? '#4d7d3c' : bio === 'alm' ? '#5a9446' : '#647a4e';
+    drawBush(x + 3 + h(156) * (TILE - 6), y + 1, 2.6 + h(157) * 2.4, h, 158, bcol);
+  }
+  if (leftAir && h(120) > 1 - 0.34 * vegK) drawTuft(x + 0.5, y + 3 + h(121) * (TILE - 6), -1, 0.9 + h(122) * 0.4, gcol, h, 123);
+  if (rightAir && h(126) > 1 - 0.34 * vegK) drawTuft(x + TILE - 0.5, y + 3 + h(127) * (TILE - 6), 1, 0.9 + h(128) * 0.4, gcol, h, 129);
+  if (downAir && h(132) > 1 - 0.3 * vegK) {
     const vcol = (bio === 'valley' || bio === 'alm') ? 'rgba(86,118,68,0.85)' : 'rgba(96,104,72,0.8)';
     drawVine(x + 2 + h(133) * (TILE - 4), y + TILE, 4 + h(134) * 7, vcol, h, 135);
   }
-  if ((leftAir || rightAir || upAir) && h(138) > 0.95) {   // alpine flower in a crevice / on a ledge
+  if ((leftAir || rightAir || upAir) && h(138) > 0.93) {   // alpine flower in a crevice / on a ledge
     const fx = x + (leftAir ? 2 : rightAir ? TILE - 2 : 3 + h(139) * (TILE - 6));
-    const fy = y + (upAir ? 1 : 3 + h(140) * (TILE - 6));
+    const fy = y + (upAir ? 0 : 3 + h(140) * (TILE - 6));
     cx.fillStyle = h(141) > 0.5 ? '#d9577a' : '#5a7fd0';   // alpenrose / gentian
     cx.beginPath(); cx.arc(fx, fy, 1.5, 0, 7); cx.fill();
     cx.fillStyle = '#e9c84a'; cx.beginPath(); cx.arc(fx, fy, 0.6, 0, 7); cx.fill();
   }
+}
+// a shaded, lit rounded boulder. by = vertical centre; resting adds a contact
+// shadow and means it's sitting on the surface rather than set into the face.
+function drawBoulder(bx, by, r, h, seed, tone, resting) {
+  if (resting) { cx.fillStyle = 'rgba(18,22,28,0.18)'; cx.beginPath(); cx.ellipse(bx, by + r * 0.82, r * 1.05, r * 0.32, 0, 0, 7); cx.fill(); }
+  const t = Math.round(tone);
+  cx.fillStyle = `rgb(${t},${t - 5},${t - 13})`;
+  cx.beginPath();
+  const pts = 8;
+  for (let i = 0; i < pts; i++) {
+    const a = i / pts * 6.283, rr = r * (0.8 + h(seed + i) * 0.3);
+    const px = bx + Math.cos(a) * rr, py = by + Math.sin(a) * rr * 0.9;
+    i ? cx.lineTo(px, py) : cx.moveTo(px, py);
+  }
+  cx.closePath(); cx.fill();
+  cx.fillStyle = 'rgba(255,255,255,0.13)';
+  cx.beginPath(); cx.ellipse(bx - r * 0.25, by - r * 0.36, r * 0.5, r * 0.3, -0.4, 0, 7); cx.fill();
+  cx.fillStyle = 'rgba(0,0,0,0.2)';
+  cx.beginPath(); cx.ellipse(bx + r * 0.1, by + r * 0.4, r * 0.7, r * 0.3, 0, 0, 7); cx.fill();
+  cx.strokeStyle = 'rgba(0,0,0,0.22)'; cx.lineWidth = 0.6;
+  cx.beginPath(); cx.moveTo(bx - r * 0.35, by - r * 0.12); cx.lineTo(bx + r * 0.05, by + r * 0.12); cx.lineTo(bx + r * 0.18, by + r * 0.42); cx.stroke();
+}
+// a leafy shrub sitting on (bx, baseY) — overlapping blobs, base shadow + top light
+function drawBush(bx, baseY, r, h, seed, col) {
+  cx.fillStyle = 'rgba(18,22,28,0.14)'; cx.beginPath(); cx.ellipse(bx, baseY, r * 1.1, r * 0.3, 0, 0, 7); cx.fill();
+  cx.fillStyle = col;
+  for (let i = 0; i < 4; i++) {
+    const a = i / 4 * 6.283;
+    cx.beginPath(); cx.arc(bx + Math.cos(a) * r * 0.45, baseY - r * 0.5 + Math.sin(a) * r * 0.35, r * (0.55 + h(seed + i) * 0.25), 0, 7); cx.fill();
+  }
+  cx.fillStyle = 'rgba(255,255,255,0.13)';
+  cx.beginPath(); cx.arc(bx - r * 0.2, baseY - r * 0.85, r * 0.4, 0, 7); cx.fill();
 }
 function drawTuft(ax, ay, dir, scale, col, h, seed) {
   cx.strokeStyle = col; cx.lineWidth = 0.8;
@@ -2100,8 +2070,6 @@ function drawVine(ax, ay, len, col, h, seed) {
 }
 
 function drawTiles() {
-  const tex = ensureTex();
-  cx.imageSmoothingEnabled = true; // smooth the supersampled grain blits (restored at end)
   const SEAM = 0.5; // overlap to hide sub-pixel gridlines between tiles
   const x0 = Math.max(0, Math.floor(cam.x / TILE) - 1), x1 = Math.min(WORLD_W - 1, Math.ceil((cam.x + VW) / TILE) + 1);
   const y0 = Math.max(0, Math.floor(cam.y / TILE) - 1), y1 = Math.min(WORLD_H - 1, Math.ceil((cam.y + VH) / TILE) + 1);
@@ -2114,12 +2082,9 @@ function drawTiles() {
       if (t === 1) {
         const hashVal = Math.abs(Math.sin(tx * 12.9898 + ty * 78.233) * 43758.5453) % 1;
         const h = (s) => (hashVal * 123.456 + s * 23.719) % 1;
-        // per-tile colour jitter so the flat fill never reads as one slab
-        const jit = hashVal - 0.5;
-        const rockColor = hexLerp(ROCKC[bio], jit > 0 ? '#cbc7b9' : '#6e6a5f', Math.abs(jit) * 0.15);
+        const rockColor = ROCKC[bio];
         cx.fillStyle = rockColor;
         cx.fillRect(x - SEAM, y - SEAM, TILE + SEAM * 2, TILE + SEAM * 2);
-        texTile(tex.rock, tx, ty, x, y);
 
         const up = tileAt(tx, ty - 1);
         const down = tileAt(tx, ty + 1);
@@ -2236,10 +2201,9 @@ function drawTiles() {
         if (upAir || downAir || leftAir || rightAir) drawWallVeg(x, y, h, bio, upAir, downAir, leftAir, rightAir);
       } else if (t === 2) {
         const dh = Math.abs(Math.sin(tx * 41.3 + ty * 9.71) * 4117.7) % 1;
-        const rockColor = hexLerp('#b3a88e', dh > 0.5 ? '#c6bca2' : '#928871', Math.abs(dh - 0.5) * 0.2);
+        const rockColor = '#b3a88e';
         cx.fillStyle = rockColor;
         cx.fillRect(x - SEAM, y - SEAM, TILE + SEAM * 2, TILE + SEAM * 2);
-        texTile(tex.dirt, tx, ty, x, y);
         cx.fillStyle = '#998d72';
         cx.fillRect(x + ((tx * 3) % 8), y + ((ty * 5) % 8), 4, 3);
         cx.fillRect(x + ((tx * 5 + 7) % 10), y + ((ty * 3 + 4) % 10), 3, 3);
@@ -2446,7 +2410,6 @@ function drawWaterOverlay() {
       }
     }
   }
-  cx.imageSmoothingEnabled = false; // back to crisp nearest-neighbour for the rest of the frame
 }
 
 function drawWaterfall() {
