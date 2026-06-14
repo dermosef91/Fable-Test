@@ -385,8 +385,6 @@ const ENTITIES = [
   { t: 'page',     x: 58,  r: 28, n: 6 },
 
   // -- Hochband ----------------------------------------------------------------------
-  { t: 'sign',     x: 63,  r: 28, key: 'sign_hochband' },
-  { t: 'plaque',   x: 69,  r: 28 },  // right beside the ferrata cable it honours
   { t: 'fire',     x: 62,  r: 28, id: 'biwak', name: 'Biwak am Hochband', biwak: true },
   { t: 'marmot',   x: 70,  r: 28 },
 
@@ -395,6 +393,7 @@ const ENTITIES = [
   { t: 'depot',    x: 58,  r: 19 },
 
   // -- Grat & Gipfel ---------------------------------------------------------------------
+  { t: 'plaque',   x: 73,  r: 12 },  // "Steig der Rosa" — mounted where the ferrata tops out
   { t: 'sign',     x: 76,  r: 12, key: 'sign_grat' },
   { t: 'marmot',   x: 96,  r: 4 },
   { t: 'sign',     x: 144, r: 4, key: 'sign_notch' },
@@ -437,6 +436,7 @@ const FLOWERS = [ // alpenrose & friends on the Alm, edelweiss up top
 
 // Background rock faces (drawn faded, behind the action — they sell the mountain)
 const BG_ROCK = [
+  { x: 71, y: 9,  w: 7,  h: 12 },             // crag rising behind the ferrata-top plaque (so it isn't floating)
   { x: 72, y: 19, w: 94, h: 51 },             // the great south face under the ridge pillars
   { x: 2,  y: 37, w: 31, h: 33 },             // gorge wall
   { x: 2,  y: 0,  w: 26, h: 28 },             // shoulder above the Stellung
