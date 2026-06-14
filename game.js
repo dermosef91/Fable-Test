@@ -4447,20 +4447,54 @@ function drawIcon(name, x, y, s) {
       break;
     }
     case 'book': {
-      cx.fillStyle = '#7a5a39'; // cover, so the pages read on any background
-      cx.beginPath(); cx.moveTo(0, -4); cx.quadraticCurveTo(-5, -8.5, -9.5, -6.5);
-      cx.lineTo(-9.5, 5.5); cx.quadraticCurveTo(-5, 4, 0, 6.5);
-      cx.quadraticCurveTo(5, 4, 9.5, 5.5); cx.lineTo(9.5, -6.5);
-      cx.quadraticCurveTo(5, -8.5, 0, -4); cx.closePath(); cx.fill();
-      cx.fillStyle = '#f3ecd2';
-      cx.beginPath(); cx.moveTo(0, -5); cx.quadraticCurveTo(-4, -7, -8, -5.5);
-      cx.lineTo(-8, 4.5); cx.quadraticCurveTo(-4, 3, 0, 5); cx.closePath(); cx.fill();
-      cx.beginPath(); cx.moveTo(0, -5); cx.quadraticCurveTo(4, -7, 8, -5.5);
-      cx.lineTo(8, 4.5); cx.quadraticCurveTo(4, 3, 0, 5); cx.closePath(); cx.fill();
-      cx.strokeStyle = '#b9ac82'; cx.lineWidth = 1;
-      cx.beginPath(); cx.moveTo(0, -5); cx.lineTo(0, 5); cx.stroke();
-      cx.beginPath(); cx.moveTo(-6, -2.5); cx.lineTo(-2, -2); cx.moveTo(-6, 0.5); cx.lineTo(-2, 1);
-      cx.moveTo(2, -2); cx.lineTo(6, -2.5); cx.moveTo(2, 1); cx.lineTo(6, 0.5); cx.stroke();
+      // Warm brown cover with curved arches and dip at the spine
+      cx.fillStyle = '#7a5a39';
+      cx.beginPath();
+      cx.moveTo(0, -3.5);
+      cx.quadraticCurveTo(-4.5, -7.5, -9, -6.5);
+      cx.lineTo(-9, 5.5);
+      cx.quadraticCurveTo(-4.5, 4.5, 0, 8.0);
+      cx.quadraticCurveTo(4.5, 4.5, 9, 5.5);
+      cx.lineTo(9, -6.5);
+      cx.quadraticCurveTo(4.5, -7.5, 0, -3.5);
+      cx.closePath();
+      cx.fill();
+
+      // Cream pages left and right with margins
+      cx.fillStyle = '#fbf8f0';
+      cx.beginPath();
+      cx.moveTo(0, -4.5);
+      cx.quadraticCurveTo(-4, -7.8, -7.5, -6.8);
+      cx.lineTo(-7.5, 4.2);
+      cx.quadraticCurveTo(-4, 3.2, 0, 6.5);
+      cx.closePath();
+      cx.fill();
+
+      cx.beginPath();
+      cx.moveTo(0, -4.5);
+      cx.quadraticCurveTo(4, -7.8, 7.5, -6.8);
+      cx.lineTo(7.5, 4.2);
+      cx.quadraticCurveTo(4, 3.2, 0, 6.5);
+      cx.closePath();
+      cx.fill();
+
+      // Flat tan vertical spine bar
+      cx.strokeStyle = '#bcae88';
+      cx.lineWidth = 1.8;
+      cx.lineCap = 'round';
+      cx.beginPath();
+      cx.moveTo(0, -4);
+      cx.lineTo(0, 6.5);
+      cx.stroke();
+
+      // Flat tan horizontal text pill-shapes
+      cx.lineWidth = 1.5;
+      cx.beginPath();
+      cx.moveTo(-5.8, -2.5); cx.lineTo(-2.2, -2.5);
+      cx.moveTo(-5.8, 1.5); cx.lineTo(-2.2, 1.5);
+      cx.moveTo(2.2, -2.5); cx.lineTo(5.8, -2.5);
+      cx.moveTo(2.2, 1.5); cx.lineTo(5.8, 1.5);
+      cx.stroke();
       break;
     }
     case 'camera': {
@@ -6519,6 +6553,136 @@ function drawTitleFlower(x, y, kind) {
   }
 }
 
+// ------------------------------------------------------------ flat title --
+const FLAT_PALETTES = [
+  null,
+  // Phase 1: Morning Mist
+  {
+    sky: '#d2e5f0', sun: '#fef4cf', moon: false,
+    mountainBack: '#b4cdc3', mountainFront: '#88aaa0',
+    hillBack: '#8fb56f', hillMid: '#7fa55f', hillFront: '#4f7c4c',
+    conifer: '#416752', deciduous: '#6fa364', trunk: '#72543e'
+  },
+  // Phase 2: Rain
+  {
+    sky: '#a5b7c4', sun: false, moon: false,
+    mountainBack: '#8ba198', mountainFront: '#6c887d',
+    hillBack: '#729058', hillMid: '#62804c', hillFront: '#3d613a',
+    conifer: '#325040', deciduous: '#547d4c', trunk: '#5c4331'
+  },
+  // Phase 3: Night
+  {
+    sky: '#0f172a', sun: false, moon: '#fef6d0',
+    mountainBack: '#1d2a3a', mountainFront: '#111c2a',
+    hillBack: '#142718', hillMid: '#0f1f12', hillFront: '#09150a',
+    conifer: '#0b1b14', deciduous: '#112211', trunk: '#1c140e'
+  },
+  // Phase 4: First Light
+  {
+    sky: '#fed0b8', sun: '#ffa380', moon: false,
+    mountainBack: '#b29da4', mountainFront: '#8c7784',
+    hillBack: '#8f775c', hillMid: '#7e664e', hillFront: '#4c4230',
+    conifer: '#4a3b3f', deciduous: '#604f58', trunk: '#4f392b'
+  },
+  // Phase 5: Clear Morning
+  {
+    sky: '#d2e5f0', sun: '#fef4cf', moon: false,
+    mountainBack: '#b4cdc3', mountainFront: '#88aaa0',
+    hillBack: '#8fb56f', hillMid: '#7fa55f', hillFront: '#4f7c4c',
+    conifer: '#416752', deciduous: '#6fa364', trunk: '#72543e'
+  }
+];
+
+function getFlatColors() {
+  const a = FLAT_PALETTES[phasePrev] || FLAT_PALETTES[G.phase] || FLAT_PALETTES[1];
+  const b = FLAT_PALETTES[G.phase] || FLAT_PALETTES[1];
+  
+  const lerpColor = (c1, c2) => {
+    if (!c1) return c2;
+    if (!c2) return c1;
+    return hexLerp(c1, c2, phaseLerpT);
+  };
+  
+  return {
+    sky: lerpColor(a.sky, b.sky),
+    sun: b.sun ? lerpColor(a.sun || b.sun, b.sun) : null,
+    moon: b.moon ? lerpColor(a.moon || b.moon, b.moon) : null,
+    mountainBack: lerpColor(a.mountainBack, b.mountainBack),
+    mountainFront: lerpColor(a.mountainFront, b.mountainFront),
+    hillBack: lerpColor(a.hillBack, b.hillBack),
+    hillMid: lerpColor(a.hillMid, b.hillMid),
+    hillFront: lerpColor(a.hillFront, b.hillFront),
+    conifer: lerpColor(a.conifer, b.conifer),
+    deciduous: lerpColor(a.deciduous, b.deciduous),
+    trunk: lerpColor(a.trunk, b.trunk)
+  };
+}
+
+function drawFlatCloud(x, y, scale, color) {
+  cx.fillStyle = color;
+  cx.beginPath();
+  const w = 40 * scale;
+  const h = 16 * scale;
+  roundRect(x - w / 2, y - h / 2, w, h, h / 2);
+  cx.fill();
+  
+  cx.beginPath();
+  cx.arc(x - 4 * scale, y - 6 * scale, 10 * scale, 0, Math.PI * 2);
+  cx.arc(x + 8 * scale, y - 4 * scale, 8 * scale, 0, Math.PI * 2);
+  cx.fill();
+}
+
+
+function drawFlatFlower(x, y, isYellow, colors) {
+  cx.save();
+  cx.strokeStyle = colors.conifer;
+  cx.lineWidth = 1;
+  cx.beginPath();
+  cx.moveTo(x, y);
+  cx.lineTo(x, y - 10);
+  cx.moveTo(x, y - 4);
+  cx.lineTo(x - 2, y - 6);
+  cx.moveTo(x, y - 6);
+  cx.lineTo(x + 2, y - 8);
+  cx.stroke();
+  
+  const cy_blossom = y - 11;
+  if (isYellow) {
+    cx.fillStyle = '#fdb813';
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * Math.PI * 2;
+      cx.beginPath();
+      cx.arc(x + Math.cos(a) * 3, cy_blossom + Math.sin(a) * 3, 2, 0, Math.PI * 2);
+      cx.fill();
+    }
+    cx.fillStyle = '#ffffff';
+    cx.beginPath(); cx.arc(x, cy_blossom, 1.5, 0, Math.PI * 2); cx.fill();
+  } else {
+    cx.fillStyle = '#ffffff';
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * Math.PI * 2;
+      cx.beginPath();
+      cx.arc(x + Math.cos(a) * 3, cy_blossom + Math.sin(a) * 3, 2, 0, Math.PI * 2);
+      cx.fill();
+    }
+    cx.fillStyle = '#fdb813';
+    cx.beginPath(); cx.arc(x, cy_blossom, 1.5, 0, Math.PI * 2); cx.fill();
+  }
+  cx.restore();
+}
+
+function drawFlatGrassTuft(x, y, colors) {
+  cx.save();
+  cx.strokeStyle = colors.conifer;
+  cx.lineWidth = 1;
+  cx.beginPath();
+  cx.moveTo(x, y); cx.lineTo(x - 2, y - 5);
+  cx.moveTo(x, y); cx.lineTo(x, y - 6);
+  cx.moveTo(x, y); cx.lineTo(x + 2, y - 4);
+  cx.stroke();
+  cx.restore();
+}
+
 // dynamic title backdrop using in-game peaks, church, conifer bands, and bg rock
 function drawTitleBg(W, H) {
   // slowly pan camera on title screen
@@ -6526,102 +6690,124 @@ function drawTitleBg(W, H) {
   cam.y = 1030 + Math.cos(frame * 0.001) * 10;
   
   const pc = phaseColors();
+  const colors = getFlatColors();
 
-  // Draw in-game background under ZOOM scale
   cx.save();
   cx.setTransform(ZOOM, 0, 0, ZOOM, 0, 0);
   
-  drawSky(pc);
+  // Sky
+  cx.fillStyle = colors.sky;
+  cx.fillRect(0, 0, VW, VH);
   
-  // Draw foreground meadow hill under ZOOM scale
-  const mY = VH * 0.72;
-  const mg = cx.createLinearGradient(0, mY - 10, 0, VH);
-  const grassCol0 = hexLerp('#5d9148', '#1b2a14', pc.night);
-  const grassCol1 = hexLerp('#2b3422', '#0a1007', pc.night);
-  mg.addColorStop(0, grassCol0);
-  mg.addColorStop(1, grassCol1);
-  cx.fillStyle = mg;
+  // Sun
+  if (colors.sun) {
+    cx.fillStyle = colors.sun;
+    cx.beginPath();
+    cx.arc(VW * 0.18, VH * 0.18, 28, 0, Math.PI * 2);
+    cx.fill();
+  }
+  
+  // Moon
+  if (colors.moon) {
+    cx.fillStyle = colors.moon;
+    cx.beginPath();
+    cx.arc(VW * 0.82, VH * 0.18, 14, 0, Math.PI * 2);
+    cx.fill();
+    cx.fillStyle = colors.sky;
+    cx.beginPath();
+    cx.arc(VW * 0.82 - 6, VH * 0.18 - 3, 12, 0, Math.PI * 2);
+    cx.fill();
+  }
+  
+  // Clouds
+  const cloudCol = hexLerp('#ffffff', '#2a3a5c', pc.night);
+  drawFlatCloud(VW * 0.08, VH * 0.32, 0.9, cloudCol);
+  drawFlatCloud(VW * 0.78, VH * 0.14, 1.3, cloudCol);
+  drawFlatCloud(VW * 0.88, VH * 0.38, 0.85, cloudCol);
+  
+  // Background Mountain Range
+  cx.fillStyle = colors.mountainBack;
   cx.beginPath();
-  cx.moveTo(-10, mY + 6);
-  cx.quadraticCurveTo(VW * 0.3, mY - 12, VW * 0.55, mY - 3);
-  cx.quadraticCurveTo(VW * 0.8, mY + 5, VW + 10, mY - 5);
+  cx.moveTo(-10, VH);
+  cx.lineTo(-10, VH * 0.6);
+  cx.lineTo(VW * 0.22, VH * 0.38);
+  cx.lineTo(VW * 0.44, VH * 0.65);
+  cx.lineTo(VW * 0.64, VH * 0.45);
+  cx.lineTo(VW * 0.78, VH * 0.65);
+  cx.lineTo(VW * 0.90, VH * 0.52);
+  cx.lineTo(VW + 10, VH * 0.65);
+  cx.lineTo(VW + 10, VH);
+  cx.closePath(); cx.fill();
+  
+  // Foreground Mountain Range
+  cx.fillStyle = colors.mountainFront;
+  cx.beginPath();
+  cx.moveTo(-10, VH);
+  cx.lineTo(-10, VH * 0.7);
+  cx.lineTo(VW * 0.12, VH * 0.54);
+  cx.lineTo(VW * 0.38, VH * 0.75);
+  cx.lineTo(VW * 0.54, VH * 0.7);
+  cx.lineTo(VW * 0.74, VH * 0.42);
+  cx.lineTo(VW + 10, VH * 0.78);
+  cx.lineTo(VW + 10, VH);
+  cx.closePath(); cx.fill();
+  
+  // Snowy Cap on Peak 5
+  cx.fillStyle = hexLerp('#ffffff', '#1b2a47', pc.night);
+  cx.beginPath();
+  cx.moveTo(VW * 0.74, VH * 0.42);
+  cx.lineTo(VW * 0.74 - 15, VH * 0.49);
+  cx.lineTo(VW * 0.74 - 5, VH * 0.48);
+  cx.lineTo(VW * 0.74, VH * 0.50);
+  cx.lineTo(VW * 0.74 + 5, VH * 0.48);
+  cx.lineTo(VW * 0.74 + 18, VH * 0.49);
+  cx.closePath(); cx.fill();
+  
+  // Meadow Hill 1 (Back)
+  cx.fillStyle = colors.hillBack;
+  cx.beginPath();
+  cx.moveTo(-10, VH * 0.78);
+  cx.quadraticCurveTo(VW * 0.4, VH * 0.72, VW + 10, VH * 0.76);
   cx.lineTo(VW + 10, VH + 10);
   cx.lineTo(-10, VH + 10);
   cx.closePath(); cx.fill();
-
-  // Draw swaying organic grass blades along the hill edge
-  cx.strokeStyle = grassCol0;
-  cx.lineWidth = 1.2;
+  
+  // Meadow Hill 2 (Middle)
+  cx.fillStyle = colors.hillMid;
   cx.beginPath();
-  for (let x = 0; x < VW; x += 3.5) {
-    let y = mY - 3;
-    if (x < VW * 0.55) {
-      const t = x / (VW * 0.55);
-      y = (1-t)*(1-t)*(mY+6) + 2*(1-t)*t*(mY-12) + t*t*(mY-3);
-    } else {
-      const t = (x - VW * 0.55) / (VW * 0.45);
-      y = (1-t)*(1-t)*(mY-3) + 2*(1-t)*t*(mY+5) + t*t*(mY-5);
-    }
-    const sway = Math.sin(x + frame * 0.035) * 1.5;
-    cx.moveTo(x, y + 2);
-    cx.lineTo(x + sway, y - 1 - (x % 3));
-  }
-  cx.stroke();
-
-  // Draw hiking path winding up the hill
-  cx.save();
-  cx.globalAlpha = 0.75;
-  const pg = cx.createLinearGradient(0, mY, 0, VH);
-  pg.addColorStop(0, hexLerp('#ceb68f', '#463728', pc.night));
-  pg.addColorStop(1, hexLerp('#a68a67', '#322619', pc.night));
-  cx.fillStyle = pg;
-  cx.beginPath();
-  cx.moveTo(VW * 0.45, VH + 5);
-  cx.quadraticCurveTo(VW * 0.52, VH - 20, VW * 0.49, VH - 32);
-  cx.lineTo(VW * 0.51, VH - 32);
-  cx.quadraticCurveTo(VW * 0.54, VH - 20, VW * 0.48, VH + 5);
+  cx.moveTo(-10, VH * 0.83);
+  cx.quadraticCurveTo(VW * 0.6, VH * 0.77, VW + 10, VH * 0.81);
+  cx.lineTo(VW + 10, VH + 10);
+  cx.lineTo(-10, VH + 10);
   cx.closePath(); cx.fill();
-  cx.restore();
-
-  // Draw detailed tree assets framing the meadow
-  drawTitleTree(VW * 0.08, mY + 6, 0, 0.85, pc.night); // Larch left
-  drawTitleTree(VW * 0.16, mY + 4, 1, 0.65, pc.night); // Spruce left
-  drawTitleTree(VW * 0.92, mY + 5, 1, 0.82, pc.night); // Spruce right
-  drawTitleTree(VW * 0.84, mY + 8, 0, 0.62, pc.night); // Larch right
-
-  // Draw flowers scattered in the grass
-  drawTitleFlower(VW * 0.32, mY + 8, 'edel');
-  drawTitleFlower(VW * 0.38, mY + 14, 'gent');
-  drawTitleFlower(VW * 0.62, mY + 10, 'rose');
-  drawTitleFlower(VW * 0.70, mY + 16, 'edel');
-
-  // Re-use detailed boot and book assets
-  drawIcon('boots', VW * 0.28, mY + 8, 24);
-  drawIcon('book', VW * 0.38, mY + 14, 18);
-
-  // Apply night shading/vignette overlay
-  if (pc.night > 0.01) {
-    cx.fillStyle = `rgba(12, 16, 34, ${pc.night * 0.42})`;
-    cx.fillRect(0, 0, VW, VH);
-  }
-
-  // Draw glowing fireflies at night
-  if (pc.night > 0.05) {
-    for (let i = 0; i < 6; i++) {
-      const fx = ((i * 127 + frame * 0.15) % (VW * 0.8)) + VW * 0.1;
-      const fy = mY - 10 - ((i * 93 + frame * 0.08) % 40) + Math.sin(frame * 0.04 + i) * 3.5;
-      
-      cx.fillStyle = `rgba(255, 230, 140, ${0.4 * pc.night * (0.6 + 0.4 * Math.sin(frame * 0.05 + i))})`;
-      cx.beginPath(); cx.arc(fx, fy, 1.4, 0, 7); cx.fill();
-      
-      const rg = cx.createRadialGradient(fx, fy, 0.2, fx, fy, 7);
-      rg.addColorStop(0, `rgba(255, 235, 170, ${0.2 * pc.night * (0.6 + 0.4 * Math.sin(frame * 0.05 + i))})`);
-      rg.addColorStop(1, 'rgba(255, 235, 170, 0)');
-      cx.fillStyle = rg; cx.fillRect(fx - 7, fy - 7, 14, 14);
-    }
-  }
-
-  // Draw rain overlay if active
+  
+  // Meadow Hill 3 (Foreground)
+  cx.fillStyle = colors.hillFront;
+  cx.beginPath();
+  cx.moveTo(-10, VH * 0.88);
+  cx.quadraticCurveTo(VW * 0.3, VH * 0.84, VW + 10, VH * 0.87);
+  cx.lineTo(VW + 10, VH + 10);
+  cx.lineTo(-10, VH + 10);
+  cx.closePath(); cx.fill();
+  
+  // Trees
+  drawTitleTree(VW * 0.08, VH * 0.82, 0, 0.85, pc.night); // Larch left
+  drawTitleTree(VW * 0.16, VH * 0.81, 1, 0.65, pc.night); // Spruce left
+  drawTitleTree(VW * 0.91, VH * 0.82, 1, 0.82, pc.night); // Spruce right
+  drawTitleTree(VW * 0.84, VH * 0.81, 0, 0.62, pc.night); // Larch right
+  
+  // Flowers & Grass
+  drawFlatFlower(VW * 0.19, VH * 0.87, true, colors);
+  drawFlatFlower(VW * 0.68, VH * 0.865, false, colors);
+  drawFlatGrassTuft(VW * 0.14, VH * 0.87, colors);
+  drawFlatGrassTuft(VW * 0.48, VH * 0.86, colors);
+  drawFlatGrassTuft(VW * 0.79, VH * 0.87, colors);
+  
+  // Boot & Book
+  drawIcon('boots', VW * 0.26, VH * 0.82, 24);
+  drawIcon('book', VW * 0.36, VH * 0.82, 18);
+  
+  // Rain
   if (pc.rain > 0.01) {
     cx.strokeStyle = `rgba(174,194,224,${0.25 * pc.rain})`;
     cx.lineWidth = 1.0;
@@ -6633,24 +6819,26 @@ function drawTitleBg(W, H) {
     }
     cx.stroke();
   }
+  
+  // Fireflies
+  if (pc.night > 0.05) {
+    for (let i = 0; i < 6; i++) {
+      const fx = ((i * 127 + frame * 0.15) % (VW * 0.8)) + VW * 0.1;
+      const fy = VH * 0.8 - 10 - ((i * 93 + frame * 0.08) % 40) + Math.sin(frame * 0.04 + i) * 3.5;
+      cx.fillStyle = `rgba(255, 230, 140, ${0.4 * pc.night * (0.6 + 0.4 * Math.sin(frame * 0.05 + i))})`;
+      cx.beginPath(); cx.arc(fx, fy, 1.4, 0, 7); cx.fill();
+      
+      const rg = cx.createRadialGradient(fx, fy, 0.2, fx, fy, 7);
+      rg.addColorStop(0, `rgba(255, 235, 170, ${0.2 * pc.night * (0.6 + 0.4 * Math.sin(frame * 0.05 + i))})`);
+      rg.addColorStop(1, 'rgba(255, 235, 170, 0)');
+      cx.fillStyle = rg; cx.fillRect(fx - 7, fy - 7, 14, 14);
+    }
+  }
 
   cx.restore();
-
-  // Subtle top/bottom overlay vignette for reading elements
-  const vg = cx.createLinearGradient(0, 0, 0, H * 0.32);
-  vg.addColorStop(0, 'rgba(12,14,28,0.45)');
-  vg.addColorStop(1, 'rgba(12,14,28,0)');
-  cx.fillStyle = vg; cx.fillRect(0, 0, W, H * 0.32);
-
-  const vg2 = cx.createLinearGradient(0, H, 0, H * 0.72);
-  vg2.addColorStop(0, 'rgba(12,14,28,0.35)');
-  vg2.addColorStop(1, 'rgba(12,14,28,0)');
-  cx.fillStyle = vg2; cx.fillRect(0, H * 0.72, W, H * 0.28);
 }
 
 function drawTitle() {
-  // cycle day phase on the title screen every 15 seconds; phaseColors() detects
-  // the change and eases the sky/weather across to the next phase
   if (frame > 0 && frame % 900 === 0) {
     G.phase = (G.phase % 5) + 1;
   }
@@ -6662,137 +6850,249 @@ function drawTitle() {
   
   cx.textAlign = 'center'; cx.textBaseline = 'middle';
   
-  // Set pointer cursor on hover
   const hoveredId = hitBtn(mpos);
   cv.style.cursor = hoveredId ? 'pointer' : 'default';
 
-  cx.save();
+  // Title Typography
+  const titleY = H * 0.22;
+  const titleColor = hexLerp('#26523c', '#fbf8f0', curPC.night);
+  const subtitleColor = hexLerp('#26523c', '#e2dcca', curPC.night);
   
-  // Title text gold gradient
-  const titleY = H * 0.27;
-  setTracking(Math.min(6, W * 0.012));
-  
-  const tg = cx.createLinearGradient(W / 2, titleY - 25, W / 2, titleY + 25);
-  tg.addColorStop(0, '#fefaf0');
-  tg.addColorStop(0.5, '#f3ecd2');
-  tg.addColorStop(1, '#d0bd92');
-  cx.fillStyle = tg;
-  cx.font = `bold ${Math.min(50, W * 0.095)}px Georgia, serif`;
+  setTracking(Math.min(6, W * 0.01));
+  cx.fillStyle = titleColor;
+  cx.font = `800 ${Math.min(62, W * 0.09)}px "Outfit", sans-serif`;
   cx.fillText(TX.title, W / 2, titleY);
 
+  // Subtitle
+  setTracking(Math.min(2, W * 0.003));
+  cx.font = `600 ${Math.min(13, W * 0.02)}px "Outfit", sans-serif`;
+  cx.fillStyle = subtitleColor;
+  const subText = TX.subtitle.toUpperCase().replace(/·/g, '•');
+  cx.fillText(subText, W / 2, titleY + 36);
   setTracking(0);
-  cx.font = `italic ${Math.min(15, W * 0.033)}px Georgia, serif`;
-  cx.fillStyle = 'rgba(243,236,210,0.95)';
-  cx.fillText(TX.subtitle, W / 2, titleY + 34);
-  cx.restore();
 
-  // thin rules flanking the subtitle
-  const sw = Math.min(W * 0.8, cx.measureText(TX.subtitle).width);
-  cx.strokeStyle = 'rgba(243,236,210,0.55)'; cx.lineWidth = 1;
-  cx.beginPath();
-  cx.moveTo(W / 2 - sw / 2 - 44, titleY + 34); cx.lineTo(W / 2 - sw / 2 - 14, titleY + 34);
-  cx.moveTo(W / 2 + sw / 2 + 14, titleY + 34); cx.lineTo(W / 2 + sw / 2 + 44, titleY + 34);
-  cx.stroke();
-
-  // menu: one clear primary action, a quiet secondary, language as a text link
+  // Fullscreen Button
   BTNS = [];
-  if (fsSupported) { addBtn('fs', W - 49, 60, 20, isFullscreen() ? 'i:shrink' : 'i:expand'); drawBtn(BTNS[0]); }
+  if (fsSupported) {
+    addBtn('fs', W - 40, 40, 18, isFullscreen() ? 'i:shrink' : 'i:expand');
+    const b = BTNS[BTNS.length - 1];
+    const on = hoveredId === 'fs';
+    cx.fillStyle = on ? '#e2dcca' : '#fbf8f0';
+    cx.strokeStyle = '#2b533e';
+    cx.lineWidth = 1.2;
+    cx.beginPath(); cx.arc(b.lx, b.ly, b.lr, 0, Math.PI * 2); cx.fill(); cx.stroke();
+    cx.strokeStyle = '#2b533e'; cx.lineWidth = 2; cx.lineCap = 'round'; cx.lineJoin = 'round';
+    cx.save();
+    cx.translate(b.lx, b.ly);
+    const sz = 6;
+    if (isFullscreen()) {
+      cx.beginPath();
+      cx.moveTo(sz, -sz); cx.lineTo(2, -2); cx.lineTo(sz, -2); cx.moveTo(2, -2); cx.lineTo(2, -sz);
+      cx.moveTo(-sz, -sz); cx.lineTo(-2, -2); cx.lineTo(-sz, -2); cx.moveTo(-2, -2); cx.lineTo(-2, -sz);
+      cx.moveTo(sz, sz); cx.lineTo(2, 2); cx.lineTo(sz, 2); cx.moveTo(2, 2); cx.lineTo(2, sz);
+      cx.moveTo(-sz, sz); cx.lineTo(-2, 2); cx.lineTo(-sz, 2); cx.moveTo(-2, 2); cx.lineTo(-2, sz);
+      cx.stroke();
+    } else {
+      cx.beginPath();
+      cx.moveTo(2, -2); cx.lineTo(sz, -sz); cx.lineTo(sz - 3, -sz); cx.moveTo(sz, -sz); cx.lineTo(sz, -sz + 3);
+      cx.moveTo(-2, -2); cx.lineTo(-sz, -sz); cx.lineTo(-sz + 3, -sz); cx.moveTo(-sz, -sz); cx.lineTo(-sz, -sz + 3);
+      cx.moveTo(2, 2); cx.lineTo(sz, sz); cx.lineTo(sz - 3, sz); cx.moveTo(sz, sz); cx.lineTo(sz, sz - 3);
+      cx.moveTo(-2, 2); cx.lineTo(-sz, sz); cx.lineTo(-sz + 3, sz); cx.moveTo(-sz, sz); cx.lineTo(-sz, sz - 3);
+      cx.stroke();
+    }
+    cx.restore();
+  }
   
-  const bw2 = Math.min(270, W * 0.72);
+  const bw2 = Math.min(280, W * 0.72);
   let rowY = H * 0.52;
-  const menuCount = hasSave() ? 3 : 2;
-  const cardW = bw2 + 40;
-  const cardH = (menuCount * 50) + 20;
-  const cardX = W / 2 - cardW / 2;
-  const cardY = rowY - 30;
   
-  // Glassmorphic panel for the menu
-  cx.save();
-  cx.fillStyle = 'rgba(18, 22, 38, 0.45)';
-  cx.strokeStyle = 'rgba(243, 236, 210, 0.18)';
-  cx.lineWidth = 1.2;
-  cx.shadowColor = 'rgba(10, 10, 18, 0.3)';
-  cx.shadowBlur = 10;
-  cx.shadowOffsetY = 4;
-  roundRect(cardX, cardY, cardW, cardH, 16);
-  cx.fill(); cx.stroke();
-  cx.restore();
-
-  const prim = (id, label, y) => {
+  const formatBtnLabel = (label) => {
+    return label.toUpperCase().replace(/·/g, '•');
+  };
+  
+  const drawPrimaryBtn = (id, label, y) => {
     const isHovered = hoveredId === id;
-    const x = W / 2 - bw2 / 2;
-    
     cx.save();
     if (isHovered) {
       cx.translate(W / 2, y);
       cx.scale(1.03, 1.03);
       cx.translate(-W / 2, -y);
-      cx.shadowColor = 'rgba(240, 217, 162, 0.4)';
+      cx.shadowColor = 'rgba(38, 82, 60, 0.35)';
       cx.shadowBlur = 8;
-      cx.shadowOffsetY = 0;
+      cx.shadowOffsetY = 2;
     }
+    cx.fillStyle = '#2b533e';
+    roundRect(W / 2 - bw2 / 2, y - 22, bw2, 44, 14);
+    cx.fill();
     
-    const pg = cx.createLinearGradient(0, y - 20, 0, y + 20);
-    if (isHovered) {
-      pg.addColorStop(0, '#fff0c7'); pg.addColorStop(1, '#e2bd7e');
-    } else {
-      pg.addColorStop(0, '#f0d9a2'); pg.addColorStop(1, '#d8ae6c');
-    }
-    
-    cx.fillStyle = pg; roundRect(x, y - 20, bw2, 40, 12); cx.fill();
-    cx.strokeStyle = isHovered ? 'rgba(90,70,30,0.8)' : 'rgba(70,50,18,0.5)';
-    cx.lineWidth = isHovered ? 1.5 : 1;
-    roundRect(x + 0.5, y - 19.5, bw2 - 1, 39, 12); cx.stroke();
-    
-    cx.fillStyle = '#2a2210'; cx.font = 'bold 15px Georgia, serif'; cx.fillText(label, W / 2, y + 1);
+    cx.fillStyle = '#ffffff';
+    cx.font = '800 13px "Outfit", sans-serif';
+    cx.textAlign = 'center';
+    cx.textBaseline = 'middle';
+    cx.fillText(formatBtnLabel(label), W / 2, y + 0.5);
     cx.restore();
     
     BTNS.push({ id, x: (W / 2) * DPR, y: y * DPR, w: bw2 * DPR, h: 44 * DPR, lr: 0 });
   };
   
-  const seco = (id, label, y) => {
+  const drawSecondaryBtn = (id, label, y) => {
     const isHovered = hoveredId === id;
     cx.save();
     if (isHovered) {
       cx.translate(W / 2, y);
       cx.scale(1.03, 1.03);
       cx.translate(-W / 2, -y);
+      cx.shadowColor = 'rgba(38, 82, 60, 0.2)';
+      cx.shadowBlur = 6;
+      cx.shadowOffsetY = 1;
     }
+    cx.fillStyle = isHovered ? '#f0ebd8' : 'rgba(251, 248, 240, 0.85)';
+    cx.strokeStyle = '#2b533e';
+    cx.lineWidth = 1.5;
+    roundRect(W / 2 - bw2 / 2, y - 19, bw2, 38, 12);
+    cx.fill(); cx.stroke();
     
-    cx.fillStyle = isHovered ? 'rgba(28, 32, 54, 0.82)' : 'rgba(14,17,30,0.62)';
-    roundRect(W / 2 - bw2 / 2, y - 16, bw2, 32, 10); cx.fill();
-    cx.strokeStyle = isHovered ? 'rgba(243,236,210,0.72)' : 'rgba(243,236,210,0.38)';
-    cx.lineWidth = 1; cx.stroke();
+    cx.fillStyle = '#2b533e';
+    cx.font = '800 12px "Outfit", sans-serif';
+    cx.textAlign = 'center';
+    cx.textBaseline = 'middle';
+    cx.fillText(formatBtnLabel(label), W / 2, y + 0.5);
+    cx.restore();
     
-    cx.fillStyle = isHovered ? '#ffffff' : 'rgba(243,236,210,0.92)';
-    cx.font = '13.5px Georgia, serif'; cx.fillText(label, W / 2, y + 1);
+    BTNS.push({ id, x: (W / 2) * DPR, y: y * DPR, w: bw2 * DPR, h: 38 * DPR, lr: 0 });
+  };
+  
+  const drawLanguageBtn = (id, label, y) => {
+    const isHovered = hoveredId === id;
+    cx.save();
+    if (isHovered) {
+      cx.translate(W / 2, y);
+      cx.scale(1.03, 1.03);
+      cx.translate(-W / 2, -y);
+      cx.shadowColor = 'rgba(38, 82, 60, 0.15)';
+      cx.shadowBlur = 6;
+      cx.shadowOffsetY = 1;
+    }
+    cx.fillStyle = isHovered ? '#f0ebd8' : '#fbf8f0';
+    cx.strokeStyle = '#2b533e';
+    cx.lineWidth = 1.2;
+    roundRect(W / 2 - bw2 / 2, y - 18, bw2, 36, 12);
+    cx.fill(); cx.stroke();
+    
+    cx.fillStyle = '#2b533e';
+    cx.font = '800 12px "Outfit", sans-serif';
+    cx.textAlign = 'center';
+    cx.textBaseline = 'middle';
+    cx.fillText(label, W / 2 - 8, y + 0.5);
+    
+    cx.strokeStyle = '#2b533e';
+    cx.lineWidth = 1.8;
+    cx.lineCap = 'round';
+    cx.lineJoin = 'round';
+    cx.beginPath();
+    cx.moveTo(W / 2 + bw2 / 2 - 22, y - 2);
+    cx.lineTo(W / 2 + bw2 / 2 - 18, y + 2);
+    cx.lineTo(W / 2 + bw2 / 2 - 14, y - 2);
+    cx.stroke();
+    
     cx.restore();
     
     BTNS.push({ id, x: (W / 2) * DPR, y: y * DPR, w: bw2 * DPR, h: 36 * DPR, lr: 0 });
   };
 
-  const tert = (id, label, y) => {
-    const isHovered = hoveredId === id;
-    cx.fillStyle = isHovered ? '#ffffff' : 'rgba(243,236,210,0.7)';
-    cx.font = '12.5px Georgia, serif'; cx.fillText(label, W / 2, y);
-    const lw2 = cx.measureText(label).width;
-    cx.strokeStyle = isHovered ? 'rgba(243,236,210,0.7)' : 'rgba(243,236,210,0.3)';
-    cx.lineWidth = 1;
-    cx.beginPath(); cx.moveTo(W / 2 - lw2 / 2, y + 8); cx.lineTo(W / 2 + lw2 / 2, y + 8); cx.stroke();
-    BTNS.push({ id, x: (W / 2) * DPR, y: y * DPR, w: (lw2 + 44) * DPR, h: 30 * DPR, lr: 0 });
-  };
-
   if (hasSave()) {
-    prim('cont', TX.title_continue, rowY); rowY += 52;
-    seco('new', TX.title_new, rowY); rowY += 42;
+    rowY = H * 0.48;
+    drawPrimaryBtn('cont', TX.title_continue, rowY); rowY += 52;
+    drawSecondaryBtn('new', TX.title_new, rowY); rowY += 46;
   } else {
-    prim('start', TX.title_start, rowY); rowY += 52;
+    rowY = H * 0.52;
+    drawPrimaryBtn('start', TX.title_start, rowY); rowY += 56;
   }
-  tert('lang', TX.lang_btn, rowY); rowY += 34;
-  cx.fillStyle = 'rgba(243,236,210,0.55)'; cx.font = '11.5px Georgia, serif';
-  const hy = Math.max(rowY + 12, H - 38);
-  cx.fillText(TX.ctl_hint1, W / 2, hy);
-  cx.fillText(TX.ctl_hint2, W / 2, hy + 18);
+  
+  const langLabel = LANG === 'de' ? 'SPRACHE: DEUTSCH' : 'LANGUAGE: ENGLISH';
+  drawLanguageBtn('lang', langLabel, rowY);
+  
+  // Bottom Controls Legend
+  const hy = H - 48;
+  const legend = LANG === 'de' ? [
+    { keys: ['←', '→', '↑'], label: 'LAUFEN' },
+    { keys: ['SPACE'], label: 'SPRINGEN' },
+    { keys: ['E'], label: 'BENUTZEN' },
+    { keys: ['M'], label: 'KARTE' },
+    { keys: ['F'], label: 'VOLLBILD' }
+  ] : [
+    { keys: ['←', '→', '↑'], label: 'MOVE' },
+    { keys: ['SPACE'], label: 'JUMP' },
+    { keys: ['E'], label: 'INTERACT' },
+    { keys: ['M'], label: 'MAP' },
+    { keys: ['F'], label: 'FULLSCREEN' }
+  ];
+  
+  cx.save();
+  let totalW = 0;
+  cx.font = 'bold 9px "Outfit", sans-serif';
+  for (const item of legend) {
+    let w = 0;
+    for (const k of item.keys) {
+      w += Math.max(16, cx.measureText(k).width + 8) + 3;
+    }
+    w -= 3 + 6;
+    cx.font = '600 10px "Outfit", sans-serif';
+    w += cx.measureText(item.label).width;
+    totalW += w + 24;
+    cx.font = 'bold 9px "Outfit", sans-serif';
+  }
+  totalW -= 24;
+  
+  let curX = W / 2 - totalW / 2;
+  cx.textBaseline = 'middle';
+  for (let i = 0; i < legend.length; i++) {
+    const item = legend[i];
+    for (const k of item.keys) {
+      cx.font = 'bold 9px "Outfit", sans-serif';
+      const kw = Math.max(16, cx.measureText(k).width + 8);
+      const kh = 16;
+      const ky = hy - kh / 2;
+      
+      cx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+      cx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+      cx.lineWidth = 1;
+      cx.beginPath();
+      cx.roundRect(curX, ky, kw, kh, 3);
+      cx.fill(); cx.stroke();
+      
+      cx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+      cx.textAlign = 'center';
+      cx.fillText(k, curX + kw / 2, hy + 0.5);
+      curX += kw + 3;
+    }
+    curX -= 3;
+    curX += 6;
+    
+    cx.font = '600 10px "Outfit", sans-serif';
+    cx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    cx.textAlign = 'left';
+    cx.fillText(item.label, curX, hy + 0.5);
+    curX += cx.measureText(item.label).width;
+    
+    if (i < legend.length - 1) {
+      curX += 12;
+      cx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+      cx.lineWidth = 1;
+      cx.beginPath();
+      cx.moveTo(curX, hy - 6);
+      cx.lineTo(curX, hy + 6);
+      cx.stroke();
+      curX += 12;
+    }
+  }
+  
+  // Footer description
+  cx.font = '600 9px "Outfit", sans-serif';
+  cx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+  cx.textAlign = 'center';
+  cx.fillText('A HIKE, NOT A FIGHT • EIN SPAZIERGANG, KEIN KAMPF.', W / 2, hy + 20);
+  
   cx.restore();
 
   if (pendTitle === 'lang') {
