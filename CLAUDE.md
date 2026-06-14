@@ -170,6 +170,10 @@ engine's `pend*` event queue exists for exactly that.
 - **Contact shadows:** `groundShadow(x, floorY, hw, a)` grounds actors/objects;
   draw it before the body, at the floor line, only when grounded. Add new
   shadow-worthy entity types to `SHADOW_ENTS`.
+- **Wall-mounted entities (`plaque`, `sign`) draw *above* their base**, but
+  the entity floor/headroom test forbids solid tiles in those rows — so put a
+  `BG_ROCK` face behind them or they read as floating against sky. Place such
+  entities where a background-rock rect covers their graphic.
 - **Ambient motes (`drawMotes`):** decorative per-zone air life (dust in shafts,
   pollen on the Alm, wind-grit on the ridge, mist in the gorge), keyed off
   `curZone.id` in `moteKind`. A separate pool from gameplay `parts`, drawn
