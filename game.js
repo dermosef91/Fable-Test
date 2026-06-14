@@ -120,7 +120,7 @@ const player = {
   face: 1, grounded: false, coyote: 0, jbuf: 0,
   climbing: false, swim: false, anim: 0, idle: 0,
   warmth: 100, maxWarmth: 100,
-  stumbleY: 0, sliding: 0, stunT: 0, glissT: 0,
+  stumbleY: 0, sliding: 0, stunT: 0, glissT: 0, screeCoyote: 0,
 };
 
 const spawnE = ENTITIES.find(e => e.t === 'spawn');
@@ -805,6 +805,7 @@ function physTick() {
   // ---- ground info
   const under = tilesUnder(p.x, p.y, p.w, p.h);
   const onScree = p.grounded && under.includes(2) && !under.includes(1) ? true : (p.grounded && under.includes(2) && under.every(t => t === 2 || t === 0));
+  if (p.grounded) p.screeCoyote = under.includes(2) ? 8 : 0;
   const onIce = p.grounded && under.includes(7); // Blankeis: glassy, almost no grip
   const onOneway = under.includes(3);
 
@@ -869,12 +870,18 @@ function physTick() {
 
     // jump (from ground, coyote, or straight out of the water)
     if (jumpEdge && !stunned) p.jbuf = 8;
-    if (p.jbuf > 0 && (p.grounded || p.coyote > 0 || p.swim) && !(p.sliding && !G.gear.boots)) {
-      p.vy = p.swim ? -5.6 : -8.4;
-      // jumping off a hoist keeps its drift — the arc matches what you see
-      if (p.moverRef) { p.vx += p.moverRef.dx || 0; p.vy += Math.min(0, p.moverRef.dy || 0); }
-      p.grounded = false; p.coyote = 0; p.jbuf = 0; p.moverRef = null;
-      sfx.jump();
+    if (p.jbuf > 0 && (p.grounded || p.coyote > 0 || p.swim)) {
+      if ((p.sliding || p.screeCoyote > 0) && !G.gear.boots && !p.swim) {
+        if (slipToastCd <= 0) { toast(TX.toast_slip); sfx.slip(); slipToastCd = 160; }
+        p.jbuf = 0;
+      } else {
+        p.vy = p.swim ? -5.6 : -8.4;
+        // jumping off a hoist keeps its drift — the arc matches what you see
+        if (p.moverRef) { p.vx += p.moverRef.dx || 0; p.vy += Math.min(0, p.moverRef.dy || 0); }
+        p.grounded = false; p.coyote = 0; p.jbuf = 0; p.moverRef = null;
+        p.screeCoyote = 0;
+        sfx.jump();
+      }
     }
     if (p.jbuf > 0) p.jbuf--;
     if (!inp.jump && p.vy < -2.5 && !p.swim) p.vy = -2.5; // variable height
@@ -1014,7 +1021,10 @@ function physTick() {
     } else p.y = ny;
   }
   if (p.grounded) { p.coyote = 8; fallStartY = p.y; }
-  else if (p.coyote > 0) p.coyote--;
+  else {
+    if (p.coyote > 0) p.coyote--;
+    if (p.screeCoyote > 0) p.screeCoyote--;
+  }
   if (p.climbing) fallStartY = p.y;
 
   function landIfFalling() {
@@ -6242,21 +6252,214 @@ function drawPhotoScene(n, ix, iy, iw, ih) {
 
 // ------------------------------------------------------------ title / end --
 // helper to draw detailed trees on the title screen meadow
+// Reuses the same rendering as the in-game drawTree but with absolute coords + nightVal
 function drawTitleTree(bx, by, kind, s, nightVal) {
   const H = 70 * s;
-  cx.strokeStyle = '#6b4a2c'; cx.lineWidth = 3 * s;
-  cx.beginPath(); cx.moveTo(bx, by); cx.lineTo(bx, by - H); cx.stroke();
+
+  // Helper for quadratic bezier points
+  const getQuadPoint = (p0x, p0y, p1x, p1y, p2x, p2y, t) => {
+    const mt = 1 - t;
+    return {
+      x: mt * mt * p0x + 2 * mt * t * p1x + t * t * p2x,
+      y: mt * mt * p0y + 2 * mt * t * p1y + t * t * p2y
+    };
+  };
+
+  // 1. Calculate Trunk Points (Tapered & Flared base)
+  const steps = 6;
+  const trunkPoints = [];
+  const baseW = 5.5 * s;
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    const currH = H * t;
+    // Larches have a slight organic bend
+    const tx = (kind === 0) ? bx + Math.sin(t * Math.PI * 1.25) * 2.5 * s + t * 2 * s : bx;
+    const ty = by - currH;
+    let tw = baseW * (1 - t * 0.76);
+    if (i === 0) tw = baseW * 1.55; // Root flare
+    else if (i === 1) tw = baseW * 1.15;
+    trunkPoints.push({ x: tx, y: ty, w: tw });
+  }
+
+  // 2. Draw Trunk (Light and shadow halves for 3D depth)
+  // Left half (light)
+  cx.beginPath();
+  for (let i = 0; i <= steps; i++) {
+    cx.lineTo(trunkPoints[i].x - trunkPoints[i].w / 2, trunkPoints[i].y);
+  }
+  for (let i = steps; i >= 0; i--) {
+    cx.lineTo(trunkPoints[i].x, trunkPoints[i].y);
+  }
+  cx.closePath();
+  cx.fillStyle = hexLerp('#6b4b32', '#1c130d', nightVal);
+  cx.fill();
+
+  // Right half (shadow)
+  cx.beginPath();
+  for (let i = 0; i <= steps; i++) {
+    cx.lineTo(trunkPoints[i].x, trunkPoints[i].y);
+  }
+  for (let i = steps; i >= 0; i--) {
+    cx.lineTo(trunkPoints[i].x + trunkPoints[i].w / 2, trunkPoints[i].y);
+  }
+  cx.closePath();
+  cx.fillStyle = hexLerp('#442f1f', '#100c07', nightVal);
+  cx.fill();
+
+  // Bark grooves (subtle texture, low contrast)
+  cx.strokeStyle = hexLerp('#523925', '#140e09', nightVal);
+  cx.lineWidth = 0.6 * s;
+  cx.beginPath();
+  for (let i = 0; i <= steps; i++) {
+    const p = trunkPoints[i];
+    const gx = p.x - p.w * 0.15;
+    if (i === 0) cx.moveTo(gx, p.y);
+    else cx.lineTo(gx, p.y);
+  }
+  cx.stroke();
+
+  cx.beginPath();
+  for (let i = 0; i <= steps; i++) {
+    const p = trunkPoints[i];
+    const gx = p.x + p.w * 0.2;
+    if (i === 0) cx.moveTo(gx, p.y);
+    else cx.lineTo(gx, p.y);
+  }
+  cx.stroke();
+
+  // 3. Draw Foliage
   if (kind === 0) { // larch: feathery, golden-green
-    cx.fillStyle = hexLerp('#7fa05a', '#2c4434', nightVal);
+    const shadowCol = hexLerp('#5f8247', '#1b2a1a', nightVal);
+    const mainCol = hexLerp('#7fa05a', '#223625', nightVal);
+    const highCol = hexLerp('#99ba73', '#2b4733', nightVal);
+
     for (let i = 0; i < 6; i++) {
-      const ly = by - H * (0.35 + i * 0.12), lw = (38 - i * 5) * s;
-      cx.beginPath(); cx.moveTo(bx - lw / 2, ly); cx.quadraticCurveTo(bx, ly - 9 * s, bx + lw / 2, ly); cx.quadraticCurveTo(bx, ly + 4 * s, bx - lw / 2, ly); cx.fill();
+      const t = 0.35 + i * 0.12;
+      const tx = bx + Math.sin(t * Math.PI * 1.25) * 2.5 * s + t * 2 * s;
+      const ly = by - H * t;
+      const lw = (39 - i * 5) * s;
+
+      // Draw branch structure
+      cx.strokeStyle = hexLerp('#4e3523', '#130d09', nightVal);
+      cx.lineWidth = (2.0 - i * 0.2) * s;
+      cx.beginPath();
+      cx.moveTo(tx, ly);
+      cx.quadraticCurveTo(tx - lw * 0.3, ly + 6 * s, tx - lw / 2, ly - 3 * s);
+      cx.moveTo(tx, ly);
+      cx.quadraticCurveTo(tx + lw * 0.3, ly + 6 * s, tx + lw / 2, ly - 3 * s);
+      cx.stroke();
+
+      // Collect puff positions
+      const numPuffs = 3;
+      const positions = [];
+      positions.push({ x: tx, y: ly, r: 7.2 * s });
+
+      for (let k = 1; k <= numPuffs; k++) {
+        const pt = k / numPuffs;
+        const radius = (7.2 - pt * 3.4) * s;
+
+        const lp = getQuadPoint(tx, ly, tx - lw * 0.3, ly + 6 * s, tx - lw / 2, ly - 3 * s, pt);
+        positions.push({ x: lp.x, y: lp.y, r: radius });
+
+        const rp = getQuadPoint(tx, ly, tx + lw * 0.3, ly + 6 * s, tx + lw / 2, ly - 3 * s, pt);
+        positions.push({ x: rp.x, y: rp.y, r: radius });
+      }
+
+      // Draw shadow layer first
+      cx.fillStyle = shadowCol;
+      for (const pos of positions) {
+        cx.beginPath(); cx.arc(pos.x, pos.y + 0.7 * s, pos.r, 0, 7); cx.fill();
+      }
+
+      // Draw main layer
+      cx.fillStyle = mainCol;
+      for (const pos of positions) {
+        cx.beginPath(); cx.arc(pos.x, pos.y, pos.r, 0, 7); cx.fill();
+      }
+
+      // Draw highlight layer
+      cx.fillStyle = highCol;
+      for (const pos of positions) {
+        cx.beginPath(); cx.arc(pos.x - 0.4 * s, pos.y - 0.4 * s, pos.r * 0.88, 0, 7); cx.fill();
+      }
     }
-  } else { // spruce
-    cx.fillStyle = hexLerp('#39614a', '#1f3328', nightVal);
-    for (let i = 0; i < 4; i++) {
-      const ly = by - H * (0.3 + i * 0.18), lw = (42 - i * 8) * s;
-      cx.beginPath(); cx.moveTo(bx - lw / 2, ly); cx.lineTo(bx, ly - 16 * s); cx.lineTo(bx + lw / 2, ly); cx.closePath(); cx.fill();
+  } else { // spruce: structured, tiered, deep forest green
+    const spShadowCol = hexLerp('#203f30', '#0a1510', nightVal);
+    const spMainCol = hexLerp('#2b523c', '#102018', nightVal);
+    const spHighCol = hexLerp('#38684d', '#162b20', nightVal);
+
+    // Helper for drawing scalloped spruce tier path
+    const drawSpruceTierPath = (tx, ly, lw, topH) => {
+      cx.beginPath();
+      cx.moveTo(tx, ly - topH);
+      cx.quadraticCurveTo(tx - lw * 0.2, ly - topH * 0.4, tx - lw / 2, ly);
+      const numScallops = 6;
+      for (let j = 0; j < numScallops; j++) {
+        const xStart = tx - lw / 2 + (lw / numScallops) * j;
+        const xEnd = tx - lw / 2 + (lw / numScallops) * (j + 1);
+        const xMid = (xStart + xEnd) / 2;
+        const hangY = ly + 2.5 * s * (1 - Math.abs(xMid - tx) / (lw / 2));
+        cx.lineTo(xMid, hangY);
+        cx.lineTo(xEnd, ly);
+      }
+      cx.quadraticCurveTo(tx + lw * 0.2, ly - topH * 0.4, tx, ly - topH);
+      cx.closePath();
+    };
+
+    // Helper for drawing a hanging pinecone
+    const drawPinecone = (px, py) => {
+      const pcW = 3 * s, pcH = 6.5 * s;
+      const coneCol = hexLerp('#734829', '#1d120a', nightVal);
+      const coneColD = hexLerp('#52321c', '#140c06', nightVal);
+      cx.fillStyle = coneCol;
+      cx.beginPath(); cx.ellipse(px, py + pcH / 2, pcW / 2, pcH / 2, 0, 0, 7); cx.fill();
+      cx.fillStyle = coneColD;
+      cx.beginPath(); cx.ellipse(px, py + pcH / 2, pcW / 2, pcH / 2, 0, 0, Math.PI); cx.fill();
+      cx.strokeStyle = hexLerp('#442f1f', '#100b07', nightVal);
+      cx.lineWidth = 0.8 * s;
+      cx.beginPath(); cx.moveTo(px, py); cx.lineTo(px, py - 2 * s); cx.stroke();
+    };
+
+    for (let i = 0; i < 5; i++) {
+      const t = 0.24 + i * 0.16;
+      const tx = bx;
+      const ly = by - H * t;
+      const lw = (45 - i * 7) * s;
+      const topH = 17 * s;
+
+      // Shadow tier
+      cx.fillStyle = spShadowCol;
+      drawSpruceTierPath(tx, ly + 1 * s, lw + 1 * s, topH);
+      cx.fill();
+
+      // Main tier
+      cx.fillStyle = spMainCol;
+      drawSpruceTierPath(tx, ly, lw, topH);
+      cx.fill();
+
+      // Highlight tier
+      cx.fillStyle = spHighCol;
+      drawSpruceTierPath(tx - 0.4 * s, ly - 0.6 * s, lw * 0.92, topH * 0.9);
+      cx.fill();
+
+      // Needle texturing lines
+      cx.strokeStyle = hexLerp('#1c3b2b', '#0a1410', nightVal);
+      cx.lineWidth = 0.5 * s;
+      cx.beginPath();
+      const numScallops = 6;
+      for (let j = 0; j < numScallops; j++) {
+        const xMid = tx - lw / 2 + (lw / numScallops) * (j + 0.5);
+        const yMid = ly + 2.5 * s * (1 - Math.abs(xMid - tx) / (lw / 2));
+        cx.moveTo(tx + (xMid - tx) * 0.35, ly - topH * 0.35);
+        cx.lineTo(xMid, yMid);
+      }
+      cx.stroke();
+
+      // Hanging cones from lower tiers
+      if (i < 3) {
+        drawPinecone(tx - lw / 2 + 1 * s, ly + 1 * s);
+        drawPinecone(tx + lw / 2 - 1 * s, ly + 1 * s);
+      }
     }
   }
 }
