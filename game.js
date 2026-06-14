@@ -3703,12 +3703,12 @@ function drawPlayer() {
   const run = Math.abs(p.vx) > 0.4 && p.grounded;
   const leg = Math.sin(p.anim * 2.2) * (run ? 4 : 0);
   const breathe = Math.sin(p.idle) * 0.6;
-  const jacketColor = G.gear.jacket ? '#c0392b' : '#2e7d6b';
-  const jacketDark = G.gear.jacket ? '#a93226' : '#246355';
-  const jacketLight = G.gear.jacket ? '#d04a3d' : '#3a9980';
-  const bootColor = G.gear.boots ? '#7a4a26' : '#888';
-  const bootSole = G.gear.boots ? '#4a2e16' : '#555';
-  const bootHighlight = G.gear.boots ? '#9a6a3a' : '#aaa';
+  const jacketColor = G.gear.jacket ? '#c14d35' : '#2e7d6b';
+  const jacketDark = G.gear.jacket ? '#a23d29' : '#246355';
+  const jacketLight = G.gear.jacket ? '#d3654b' : '#3a9980';
+  const bootColor = G.gear.boots ? '#8a5530' : '#888';
+  const bootSole = G.gear.boots ? '#45291a' : '#555';
+  const bootHighlight = G.gear.boots ? '#aa794c' : '#aaa';
 
   if (p.grounded && !p.climbing && !p.gliding)
     groundShadow(p.x + p.w / 2 - cam.x, p.y + p.h - cam.y, p.w * 0.6, 0.22);
@@ -3730,7 +3730,7 @@ function drawPlayer() {
   const legRy = p.climbing ? 11 : (!p.grounded && !p.swim ? 14 : 14);
   const legH = p.climbing ? 7 : (!p.grounded && !p.swim ? 7 : 7);
   // left leg
-  cx.fillStyle = '#41475c';
+  cx.fillStyle = '#3d5f8a';
   cx.beginPath();
   cx.moveTo(-4.5 + legL, legLy);
   cx.lineTo(-1.5 + legL, legLy);
@@ -3749,11 +3749,11 @@ function drawPlayer() {
   cx.lineTo(0 + legR, legRy + legH - 1.5);
   cx.closePath(); cx.fill();
   // trouser cuff highlights
-  cx.fillStyle = '#4d536a';
+  cx.fillStyle = '#4d6f9b';
   cx.fillRect(-5 + legL, legLy + legH - 1.5, 4.5, 1.5);
   cx.fillRect(0.5 + legR, legRy + legH - 1.5, 4.5, 1.5);
   // inner seam hint
-  cx.strokeStyle = '#363b4d'; cx.lineWidth = 0.4;
+  cx.strokeStyle = '#314f76'; cx.lineWidth = 0.4;
   cx.beginPath();
   cx.moveTo(-2.5 + legL, legLy + 1); cx.lineTo(-2.5 + legL, legLy + legH - 1);
   cx.moveTo(2 + legR, legRy + 1); cx.lineTo(2 + legR, legRy + legH - 1);
@@ -3777,10 +3777,14 @@ function drawPlayer() {
   cx.fillStyle = bootSole;
   cx.fillRect(bLx - 0.5, bY + 2.2, 6.5, 1);
   cx.fillRect(bRx - 0.5, bY + 2.2, 6.5, 1);
-  // lace/highlight
+  // lighter tan upper cuff across the top of each boot
   cx.fillStyle = bootHighlight;
-  cx.fillRect(bLx + 1, bY + 0.3, 2.5, 0.6);
-  cx.fillRect(bRx + 1, bY + 0.3, 2.5, 0.6);
+  cx.fillRect(bLx + 0.2, bY, 5, 1);
+  cx.fillRect(bRx + 0.2, bY, 5, 1);
+  // lace dots on the cuff
+  cx.fillStyle = bootSole;
+  cx.fillRect(bLx + 2, bY + 0.3, 0.6, 0.6);
+  cx.fillRect(bRx + 2, bY + 0.3, 0.6, 0.6);
 
   // === BODY / JACKET (layered construction with hood, collar, zipper) ===
   const jY = 4 + breathe;
@@ -3800,12 +3804,7 @@ function drawPlayer() {
   // jacket lower hem — slightly darker band
   cx.fillStyle = jacketDark;
   cx.fillRect(-5, jY + 9.5, 10.5, 2);
-  // zipper line
-  cx.strokeStyle = jacketDark; cx.lineWidth = 0.7;
-  cx.beginPath(); cx.moveTo(0.5, jY + 0.5); cx.lineTo(0.5, jY + 11); cx.stroke();
-  // zipper pull
-  cx.fillStyle = '#ccc'; cx.fillRect(0, jY + 2, 1.2, 1.5);
-  // collar / hood peeking up behind head
+  // rounded sweater collar peeking up behind head
   cx.fillStyle = jacketColor;
   cx.beginPath();
   cx.moveTo(-5, jY);
@@ -3813,25 +3812,16 @@ function drawPlayer() {
   cx.lineTo(3.5, jY - 4);
   cx.quadraticCurveTo(5.5, jY - 3, 5, jY);
   cx.closePath(); cx.fill();
-  // collar rim
-  cx.fillStyle = jacketLight;
+  // darker round neckline
+  cx.fillStyle = jacketDark;
   cx.beginPath();
-  cx.moveTo(-4, jY - 0.5);
-  cx.quadraticCurveTo(-5, jY - 2.5, -3.5, jY - 3.5);
-  cx.lineTo(3.5, jY - 3.5);
-  cx.quadraticCurveTo(5, jY - 2.5, 4, jY - 0.5);
-  cx.lineTo(4, jY + 0.8);
-  cx.lineTo(-4, jY + 0.8);
+  cx.moveTo(-3.5, jY - 0.5);
+  cx.quadraticCurveTo(0, jY + 1.5, 3.5, jY - 0.5);
+  cx.quadraticCurveTo(0, jY + 0.2, -3.5, jY - 0.5);
   cx.closePath(); cx.fill();
-  // jacket pocket hint (front pocket)
-  cx.strokeStyle = jacketDark; cx.lineWidth = 0.5;
-  cx.beginPath();
-  cx.moveTo(1.5, jY + 5.5); cx.lineTo(4.5, jY + 5.5);
-  cx.lineTo(4.5, jY + 8.5); cx.lineTo(1.5, jY + 8.5);
-  cx.stroke();
 
-  // === BACKPACK (tan leather, darker strap, rolled sleeping mat on top) ===
-  cx.fillStyle = '#a06a2c';
+  // === BACKPACK (olive-green pack with side strap and orange ring buckle) ===
+  cx.fillStyle = '#647a4a';
   // main pack body — rounded rectangle
   cx.beginPath();
   cx.moveTo(-10, jY + 1);
@@ -3842,49 +3832,48 @@ function drawPlayer() {
   cx.lineTo(-8.5, jY + 0.5);
   cx.quadraticCurveTo(-10, jY + 0.5, -10, jY + 1);
   cx.closePath(); cx.fill();
-  // pack flap (top)
-  cx.fillStyle = '#8a5520';
+  // rounded top lid — darker green
+  cx.fillStyle = '#54683c';
   cx.beginPath();
-  cx.moveTo(-10.5, jY + 0.5);
-  cx.lineTo(-5.5, jY + 0.5);
-  cx.lineTo(-5.5, jY + 2.5);
-  cx.lineTo(-10.5, jY + 2.5);
+  cx.moveTo(-10, jY + 1.5);
+  cx.quadraticCurveTo(-10, jY - 0.5, -8, jY - 0.5);
+  cx.quadraticCurveTo(-6, jY - 0.5, -6, jY + 1.5);
+  cx.lineTo(-6, jY + 3);
+  cx.lineTo(-10, jY + 3);
   cx.closePath(); cx.fill();
-  // buckle on flap
-  cx.fillStyle = '#c9a96a';
-  cx.fillRect(-8.5, jY + 2, 1.5, 1.2);
-  // strap (darker band across pack)
-  cx.fillStyle = '#7c4f1d';
-  cx.fillRect(-10, jY + 5, 4.5, 1.5);
-  // rolled sleeping mat on top of pack — olive green cylinder
-  cx.fillStyle = '#5a6e4a';
+  // compression strap across the body (darker olive)
+  cx.fillStyle = '#46582f';
+  cx.fillRect(-10, jY + 5.5, 4, 1.3);
+  // front pocket panel
+  cx.fillStyle = '#586c40';
   cx.beginPath();
-  cx.ellipse(-8, jY - 0.5, 2.5, 1.5, 0, 0, Math.PI * 2);
-  cx.fill();
-  cx.fillStyle = '#4a5e3a';
+  cx.moveTo(-9.5, jY + 6.5);
+  cx.lineTo(-6, jY + 6.5);
+  cx.lineTo(-6, jY + 9.8);
+  cx.quadraticCurveTo(-9.5, jY + 10, -9.5, jY + 8.5);
+  cx.closePath(); cx.fill();
+  // orange ring buckle hanging on the pack front
+  cx.strokeStyle = '#e89441'; cx.lineWidth = 0.9;
   cx.beginPath();
-  cx.ellipse(-8, jY - 0.5, 2.5, 1.5, 0, Math.PI * 0.9, Math.PI * 2.1);
-  cx.fill();
-  // mat strap
-  cx.strokeStyle = '#7c4f1d'; cx.lineWidth = 0.5;
-  cx.beginPath();
-  cx.moveTo(-9.5, jY - 0.5); cx.lineTo(-6.5, jY - 0.5);
+  cx.arc(-8, jY + 4.2, 1.5, 0, Math.PI * 2);
   cx.stroke();
-  // diamond logo on pack
-  cx.strokeStyle = '#c9a96a'; cx.lineWidth = 0.6;
-  cx.beginPath();
-  cx.moveTo(-8, jY + 4); cx.lineTo(-7, jY + 5.5);
-  cx.lineTo(-8, jY + 7); cx.lineTo(-9, jY + 5.5);
-  cx.closePath(); cx.stroke();
 
-  // === BACKPACK CHEST STRAP (visible on front of jacket) ===
-  cx.strokeStyle = '#7c4f1d'; cx.lineWidth = 0.8;
+  // === BACKPACK SHOULDER STRAP (visible on front of jacket) ===
+  cx.fillStyle = '#54683c';
   cx.beginPath();
-  cx.moveTo(-5, jY + 3.5); cx.lineTo(2, jY + 3.5);
+  cx.moveTo(-5, jY + 0.5);
+  cx.lineTo(-3.5, jY + 0.5);
+  cx.lineTo(-1.5, jY + 9.5);
+  cx.lineTo(-3, jY + 9.5);
+  cx.closePath(); cx.fill();
+  // sternum strap across the chest
+  cx.strokeStyle = '#46582f'; cx.lineWidth = 0.8;
+  cx.beginPath();
+  cx.moveTo(-3.5, jY + 3.5); cx.lineTo(2, jY + 3.5);
   cx.stroke();
-  // strap buckle
-  cx.fillStyle = '#c9a96a';
-  cx.fillRect(-2, jY + 3, 1.5, 1.2);
+  // sternum strap buckle
+  cx.fillStyle = '#e89441';
+  cx.fillRect(-1, jY + 3, 1.3, 1.2);
 
   // === ARMS ===
   cx.fillStyle = jacketColor;
@@ -3901,7 +3890,7 @@ function drawPlayer() {
     cx.lineTo(-2.5, 12 - arm); cx.lineTo(-6.5, 12 - arm);
     cx.closePath(); cx.fill();
     // hands
-    cx.fillStyle = '#e8b88a';
+    cx.fillStyle = '#f0d2ab';
     cx.beginPath(); cx.arc(4.5, 2.5 + arm, 1.5, 0, 7); cx.fill();
     cx.beginPath(); cx.arc(-4.5, 4.5 - arm, 1.5, 0, 7); cx.fill();
   } else {
@@ -3918,7 +3907,7 @@ function drawPlayer() {
     cx.fillStyle = jacketDark;
     cx.fillRect(4, jY + 7 + armSwing, 3.5, 1.5);
     // hand
-    cx.fillStyle = '#e8b88a';
+    cx.fillStyle = '#f0d2ab';
     cx.beginPath(); cx.arc(5.5, jY + 9.5 + armSwing, 1.5, 0, 7); cx.fill();
   }
 
@@ -3926,7 +3915,7 @@ function drawPlayer() {
   if (p.gliding) {
     cx.strokeStyle = 'rgba(230,235,240,0.9)'; cx.lineWidth = 1;
     cx.beginPath(); cx.moveTo(-3, 6); cx.lineTo(-13, -12); cx.moveTo(3, 6); cx.lineTo(13, -12); cx.stroke();
-    cx.fillStyle = '#c0392b';
+    cx.fillStyle = '#c14d35';
     cx.beginPath(); cx.moveTo(-15, -11);
     cx.quadraticCurveTo(0, -22 - Math.sin(p.idle * 2) * 1.5, 15, -11);
     cx.quadraticCurveTo(0, -14, -15, -11); cx.closePath(); cx.fill();
@@ -3935,67 +3924,62 @@ function drawPlayer() {
     cx.quadraticCurveTo(0, -18.5, -5, -16.6); cx.closePath(); cx.fill();
   }
 
-  // === HAIR (dark, messy, peeking out from under beanie) ===
+  // === HAIR (light blonde, peeking out from under beanie) ===
   const hY = breathe;
-  cx.fillStyle = '#3a2a1a';
-  // hair tufts on sides
-  cx.beginPath();
-  cx.moveTo(-5, -1 + hY); cx.quadraticCurveTo(-6.5, -3 + hY, -5.5, -4 + hY);
-  cx.lineTo(-4.5, -1 + hY); cx.closePath(); cx.fill();
-  cx.beginPath();
-  cx.moveTo(5, -1 + hY); cx.quadraticCurveTo(6.5, -3 + hY, 5.5, -4 + hY);
-  cx.lineTo(4.5, -1 + hY); cx.closePath(); cx.fill();
-  // fringe peeking under beanie front
-  cx.beginPath();
-  cx.moveTo(-3, -1.5 + hY); cx.quadraticCurveTo(-2, -3 + hY, -0.5, -2 + hY);
-  cx.quadraticCurveTo(1, -3 + hY, 2.5, -1.5 + hY);
-  cx.lineTo(-3, -1.5 + hY); cx.closePath(); cx.fill();
+  cx.fillStyle = '#d8b673';
+  // small tufts peeking out at the sides, below the brim near the ears
+  cx.beginPath(); cx.arc(-5.3, 1.2 + hY, 1.3, 0, 7); cx.fill();
+  cx.beginPath(); cx.arc(5.3, 1.2 + hY, 1.3, 0, 7); cx.fill();
   // back hair visible behind neck
   cx.fillRect(-4, 1 + hY, 8, 2);
 
-  // === HEAD ===
-  cx.fillStyle = '#e8b88a';
+  // === HEAD (pale cream skin, two dark eyes for a soft 3/4 look) ===
+  cx.fillStyle = '#f0d2ab';
   cx.beginPath(); cx.arc(0, 0 + hY, 5, 0, 7); cx.fill();
   // subtle ear
-  cx.fillStyle = '#d9a87a';
-  cx.beginPath(); cx.arc(4.5, 0.5 + hY, 1.2, 0, 7); cx.fill();
-  // eye (simple dot)
-  cx.fillStyle = '#2c2a25';
-  cx.fillRect(2, -0.5 + hY, 1.5, 1.5);
-  // mouth hint
-  cx.fillStyle = '#c99070';
-  cx.fillRect(1.5, 2 + hY, 2, 0.6);
+  cx.fillStyle = '#e3bf94';
+  cx.beginPath(); cx.arc(-4.6, 0.5 + hY, 1.2, 0, 7); cx.fill();
+  // two dark round eyes, spaced for a soft 3/4 look
+  cx.fillStyle = '#2a2724';
+  cx.beginPath(); cx.ellipse(0.5, 0.1 + hY, 0.8, 1.05, 0, 0, 7); cx.fill();
+  cx.beginPath(); cx.ellipse(3.3, 0.1 + hY, 0.8, 1.05, 0, 0, 7); cx.fill();
+  // tiny eye glints
+  cx.fillStyle = 'rgba(255,255,255,0.85)';
+  cx.beginPath(); cx.arc(0.8, -0.3 + hY, 0.3, 0, 7); cx.fill();
+  cx.beginPath(); cx.arc(3.6, -0.3 + hY, 0.3, 0, 7); cx.fill();
+  // rosy cheek
+  cx.fillStyle = 'rgba(224,140,120,0.32)';
+  cx.beginPath(); cx.arc(2.1, 2.3 + hY, 1, 0, 7); cx.fill();
 
-  // === BEANIE (orange, rolled brim, mountain logo) ===
-  cx.fillStyle = '#d98032';
+  // === BEANIE (golden mustard knit, rolled brim, top knob) ===
+  cx.fillStyle = '#e3ad44';
   // beanie dome
   cx.beginPath();
   cx.arc(0, -1.5 + hY, 5.2, Math.PI, 0);
   cx.fill();
-  // beanie top bump
+  // little folded knob on top
+  cx.fillStyle = '#d29a34';
   cx.beginPath();
-  cx.arc(0, -6.5 + hY, 1.5, 0, 7);
+  cx.arc(0, -6.4 + hY, 1.4, 0, 7);
   cx.fill();
-  // rolled brim — thicker band with ribbed texture
-  cx.fillStyle = '#c87028';
+  // knit ribbing on the dome
+  cx.strokeStyle = '#d29a34'; cx.lineWidth = 0.4;
+  for (let i = -4; i <= 4; i += 1.3) {
+    cx.beginPath();
+    cx.moveTo(i, -2 + hY);
+    cx.lineTo(i, -5 + hY + Math.abs(i) * 0.35);
+    cx.stroke();
+  }
+  // rolled brim — thicker band
+  cx.fillStyle = '#d29a34';
   cx.fillRect(-5.2, -2.5 + hY, 10.4, 2.5);
   // brim ribbing
-  cx.strokeStyle = '#b86020'; cx.lineWidth = 0.4;
+  cx.strokeStyle = '#c28e2e'; cx.lineWidth = 0.4;
   for (let i = -4.5; i <= 4.5; i += 1.2) {
     cx.beginPath();
     cx.moveTo(i, -2.5 + hY); cx.lineTo(i, -0.2 + hY);
     cx.stroke();
   }
-  // mountain logo on beanie (small triangle)
-  cx.fillStyle = '#fff';
-  cx.beginPath();
-  cx.moveTo(0, -5.5 + hY); cx.lineTo(-1.5, -3.5 + hY); cx.lineTo(1.5, -3.5 + hY);
-  cx.closePath(); cx.fill();
-  // logo snow cap
-  cx.fillStyle = '#e0e8f0';
-  cx.beginPath();
-  cx.moveTo(0, -5.5 + hY); cx.lineTo(-0.7, -4.5 + hY); cx.lineTo(0.7, -4.5 + hY);
-  cx.closePath(); cx.fill();
 
   // === HEADLAMP ===
   if (G.gear.lamp) {
