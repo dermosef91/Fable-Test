@@ -122,6 +122,17 @@ function buildWorld() {
   fill(167, 70, 7, 3, 4);  // forest pond
   fill(169, 69, 2, 1, 3);  // half-sunk log across the pond (one-way)
 
+  // the boots teaser: a steep scree buttress on an old plank just west of the
+  // pond. The path passes under it (the plank is one-way). Without grip every
+  // jump onto the scree slides straight back off; you can never gain the upper
+  // steps to the chestnut on top. With boots you scramble up step by step.
+  fill(160, 68, 5, 1, 3);  // one-way plank base (x160..164), passable from below
+  fill(164, 67, 1, 1, 2);  // scree staircase, one tile up per column, rising west…
+  fill(163, 66, 1, 2, 2);
+  fill(162, 65, 1, 3, 2);
+  fill(161, 64, 1, 4, 2);
+  fill(160, 63, 1, 5, 2);  // …a solid pile so there is no launch pad in its lee
+
   // --- odds and ends -------------------------------------------------------
   fill(188, 69, 1, 1, 1);  // lone boulder, east end
   fill(106, 69, 2, 1, 6);  // nettles in the larch shade
@@ -227,10 +238,10 @@ const ENTITIES = [
   { t: 'marmot',   x: 140, r: 63 },
 
   // -- Lärchenwald & Teich ----------------------------------------------------
-  { t: 'shelter',  x: 160, r: 70 },
+  { t: 'chestnut', x: 160, r: 63 },  // capping the scree pile west of the pond — the boots teaser
   { t: 'photo',    x: 166, r: 70, n: 2 },
-  { t: 'gear',     x: 162, r: 70, gear: 'boots', key: 'get_boots' },
-  { t: 'chestnut', x: 178, r: 70 },
+  { t: 'shelter',  x: 176, r: 70 },
+  { t: 'gear',     x: 178, r: 70, gear: 'boots', key: 'get_boots' },
   { t: 'tin',      x: 171, r: 73 },  // shaken loose from the silt by the Zinnensprung
   { t: 'page',     x: 181, r: 70, n: 2 },
   { t: 'marmot',   x: 185, r: 70 },

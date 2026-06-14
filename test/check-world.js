@@ -196,6 +196,17 @@ ok(!solid(at(159, 2)) && !solid(at(163, 2)), 'summit has headroom');
 // 14. pond crossing: bank -> log -> bank
 ok(at(169, 69) === 3 && at(170, 69) === 3, 'pond log present');
 ok(solid(at(166, 70)) && solid(at(174, 70)), 'pond banks solid');
+// 14b. the boots teaser west of the pond: a steep scree buttress on a one-way
+//      plank you pass under, rising one tile per column to the chestnut on top
+//      — kept beyond a bootless hop's reach (findInteract grabs within ~3.5
+//      tiles, and a jump can ride a shallow scree slope right up to the cap).
+ok(at(162, 68) === 3, 'scree-pile plank is one-way (passable from below)');
+ok(!solid(at(161, 69)) && !solid(at(163, 69)), 'forest path stays open under the plank');
+for (const [x, y] of [[164, 67], [163, 66], [162, 65], [161, 64], [160, 63]]) ok(at(x, y) === 2, `scree step at ${x},${y}`);
+ok(at(164, 66) !== 2 && at(160, 62) !== 2, 'scree pile is a clean staircase (headroom on each step)');
+ok(ENTITIES.some(e => e.t === 'chestnut' && e.x === 160 && e.r === 63), 'chestnut caps the scree pile');
+ok(ENTITIES.some(e => e.t === 'gear' && e.gear === 'boots' && e.x > 174), 'boots wait east of the pond');
+ok(ENTITIES.some(e => e.t === 'shelter' && e.x > 174), 'forest shelter sits east of the pond');
 
 // 15. das Schartl: walkable from the Lärchenschatten (x109) onto the scree,
 //     every step at most 1 tile up / 2 down, with 2+ tiles of headroom
