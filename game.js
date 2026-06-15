@@ -1136,7 +1136,6 @@ function findInteract() {
     if (!types.includes(e.t) || e.present === false) continue;
     if (e.t === 'photo' && !G.flags.finale) continue; // the photo hunt unlocks at the summit
     if (e.t === 'tin' && !G.flags.zinnensprung) continue; // the silt keeps its secret until the jump
-    if (e.gear === 'glider') continue; // Vera grants the glider directly
     const d = Math.hypot(e.x * TILE + 8 - px, e.r * TILE - 14 - py);
     if (d < best) { best = d; nearInteract = e; }
   }
@@ -1285,7 +1284,7 @@ function talkTo(who) {
     else if (!G.flags.veraMet) {
       G.flags.veraMet = true;
       say(t.first, () => {
-        G.gear.glider = true;
+        if (!G.gear.glider) G.gear.glider = true; // fallback: the ridge parcel is the usual source
         setObjective('peak');
         save();
       });
@@ -3154,7 +3153,6 @@ function drawEntity(e) {
     }
     case 'gear': {
       if (taken) return;
-      if (e.gear === 'glider') return; // Vera grants the glider directly
       const gy = y - 10 + bob;
       cx.fillStyle = 'rgba(255,255,255,0.2)'; cx.beginPath(); cx.arc(x, gy, 10, 0, 7); cx.fill();
       if (e.gear === 'boots') {
