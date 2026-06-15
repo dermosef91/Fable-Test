@@ -3895,20 +3895,20 @@ function drawPlayer() {
     cx.beginPath(); cx.arc(-4.5, 4.5 - arm, 1.5, 0, 7); cx.fill();
   } else {
     const armSwing = run ? -leg * 0.5 : 0;
-    // front arm (visible)
+    // front arm (visible) — hangs at the backpack/torso seam on the left
     cx.fillStyle = jacketColor;
     cx.beginPath();
-    cx.moveTo(4, jY + 1.5 + armSwing);
-    cx.lineTo(7, jY + 1.5 + armSwing);
-    cx.lineTo(7, jY + 8.5 + armSwing);
-    cx.lineTo(4, jY + 8.5 + armSwing);
+    cx.moveTo(-6.5, jY + 1.5 + armSwing);
+    cx.lineTo(-3.5, jY + 1.5 + armSwing);
+    cx.lineTo(-3.5, jY + 8.5 + armSwing);
+    cx.lineTo(-6.5, jY + 8.5 + armSwing);
     cx.closePath(); cx.fill();
     // sleeve cuff
     cx.fillStyle = jacketDark;
-    cx.fillRect(4, jY + 7 + armSwing, 3.5, 1.5);
+    cx.fillRect(-6.5, jY + 7 + armSwing, 3, 1.5);
     // hand
     cx.fillStyle = '#f0d2ab';
-    cx.beginPath(); cx.arc(5.5, jY + 9.5 + armSwing, 1.5, 0, 7); cx.fill();
+    cx.beginPath(); cx.arc(-5, jY + 9.5 + armSwing, 1.5, 0, 7); cx.fill();
   }
 
   // === PARAGLIDER CANOPY ===
