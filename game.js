@@ -3385,9 +3385,9 @@ function drawEntity(e) {
       const chibiArm = (col) => {
         const sw = swing * 0.6;
         cx.fillStyle = col;
-        cx.fillRect(3.6, BY + 1.5 - sw, 2.6, 6.2);
+        cx.fillRect(-6.2, BY + 1.5 + sw, 2.6, 6.2);
         cx.fillStyle = SKIN;
-        cx.beginPath(); cx.arc(4.9, BY + 8.5 - sw, 1.4, 0, 7); cx.fill();
+        cx.beginPath(); cx.arc(-4.9, BY + 8.5 + sw, 1.4, 0, 7); cx.fill();
       };
       const chibiHead = () => {
         cx.fillStyle = SKIN;
