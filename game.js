@@ -481,11 +481,14 @@ function toast(msg) { G.toasts.push({ msg, t: 240 }); if (G.toasts.length > 3) G
 
 // ---------------------------------------------------------------- dialog --
 const D = { queue: [], cb: null, line: 0, chars: 0 };
-function say(lines, cb, style) {
+function say(lines, cb, style, onLine) {
   // lines: array of strings (narration) or [name, text] pairs
+  // onLine(i): optional, fired as each line first appears (for staged effects)
   D.queue = lines.map(l => Array.isArray(l) ? l : ['', l]);
   D.cb = cb || null; D.line = 0; D.chars = 0; D.style = style || null;
+  D.onLine = onLine || null;
   G.mode = 'dialog';
+  if (D.onLine) D.onLine(0);
 }
 function dialogTick() {
   const cur = D.queue[D.line];
@@ -494,7 +497,11 @@ function dialogTick() {
   if (actEdge || jumpEdge || anyInputEdge) {
     anyInputEdge = false;
     if (D.chars < cur[1].length) D.chars = cur[1].length;
-    else { D.line++; D.chars = 0; if (D.line >= D.queue.length) endDialog(); }
+    else {
+      D.line++; D.chars = 0;
+      if (D.line >= D.queue.length) endDialog();
+      else if (D.onLine) D.onLine(D.line);
+    }
   }
 }
 function endDialog() {
@@ -1262,7 +1269,12 @@ function talkTo(who) {
         G.knoedel = true; player.maxWarmth = 130; player.warmth = 130;
         toast(TX.toast_knoedel); sfx.pick();
         say(TX.get_jacket, () => {
-          G.gear.jacket = true; setPhase(2); setObjective('jacket'); save();
+          setPhase(2); setObjective('jacket'); save();
+        }, null, (i) => {
+          // line 0: "disappears into the hut and returns…" — send Norbert on the errand
+          if (i === 0) startNorbertErrand();
+          // last line: "RAIN JACKET —" announcement — equip it as it appears
+          else if (i === 3 && !G.gear.jacket) { G.gear.jacket = true; sfx.pick(); }
         });
       });
     } else say(t.partial);
@@ -1461,10 +1473,12 @@ function npcTick() {
 
   // Norbert: in the hut at night (windows lit), chopping wood on Sunday
   const n = NPCS.norbert;
-  n.present = ph !== 3;
-  if (n.present) {
-    const norbertBaseX = ph >= 5 ? 59 : ph === 4 ? 73 : 70;
-    updateWander(n, norbertBaseX, 1.5, 0.018, 200, 500);
+  if (!n.errand) {  // the jacket errand drives his position while it runs
+    n.present = ph !== 3;
+    if (n.present) {
+      const norbertBaseX = ph >= 5 ? 59 : ph === 4 ? 73 : 70;
+      updateWander(n, norbertBaseX, 1.5, 0.018, 200, 500);
+    }
   }
 
   // the cow drifts, unbothered
@@ -1485,6 +1499,27 @@ function npcTick() {
       e.vx = e.x - e.prevX;
     }
   }
+}
+
+// Norbert fetches Rosa's jacket: amble to the hut door, vanish inside, return.
+// Ticks every frame — even mid-dialogue, when npcTick is paused — so the walk
+// plays out while the "disappears into the hut and returns…" line reads.
+function startNorbertErrand() {
+  const n = NPCS.norbert;
+  if (!n) return;
+  n.errand = true; n.errandT = 0; n.errandHome = n.x;
+}
+function norbertErrandTick() {
+  const n = NPCS.norbert;
+  if (!n || !n.errand) return;
+  const home = n.errandHome, door = 64;  // hut centre (door) is at tile 64
+  const t = ++n.errandT;
+  if (t <= 36) { n.x = home + (door - home) * (t / 36); n.face = -1; }  // amble to the door
+  else if (t <= 84) { n.x = door; n.present = false; }        // inside, out of sight
+  else if (t <= 120) {                                        // step back out with it
+    n.present = true; n.face = 1;
+    n.x = door + (home - door) * ((t - 84) / 36);
+  } else { n.x = home; n.present = true; n.errand = false; }  // home, errand done
 }
 
 // ---- the Gams: appears near your next objective, bounds away when crowded --
@@ -7305,6 +7340,7 @@ function step() {
   } else if (G.mode === 'dialog') {
     dialogTick();
   }
+  norbertErrandTick();  // runs in every mode so the hut walk plays during dialogue
 
   camTick();
   fadeTick();
