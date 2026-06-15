@@ -908,12 +908,15 @@ function doInteract(e) {
 }
 
 function restAt(id, prompt) {
-  G.lastFire = id;
-  player.warmth = player.maxWarmth;
-  sfx.fire();
-  save();
-  say([TX.rested]);
-  for (let i = 0; i < 8; i++) spawnPart({ x: player.x, y: player.y, vx: (Math.random() - 0.5), vy: -1 - Math.random(), t: 40, c: '#ffd54f', s: 2 });
+  // Short fade to black and back implies the rest happened.
+  fade(() => {
+    G.lastFire = id;
+    player.warmth = player.maxWarmth;
+    sfx.fire();
+    save();
+    say([TX.rested]);
+    for (let i = 0; i < 8; i++) spawnPart({ x: player.x, y: player.y, vx: (Math.random() - 0.5), vy: -1 - Math.random(), t: 40, c: '#ffd54f', s: 2 });
+  });
 }
 
 function givePage(n) {
