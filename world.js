@@ -685,10 +685,8 @@ const TX_DE = {
 
   vera: {
     first: [
-      ['Vera', 'Na sowas — bist du durchs Felsfenster geklettert? Ohne Schirm? Respekt.'],
+      ['Vera', 'Na sowas — Rosas Schirm! Den hab ich zuletzt überm Gamstal gesehen, da war ich zehn.'],
       ['Vera', 'Vera. Flugschule Gamstal — bis jetzt bestand die aus mir und dem Windsack.'],
-      ['Vera', 'Hier, nimm den. War mal Rosas. Der Berg hat dir das Gehen gezeigt — jetzt lernst du fliegen.'],
-      ['Vera', 'GLEITSCHIRM — halte SPRINGEN in der Luft, RUNTER zum Sturzflug.'],
       ['Vera', 'Hier hinten steigt die warme Luft in Säulen. Thermik. Flieg hinein und kreise — sie trägt dich nach oben.'],
       ['Vera', 'Magst eine Übung? Fünf Ringe hängen im Tal. Alle fünf, und du bist offiziell meine erste Flugschülerin.'],
     ],
