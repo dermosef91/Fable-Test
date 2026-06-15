@@ -240,35 +240,39 @@ function buildWorld() {
   // The hardest climb in the game. Thin ledges, crumbling rock, ice, air gusts,
   // and a one-way commit chimney. Summit at y1 — the highest point in the game.
 
-  // Solid ground to catch falls in the lower half
-  fill(264, 50, 52, 20, 1);   // catch floor x264..315, y50..69
+  // The lower massif catches falls in the lower half. Its WEST face steps down
+  // to the valley as a walkable approach staircase, so the Gamskofel is reached
+  // ON FOOT straight from the Hidden Valley — no paraglider required.
+  fill(270, 50, 46, 20, 1);   // main catch massif x270..315, y50..69
 
-  // Stage 1 — The Approach: valley floor up to the face
-  fill(264, 66, 4, 4, 1);     // entry ramp (x264..267, y66..69)
-  fill(270, 63, 3, 3, 1);     // ledge (x270..272, y63..65)
-  fill(266, 60, 3, 2, 1);     // zig left (x266..268, y60..61)
-  fill(272, 57, 3, 2, 1);     // zag right (x272..274, y57..58)
-  fill(268, 54, 4, 2, 1);     // wider shelf (x268..271, y54..55)
+  // Stage 1 — The Approach: a stepped buttress from the valley floor (y70) up
+  // to the massif top (y50). Each step is a 4-wide landing 3 tiles up, set back
+  // east so every hop has open sky — a steady walk-up, never a glider drop.
+  fill(266, 53, 4, 17, 1);    // step (x266..269, top y53) — bonds into the massif
+  fill(262, 56, 4, 14, 1);    // step (x262..265, top y56)
+  fill(258, 59, 4, 11, 1);    // step (x258..261, top y59)
+  fill(254, 62, 4, 8, 1);     // step (x254..257, top y62)
+  fill(250, 65, 4, 5, 1);     // step (x250..253, top y65)
+  fill(246, 68, 4, 2, 1);     // first step off the valley floor (x246..249, top y68)
 
   // Stage 2 — The Lower Face
-  fill(274, 51, 3, 1, 1);     // narrow ledge (x274..276, y51)
   fill(278, 48, 3, 1, 1);     // ledge (x278..280, y48)
   fill(274, 45, 3, 1, 1);     // zig back (x274..276, y45)
   fill(280, 42, 3, 2, 1);     // pre-biwak ledge (x280..282, y42..43)
   fill(284, 39, 5, 2, 1);     // BIWAK shelf (x284..288, y39..40) — checkpoint
 
-  // Stage 3 — The Ice Chimney: crumbling rock + ice + one-way commit
+  // Stage 3 — The Ice Chimney: a zig-zag of crumbling rock up to the wind
+  // ridge. Every step is 3 tiles up with clear sky for the arc; the slab over
+  // the bonfire crumbles, so don't linger.
   fill(281, 36, 3, 1, 1);     // ledge (x281..283, y36)
-  // x286..287, y33: CRUMBLING ledge — see CRUMBLE array (overlay, not tile)
+  // x285..287, y33: CRUMBLING ledge over the bonfire — see CRUMBLE array (overlay)
   fill(282, 30, 3, 1, 1);     // recovery ledge (x282..284, y30)
-  fill(287, 27, 2, 1, 3);     // ONE-WAY PLANK commit (x287..288, y27)
-  fill(283, 24, 4, 1, 1);     // exit shelf (x283..286, y24)
+  fill(285, 27, 3, 1, 1);     // chimney step (x285..287, y27)
+  fill(280, 24, 5, 1, 1);     // exit shelf (x280..284, y24) — tops out the chimney
 
-  // Upper catch floor + re-entry plank
-  fill(278, 25, 30, 5, 1);    // upper catch floor x278..307, y25..29
-  carve(285, 25, 4, 8);       // carve chimney shaft through catch floor and above crumble (x285..288, y25..32)
-  carve(283, 24, 4, 1);       // keep the exit shelf clear above the catch floor
-  fill(281, 24, 2, 1, 3);     // re-entry plank from catch floor to route
+  // Upper catch floor under the wind ridge (catches gusted-off falls; re-enter
+  // the route by hopping west onto the exit shelf)
+  fill(288, 25, 20, 5, 1);    // upper catch floor x288..307, y25..29
 
   // Stage 4 — The Wind Ridge: exposed, air currents, ice
   fill(288, 21, 3, 1, 1);     // ledge (x288..290, y21)
@@ -335,7 +339,7 @@ const MOVERS = [
 const CRUMBLE = [
   { x: 86,  y: 8, w: 3 },   // Knife Edge ledge (x86..88)
   { x: 107, y: 5, w: 3 },   // Summit Block ledge (x107..109)
-  { x: 286, y: 33, w: 2 },  // Gamskofel Ice Chimney (x286..287)
+  { x: 285, y: 33, w: 3 },  // Gamskofel Ice Chimney, over the bonfire (x285..287)
   { x: 310, y: 3, w: 2 },   // Gamskofel near-summit (x310..311) — last test!
   { x: 38,  y: 15, w: 2 },  // Mine Shaft lower crumble (x:38..39, y:15)
   { x: 33,  y: 11, w: 3 },  // Mine Shaft upper crumble (x:33..35, y:11)
