@@ -4863,81 +4863,66 @@ function drawPortrait(who, x, y, s) {
   const bg = cx.createLinearGradient(0, -16, 0, 16);
   bg.addColorStop(0, '#37425c'); bg.addColorStop(1, '#1f2638');
   cx.fillStyle = bg; cx.fillRect(-16, -16, 32, 32);
-  const skin = '#e8b88a', eye = '#2c2a25';
+  const skin = '#f0d2ab', eye = '#2a2724';
   const shoulders = c => { cx.fillStyle = c; cx.beginPath(); cx.moveTo(-13, 16); cx.quadraticCurveTo(0, 4, 13, 16); cx.lineTo(16, 16); cx.lineTo(-16, 16); cx.closePath(); cx.fill(); };
   const head = hy => { cx.fillStyle = skin; cx.beginPath(); cx.arc(0, hy, 7.5, 0, 7); cx.fill(); };
-  const eyes = hy => { cx.fillStyle = eye; cx.fillRect(-3.6, hy, 2, 2); cx.fillRect(1.6, hy, 2, 2); };
+  // two round eyes with glints, matching the new chibi face (no nose/mouth)
+  const eyes = hy => {
+    cx.fillStyle = eye;
+    cx.beginPath(); cx.ellipse(-2.6, hy + 1.5, 1.2, 1.6, 0, 0, 7); cx.fill();
+    cx.beginPath(); cx.ellipse(2.6, hy + 1.5, 1.2, 1.6, 0, 0, 7); cx.fill();
+    cx.fillStyle = 'rgba(255,255,255,0.85)';
+    cx.beginPath(); cx.arc(-2.1, hy + 0.9, 0.5, 0, 7); cx.fill();
+    cx.beginPath(); cx.arc(3.1, hy + 0.9, 0.5, 0, 7); cx.fill();
+  };
   switch (who) {
     case 'player': {
-      shoulders(G.gear.jacket ? '#c0392b' : '#2e7d6b');
+      shoulders(G.gear.jacket ? '#c14d35' : '#2e7d6b');
       const hy = -1;
-      // Detailed jacket details on shoulders (collars, zip, backpack straps)
-      const jacketD = G.gear.jacket ? '#a93226' : '#246355';
-      const jacketL = G.gear.jacket ? '#d04a3d' : '#3a9980';
-      // Collar rim
-      cx.fillStyle = jacketL;
+      const jacketD = G.gear.jacket ? '#a23d29' : '#246355';
+      const jacketL = G.gear.jacket ? '#d3654b' : '#3a9980';
+      // rounded sweater neckline
+      cx.fillStyle = jacketD;
       cx.beginPath();
       cx.moveTo(-5, 6); cx.quadraticCurveTo(0, 11, 5, 6);
-      cx.lineTo(5, 9); cx.quadraticCurveTo(0, 14, -5, 9);
+      cx.quadraticCurveTo(0, 8.5, -5, 6);
       cx.closePath(); cx.fill();
-      // Zipper line
-      cx.strokeStyle = jacketD; cx.lineWidth = 1;
-      cx.beginPath(); cx.moveTo(0, 8); cx.lineTo(0, 16); cx.stroke();
-      // Zipper pull
-      cx.fillStyle = '#ccc'; cx.fillRect(-0.7, 9, 1.4, 2);
-      // Backpack straps
-      cx.fillStyle = '#7c4f1d'; // dark brown leather straps
+      // olive backpack shoulder straps with an orange ring buckle
+      cx.fillStyle = '#54683c';
       cx.fillRect(-10.5, 6, 2.8, 10);
       cx.fillRect(7.7, 6, 2.8, 10);
-      // Chest strap
-      cx.fillRect(-7.7, 10, 15.4, 1.8);
-      cx.fillStyle = '#c9a96a'; // buckle
-      cx.fillRect(-1, 9.5, 2, 2.8);
+      cx.strokeStyle = '#e89441'; cx.lineWidth = 1.1;
+      cx.beginPath(); cx.arc(-9.1, 12, 1.7, 0, 7); cx.stroke();
 
       head(hy);
       
-      // Hair (dark messy #3a2a1a peeking out)
-      cx.fillStyle = '#3a2a1a';
-      // Side sweeps
-      cx.beginPath();
-      cx.moveTo(-7.6, hy - 2.5); cx.quadraticCurveTo(-9.2, hy + 2, -6, hy + 3.5);
-      cx.lineTo(-6, hy - 2.5); cx.closePath(); cx.fill();
-      cx.beginPath();
-      cx.moveTo(7.6, hy - 2.5); cx.quadraticCurveTo(9.2, hy + 2, 6, hy + 3.5);
-      cx.lineTo(6, hy - 2.5); cx.closePath(); cx.fill();
-      // Fringe
-      cx.beginPath();
-      cx.moveTo(-5, hy - 3.5); cx.quadraticCurveTo(-3, hy - 5.5, -0.8, hy - 4);
-      cx.quadraticCurveTo(1.5, hy - 5.5, 3.8, hy - 3.5);
-      cx.lineTo(-5, hy - 3.5); cx.closePath(); cx.fill();
+      // Hair (light blonde wisps at the temples)
+      cx.fillStyle = '#d8b673';
+      cx.beginPath(); cx.ellipse(-6.8, hy - 0.3, 2, 1.2, -0.25, 0, 7); cx.fill();
+      cx.beginPath(); cx.ellipse(6.8, hy - 0.3, 2, 1.2, 0.25, 0, 7); cx.fill();
 
       // Eyes
       eyes(hy);
-      
-      // Beanie (orange, rolled ribbed brim, mountain logo)
-      cx.fillStyle = '#d98032';
-      // Dome
+
+      // Beanie (golden mustard knit, rolled brim, top knob — no logo)
+      cx.fillStyle = '#e3ad44';
       cx.beginPath(); cx.arc(0, hy - 3.2, 7.8, Math.PI, 0); cx.fill();
-      // Beanie top bump
+      // top knob
+      cx.fillStyle = '#d29a34';
       cx.beginPath(); cx.arc(0, hy - 11, 2.2, 0, 7); cx.fill();
-      // Rolled brim
-      cx.fillStyle = '#c87028';
+      // knit ribbing on the dome
+      cx.strokeStyle = '#d29a34'; cx.lineWidth = 0.6;
+      for (let i = -6; i <= 6; i += 1.9) {
+        cx.beginPath(); cx.moveTo(i, hy - 6); cx.lineTo(i, hy - 10 + Math.abs(i) * 0.35); cx.stroke();
+      }
+      // rolled brim
+      cx.fillStyle = '#d29a34';
       cx.fillRect(-7.8, hy - 5.5, 15.6, 3.8);
-      // Brim ribbing
-      cx.strokeStyle = '#b86020'; cx.lineWidth = 0.6;
+      // brim ribbing
+      cx.strokeStyle = '#c28e2e'; cx.lineWidth = 0.6;
       for (let i = -7; i <= 7; i += 1.8) {
         cx.beginPath(); cx.moveTo(i, hy - 5.5); cx.lineTo(i, hy - 2); cx.stroke();
       }
-      // Mountain logo (white triangle)
-      cx.fillStyle = '#fff';
-      cx.beginPath();
-      cx.moveTo(0, hy - 9.5); cx.lineTo(-2.2, hy - 6.5); cx.lineTo(2.2, hy - 6.5);
-      cx.closePath(); cx.fill();
-      // Snow cap
-      cx.fillStyle = '#e0e8f0';
-      cx.beginPath();
-      cx.moveTo(0, hy - 9.5); cx.lineTo(-1, hy - 8); cx.lineTo(1, hy - 8);
-      cx.closePath(); cx.fill();
 
       // Headlamp (if acquired)
       if (G.gear.lamp) {
@@ -5017,19 +5002,8 @@ function drawPortrait(who, x, y, s) {
       cx.moveTo(7.6, hy - 2.5); cx.quadraticCurveTo(9, hy + 2, 6, hy + 3);
       cx.lineTo(6, hy - 2.5); cx.closePath(); cx.fill();
 
-      // Rosy cheeks (adds warmth/love)
-      cx.fillStyle = '#e8a085';
-      cx.beginPath(); cx.arc(-4.5, hy + 3, 1.5, 0, 7); cx.fill();
-      cx.beginPath(); cx.arc(4.5, hy + 3, 1.5, 0, 7); cx.fill();
-
       // Eyes
       eyes(hy);
-      
-      // Glasses (thin gold loops with bridge)
-      cx.strokeStyle = '#d9a13d'; cx.lineWidth = 0.8;
-      cx.beginPath(); cx.arc(-2.6, hy + 1, 2.5, 0, 7); cx.stroke();
-      cx.beginPath(); cx.arc(2.6, hy + 1, 2.5, 0, 7); cx.stroke();
-      cx.beginPath(); cx.moveTo(-0.5, hy + 1); cx.lineTo(0.5, hy + 1); cx.stroke();
       break;
     }
     case 'norbert': {
@@ -5053,7 +5027,7 @@ function drawPortrait(who, x, y, s) {
       head(hy);
 
       // Tyrolean full beard/mustache (adds massive character)
-      cx.fillStyle = '#4a3e2c';
+      cx.fillStyle = '#6a5436';
       cx.beginPath();
       cx.moveTo(-5.5, hy + 2.5);
       cx.quadraticCurveTo(-6.5, hy + 8, 0, hy + 9.5);
@@ -5066,11 +5040,6 @@ function drawPortrait(who, x, y, s) {
       cx.moveTo(-3.5, hy + 2.2); cx.quadraticCurveTo(0, hy + 3.8, 3.5, hy + 2.2);
       cx.quadraticCurveTo(0, hy + 1.2, -3.5, hy + 2.2);
       cx.closePath(); cx.fill();
-
-      // Rosy cheeks
-      cx.fillStyle = '#e8a085';
-      cx.beginPath(); cx.arc(-4, hy + 1.5, 1.2, 0, 7); cx.fill();
-      cx.beginPath(); cx.arc(4, hy + 1.5, 1.2, 0, 7); cx.fill();
 
       eyes(hy);
 
@@ -5123,11 +5092,6 @@ function drawPortrait(who, x, y, s) {
       cx.beginPath();
       cx.moveTo(7.5, hy - 1); cx.quadraticCurveTo(9, hy + 4, 6.5, hy + 5.5);
       cx.lineTo(5.5, hy - 1); cx.closePath(); cx.fill();
-
-      // Rosy cheeks
-      cx.fillStyle = '#e8a085';
-      cx.beginPath(); cx.arc(-4.5, hy + 3, 1.3, 0, 7); cx.fill();
-      cx.beginPath(); cx.arc(4.5, hy + 3, 1.3, 0, 7); cx.fill();
 
       // Flight Helmet (white half-dome with visor line, strap, and badge)
       cx.fillStyle = '#f0f0ea';
