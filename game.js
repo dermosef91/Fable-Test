@@ -3355,165 +3355,160 @@ cx.fillStyle = hexLerp('#3d3327', '#ffd87a', curPC.night);
       const px2 = 0, py2 = 0;
       const swing = (e.vx && Math.abs(e.vx) > 0.005) ? Math.sin(frame * 0.22) * 1.5 : 0;
 
-      if (e.who === 'vera') {
-        // Legs & boots
-        cx.fillStyle = '#3d3327';
-        cx.fillRect(px2 - 4 + swing, py2 - 5, 2.6, 5);
-        cx.fillRect(px2 + 1.4 - swing, py2 - 5, 2.6, 5);
-        cx.fillStyle = '#231e17'; // soles
-        cx.fillRect(px2 - 4.5 + swing, py2 - 1.5, 3.5, 1.2);
-        cx.fillRect(px2 + 1 - swing, py2 - 1.5, 3.5, 1.2);
-        
-        // Body / Jumpsuit
-        cx.fillStyle = '#b8483a'; // deep rust-red
+      // Shared chibi build — big round head, clean two-eye face, rounded body,
+      // one hanging arm — to match the player model's style & proportions.
+      // Anchored at the feet (0,0); the body grows upward (negative y).
+      const BY = -18;          // jacket/body top — mirrors the player's jY
+      const HCY = -22, HR = 5; // head centre & radius
+      const SKIN = '#f0d2ab';
+      const chibiLegs = (trouser, boot, sole) => {
+        cx.fillStyle = trouser;
+        cx.fillRect(-4 + swing, -7.5, 3, 5);
+        cx.fillRect(1 - swing, -7.5, 3, 5);
+        cx.fillStyle = boot;
+        cx.fillRect(-4.7 + swing, -3, 4.2, 2.6);
+        cx.fillRect(0.5 - swing, -3, 4.2, 2.6);
+        cx.fillStyle = sole;
+        cx.fillRect(-4.9 + swing, -0.9, 4.6, 0.9);
+        cx.fillRect(0.3 - swing, -0.9, 4.6, 0.9);
+      };
+      const chibiBody = (col, dark) => {
+        cx.fillStyle = col;
         cx.beginPath();
-        cx.moveTo(px2 - 5, py2 - 16);
-        cx.lineTo(px2 + 5, py2 - 16);
-        cx.quadraticCurveTo(px2 + 5.5, py2 - 10, px2 + 5, py2 - 5);
-        cx.lineTo(px2 - 5, py2 - 5);
-        cx.quadraticCurveTo(px2 - 5.5, py2 - 10, px2 - 5, py2 - 16);
+        cx.moveTo(-5.5, BY + 1);
+        cx.lineTo(-5.5, BY + 10);
+        cx.quadraticCurveTo(-5.5, BY + 11.5, -4, BY + 11.5);
+        cx.lineTo(4, BY + 11.5);
+        cx.quadraticCurveTo(5.5, BY + 11.5, 5.5, BY + 10);
+        cx.lineTo(5.5, BY + 1);
+        cx.quadraticCurveTo(5.5, BY, 4.5, BY);
+        cx.lineTo(-4.5, BY);
+        cx.quadraticCurveTo(-5.5, BY, -5.5, BY + 1);
         cx.closePath(); cx.fill();
-        // Suit zipper line
-        cx.strokeStyle = '#982c1f'; cx.lineWidth = 0.6;
-        cx.beginPath(); cx.moveTo(px2, py2 - 16); cx.lineTo(px2, py2 - 5); cx.stroke();
-        // Belt
-        cx.fillStyle = '#333';
-        cx.fillRect(px2 - 5.2, py2 - 9, 10.4, 1.2);
-        
-        // Head
-        cx.fillStyle = '#e8b88a';
-        cx.beginPath(); cx.arc(px2, py2 - 20, 4.5, 0, 7); cx.fill();
-        
-        // Hair peeking
-        cx.fillStyle = '#4a3e2c';
-        cx.fillRect(px2 - 4.5, py2 - 19.5, 1.2, 3);
-        cx.fillRect(px2 + 3.3, py2 - 19.5, 1.2, 3);
-        
-        // Helmet
-        cx.fillStyle = '#fff';
-        cx.beginPath(); cx.arc(px2, py2 - 22.5, 4.4, Math.PI, 0); cx.fill();
-        // Helmet chin strap hint
-        cx.strokeStyle = '#222'; cx.lineWidth = 0.5;
-        cx.beginPath(); cx.moveTo(px2 - 4, py2 - 21); cx.lineTo(px2 - 3, py2 - 17.5); cx.stroke();
+        cx.fillStyle = dark;
+        cx.fillRect(-5, BY + 9.5, 10.5, 2);
+      };
+      const chibiArm = (col) => {
+        const sw = swing * 0.6;
+        cx.fillStyle = col;
+        cx.fillRect(3.6, BY + 1.5 - sw, 2.6, 6.2);
+        cx.fillStyle = SKIN;
+        cx.beginPath(); cx.arc(4.9, BY + 8.5 - sw, 1.4, 0, 7); cx.fill();
+      };
+      const chibiHead = () => {
+        cx.fillStyle = SKIN;
+        cx.beginPath(); cx.arc(0, HCY, HR, 0, 7); cx.fill();
+      };
+      const chibiEyes = () => {
+        cx.fillStyle = '#2a2724';
+        cx.beginPath(); cx.ellipse(0.5, HCY + 1, 0.8, 1.05, 0, 0, 7); cx.fill();
+        cx.beginPath(); cx.ellipse(3.3, HCY + 1, 0.8, 1.05, 0, 0, 7); cx.fill();
+        cx.fillStyle = 'rgba(255,255,255,0.85)';
+        cx.beginPath(); cx.arc(0.8, HCY + 0.6, 0.3, 0, 7); cx.fill();
+        cx.beginPath(); cx.arc(3.6, HCY + 0.6, 0.3, 0, 7); cx.fill();
+      };
 
-        // Aviator sunglasses
-        cx.strokeStyle = '#444'; cx.lineWidth = 1;
-        cx.beginPath(); cx.moveTo(px2 - 3.5, py2 - 21); cx.lineTo(px2 + 3.5, py2 - 21); cx.stroke();
-        cx.fillStyle = '#222';
-        cx.fillRect(px2 - 3.2, py2 - 21.8, 2, 1.5);
-        cx.fillRect(px2 + 1.2, py2 - 21.8, 2, 1.5);
+      if (e.who === 'vera') {
+        chibiLegs('#3d3327', '#2e2820', '#1c1813');
+        chibiBody('#b8483a', '#982c1f');
+        // suit zipper
+        cx.strokeStyle = '#982c1f'; cx.lineWidth = 0.6;
+        cx.beginPath(); cx.moveTo(0, BY + 1); cx.lineTo(0, BY + 9); cx.stroke();
+        // belt
+        cx.fillStyle = '#333'; cx.fillRect(-5.2, BY + 6.5, 10.4, 1.4);
+        chibiArm('#b8483a');
+        chibiHead();
+        // dark hair wisps peeking at the temples
+        cx.fillStyle = '#4a3e2c';
+        cx.beginPath(); cx.ellipse(-4.6, HCY - 0.2, 1.3, 0.85, -0.25, 0, 7); cx.fill();
+        cx.beginPath(); cx.ellipse(4.6, HCY - 0.2, 1.3, 0.85, 0.25, 0, 7); cx.fill();
+        // aviator sunglasses — two dark lenses joined by a bridge
+        cx.fillStyle = '#2a2724';
+        cx.fillRect(-0.7, HCY + 0.2, 2.4, 1.7);
+        cx.fillRect(2.1, HCY + 0.2, 2.4, 1.7);
+        cx.strokeStyle = '#2a2724'; cx.lineWidth = 0.5;
+        cx.beginPath(); cx.moveTo(1.7, HCY + 0.9); cx.lineTo(2.1, HCY + 0.9); cx.stroke();
+        // white half-dome flight helmet
+        cx.fillStyle = '#fff';
+        cx.beginPath(); cx.arc(0, HCY - 0.6, HR + 0.3, Math.PI, 0); cx.fill();
+        cx.fillStyle = '#e2e2e2';
+        cx.fillRect(-HR - 0.3, HCY - 0.9, (HR + 0.3) * 2, 0.9);
+        // chin strap hint
+        cx.strokeStyle = '#999'; cx.lineWidth = 0.5;
+        cx.beginPath(); cx.moveTo(-HR + 0.4, HCY + 0.5); cx.lineTo(-HR + 1.6, HCY + 3); cx.stroke();
       }
       if (e.who === 'greta') {
-        // Legs & sturdy shoes
-        cx.fillStyle = '#3d3327';
-        cx.fillRect(px2 - 4 + swing, py2 - 5, 3, 5);
-        cx.fillRect(px2 + 1 - swing, py2 - 5, 3, 5);
-        // Shoe soles
-        cx.fillStyle = '#231e17';
-        cx.fillRect(px2 - 5 + swing, py2 - 1.5, 4.5, 1.2);
-        cx.fillRect(px2 + 0.5 - swing, py2 - 1.5, 4.5, 1.2);
-        
-        // Body / plum-purple blouse
-        cx.fillStyle = '#6f5a7d';
-        cx.beginPath();
-        cx.moveTo(px2 - 5, py2 - 16);
-        cx.lineTo(px2 + 5, py2 - 16);
-        cx.quadraticCurveTo(px2 + 5.5, py2 - 10, px2 + 5, py2 - 5);
-        cx.lineTo(px2 - 5, py2 - 5);
-        cx.quadraticCurveTo(px2 - 5.5, py2 - 10, px2 - 5, py2 - 16);
-        cx.closePath(); cx.fill();
-
-        // Knitted shawl draped over shoulders
+        chibiLegs('#3d3327', '#2e2820', '#1c1813');
+        chibiBody('#6f5a7d', '#5d4a69');
+        // knitted shawl draped over the shoulders
         cx.fillStyle = '#8f79a3';
         cx.beginPath();
-        cx.moveTo(px2 - 5, py2 - 15);
-        cx.lineTo(px2 + 5, py2 - 15);
-        cx.quadraticCurveTo(px2, py2 - 10, px2 - 5, py2 - 9);
+        cx.moveTo(-5.5, BY + 1);
+        cx.lineTo(5.5, BY + 1);
+        cx.quadraticCurveTo(0, BY + 6.5, -5.5, BY + 5);
         cx.closePath(); cx.fill();
-
-        // White collar peek
-        cx.fillStyle = '#fff';
+        // white collar peek
+        cx.fillStyle = '#f3f0ea';
         cx.beginPath();
-        cx.moveTo(px2 - 1.5, py2 - 16);
-        cx.lineTo(px2 + 1.5, py2 - 16);
-        cx.lineTo(px2, py2 - 13.5);
+        cx.moveTo(-1.6, BY + 1); cx.lineTo(1.6, BY + 1); cx.lineTo(0, BY + 3.6);
         cx.closePath(); cx.fill();
-
-        // Head
-        cx.fillStyle = '#e8b88a';
-        cx.beginPath(); cx.arc(px2, py2 - 20, 4.5, 0, 7); cx.fill();
-
-        // Hair (silver-grey bun & side sweeps)
+        chibiArm('#6f5a7d');
+        chibiHead();
+        chibiEyes();
+        // silver-grey hair: crown cap, bun on top, side wisps
         cx.fillStyle = '#cfcfcf';
-        cx.beginPath(); cx.arc(px2, py2 - 21.2, 4.7, Math.PI, 0); cx.fill();
-        cx.beginPath(); cx.arc(px2, py2 - 25.5, 2.5, 0, 7); cx.fill();
-        // Hair pin
+        cx.beginPath(); cx.arc(0, HCY - 1.4, HR + 0.2, Math.PI, 0); cx.fill();
+        cx.beginPath(); cx.arc(0, HCY - 5.8, 2.4, 0, 7); cx.fill();
+        cx.beginPath(); cx.ellipse(-4.8, HCY - 0.2, 1.4, 0.9, -0.25, 0, 7); cx.fill();
+        cx.beginPath(); cx.ellipse(4.8, HCY - 0.2, 1.4, 0.9, 0.25, 0, 7); cx.fill();
+        // hair pin
         cx.strokeStyle = '#d9a13d'; cx.lineWidth = 0.5;
-        cx.beginPath(); cx.moveTo(px2 - 3, py2 - 26); cx.lineTo(px2 + 2, py2 - 24); cx.stroke();
-
-        // Glasses
-        cx.strokeStyle = '#d9a13d'; cx.lineWidth = 0.5;
-        cx.beginPath(); cx.arc(px2 + 1.5, py2 - 20, 1.2, 0, 7); cx.stroke();
-
-        // Eye
-        cx.fillStyle = '#2c2a25';
-        cx.fillRect(px2 + 1.5, py2 - 20.5, 1, 1);
+        cx.beginPath(); cx.moveTo(-1.5, HCY - 6.4); cx.lineTo(1.5, HCY - 5.2); cx.stroke();
       }
 
       if (e.who === 'norbert') {
-        // Legs & boots
-        cx.fillStyle = '#3d3327';
-        cx.fillRect(px2 - 4.5 + swing, py2 - 5, 3, 5);
-        cx.fillRect(px2 + 1.5 - swing, py2 - 5, 3, 5);
-        // Boot soles
-        cx.fillStyle = '#231e17';
-        cx.fillRect(px2 - 5.5 + swing, py2 - 1.5, 4.5, 1.2);
-        cx.fillRect(px2 + 0.5 - swing, py2 - 1.5, 4.5, 1.2);
-        
-        // Body / Moss-green loden jacket
-        cx.fillStyle = '#3f5e3a';
-        cx.beginPath();
-        cx.moveTo(px2 - 5.5, py2 - 16);
-        cx.lineTo(px2 + 5.5, py2 - 16);
-        cx.quadraticCurveTo(px2 + 6, py2 - 10, px2 + 5.5, py2 - 5);
-        cx.lineTo(px2 - 5.5, py2 - 5);
-        cx.quadraticCurveTo(px2 - 6, py2 - 10, px2 - 5.5, py2 - 16);
-        cx.closePath(); cx.fill();
-        
-        // Blue work apron tied over it
+        chibiLegs('#3d3327', '#2e2820', '#1c1813');
+        chibiBody('#3f5e3a', '#33502f');
+        // navy work apron over the jacket
         cx.fillStyle = '#2b3a66';
-        cx.fillRect(px2 - 4, py2 - 11, 8, 7.5);
-        // Apron tie string around waist
-        cx.strokeStyle = '#1d2747'; cx.lineWidth = 0.6;
-        cx.beginPath(); cx.moveTo(px2 - 5.5, py2 - 10); cx.lineTo(px2 + 5.5, py2 - 10); cx.stroke();
-        // Apron strap around neck
-        cx.beginPath(); cx.moveTo(px2 - 2, py2 - 15); cx.lineTo(px2 - 2, py2 - 11); cx.stroke();
-        cx.beginPath(); cx.moveTo(px2 + 2, py2 - 15); cx.lineTo(px2 + 2, py2 - 11); cx.stroke();
-
-        // Head
-        cx.fillStyle = '#e8b88a';
-        cx.beginPath(); cx.arc(px2, py2 - 20, 4.8, 0, 7); cx.fill();
-
-        // Tyrolean loden beard/mustache (#4a3e2c)
-        cx.fillStyle = '#4a3e2c';
-        cx.fillRect(px2 - 3.5, py2 - 19, 7, 2.5); // beard
-        cx.fillRect(px2 - 2.5, py2 - 17, 5, 2.5); // chin beard
-        
-        // Eyes
-        cx.fillStyle = '#2c2a25';
-        cx.fillRect(px2 + 1.2, py2 - 20.5, 1, 1);
-
-        // Tyrolean hat (olive green)
-        cx.fillStyle = '#4a5e3a';
-        cx.fillRect(px2 - 6, py2 - 25, 12, 2); // brim
-        cx.fillRect(px2 - 4, py2 - 28, 8, 4); // crown
-        // Red feather
-        cx.fillStyle = '#d9577a';
         cx.beginPath();
-        cx.moveTo(px2 + 3, py2 - 29);
-        cx.lineTo(px2 + 4.5, py2 - 25);
-        cx.lineTo(px2 + 3, py2 - 25);
+        cx.moveTo(-3.6, BY + 3.5);
+        cx.lineTo(3.6, BY + 3.5);
+        cx.lineTo(3.6, BY + 11);
+        cx.quadraticCurveTo(0, BY + 11.8, -3.6, BY + 11);
         cx.closePath(); cx.fill();
+        // apron neck straps + waist tie
+        cx.strokeStyle = '#1d2747'; cx.lineWidth = 0.6;
+        cx.beginPath();
+        cx.moveTo(-2, BY + 0.8); cx.lineTo(-2.6, BY + 3.5);
+        cx.moveTo(2, BY + 0.8); cx.lineTo(2.6, BY + 3.5); cx.stroke();
+        chibiArm('#3f5e3a');
+        chibiHead();
+        chibiEyes();
+        // tidy loden beard framing the lower face
+        cx.fillStyle = '#6a5436';
+        cx.beginPath();
+        cx.moveTo(-HR + 0.4, HCY + 0.6);
+        cx.quadraticCurveTo(-HR + 0.4, HCY + HR + 1, 0, HCY + HR + 1);
+        cx.quadraticCurveTo(HR - 0.4, HCY + HR + 1, HR - 0.4, HCY + 0.6);
+        cx.quadraticCurveTo(0, HCY + 3.2, -HR + 0.4, HCY + 0.6);
+        cx.closePath(); cx.fill();
+        // Tyrolean felt hat, tilted jauntily like the player's beanie
+        cx.save();
+        cx.translate(0, HCY - 2); cx.rotate(-0.12); cx.translate(0, -(HCY - 2));
+        cx.fillStyle = '#4a5e3a';
+        cx.fillRect(-6.3, HCY - 3.4, 12.6, 1.8); // brim
+        cx.beginPath(); // crown
+        cx.moveTo(-3.8, HCY - 3.4);
+        cx.quadraticCurveTo(-4, HCY - 8, 0, HCY - 8);
+        cx.quadraticCurveTo(4, HCY - 8, 3.8, HCY - 3.4);
+        cx.closePath(); cx.fill();
+        cx.fillStyle = '#3a4a2d'; cx.fillRect(-3.8, HCY - 4.4, 7.6, 1); // band
+        cx.fillStyle = '#d9577a'; // feather
+        cx.beginPath();
+        cx.moveTo(3, HCY - 4.6); cx.lineTo(4.8, HCY - 8.2); cx.lineTo(2.4, HCY - 5.2);
+        cx.closePath(); cx.fill();
+        cx.restore();
       }
       cx.restore();
       break;

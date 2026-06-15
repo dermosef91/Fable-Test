@@ -287,6 +287,14 @@ engine's `pend*` event queue exists for exactly that.
   recoverable ground (the ridge saddles drop to the catch band). Mirror in
   check-world (`solid()` must include 7; assert ice-on-rock + recoverable slip).
 - **NPC & Animal Rendering**: Characters and animals are drawn procedurally, supporting a horizontal facing direction (`face = 1` or `-1`) via context scaling: `cx.scale(face, 1)`. When in motion (i.e. horizontal velocity `vx` is non-zero), apply a sinusoidal leg/hoof walking swing offset (`swing = Math.sin(...) * scale`) to convey movement naturally.
+- **Human NPCs share the player's chibi build.** The `npc` case in `drawEntity`
+  defines local `chibiLegs/chibiBody/chibiArm/chibiHead/chibiEyes` helpers
+  (anchored at the feet, `BY` = body top mirroring the player's `jY`, head
+  centre `HCY`, radius `HR`) so Greta/Norbert/Vera keep the same proportions,
+  pale skin (`#f0d2ab`), and two-eye-with-glints face as the player. Per-NPC
+  code only adds identity (Greta's bun/shawl, Norbert's beard/Tyrolean hat,
+  Vera's helmet/sunglasses). Keep new humans on these helpers, not bespoke
+  geometry. (Portraits in `drawPortrait` are a *separate* art pass.)
 - **Organic Tile Rendering:** Solid tiles (rock, scree) use coordinate-seeded pseudo-random hashes `h(seed)` in `drawTiles()` to procedurally draw stable organic edge bumps, grassy humps/blades, and rounded corners, avoiding straight rectangular bounds.
 - **Saves:** bump `SAVE_KEY` only if the save shape breaks compatibility;
   `loadSave` must tolerate missing fields from older saves (`|| {}`,

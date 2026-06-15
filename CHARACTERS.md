@@ -27,7 +27,7 @@ A regular at the campsite, old enough to remember Rosa's stories firsthand. Alwa
 Warm but direct — she'll pour you coffee and tell you you're under-equipped in the same breath. Knows the mountain and its people like the back of her hand. A quiet keeper of local memory.
 
 **Visual description**
-Older woman, roughly 60s–70s. Warm skin (#e8b88a). Silver-grey hair pulled into a small bun on top of her head (#cfcfcf). A muted plum-purple blouse or cardigan (#6f5a7d). Dark brown-black trousers and sturdy dark shoes (#3d3327). Sturdy, grounded stance. No hat, no accessories — she dresses practically and has been doing so for decades.
+Older woman, roughly 60s–70s, drawn in the same chibi build as the player (large round head, pale cream skin #f0d2ab, two dark round eyes with glints, no ears/nose/mouth). Silver-grey hair (#cfcfcf) as a crown cap with a small bun on top, a thin gold hair-pin (#d9a13d), and soft side wisps at the temples. Muted plum-purple blouse (#6f5a7d) with a lighter knitted shawl (#8f79a3) draped over the shoulders and a small white collar peek. Dark brown-black trousers and chunky boots (#3d3327, soles #1c1813). One arm hangs at her side. No hat — she dresses practically and has for decades.
 
 ---
 
@@ -53,7 +53,7 @@ Hut keeper of the Gamsblick-Alm (est. 1924). Son of Toni, the young man who gave
 Gruff, generous, old-school Tyrolean hospitality. Trades chestnuts for Knödel. Recognises Rosa's journal instantly and goes quiet for a moment before handing over the rain jacket she left behind half a century ago.
 
 **Visual description**
-Stocky man, middle-aged. Warm skin (#e8b88a). Dark moss-green shirt or loden jacket (#3f5e3a), a navy-blue work apron tied over it (#2b3a66). Classic Tyrolean hat — olive-green felt (#4a5e3a) with a tiny pink-red feather (#d9577a) tucked in the band. Dark brown-black trousers and sturdy boots (#3d3327). Solid, square build — he looks like he could carry a crate of Knödel up the scree path without breaking stride.
+Stocky man, middle-aged, in the player's chibi build (large round head, pale cream skin #f0d2ab, two dark round eyes with glints) plus a tidy brown loden beard (#6a5436) framing the lower face. Dark moss-green loden jacket (#3f5e3a) under a navy-blue work apron (#2b3a66). Classic Tyrolean felt hat — olive-green (#4a5e3a) with a darker band and a pink-red feather (#d9577a) — worn at a jaunty tilt to match the player's beanie. Dark brown-black trousers and chunky boots (#3d3327). One arm hangs at his side. Solid build — he looks like he could carry a crate of Knödel up the scree path without breaking stride.
 
 ---
 
@@ -66,7 +66,7 @@ Runs the one-woman Flugschule Gamstal (flight school) in the hidden valley beyon
 Confident, wry, a little wild. Lives at the edge of the map where the mountain "isn't finished yet." Grants the glider as a mid-game unlock, challenges the player to fly five rings, and awards a tongue-in-cheek diploma. Underneath the bravado she clearly loved Rosa — her voice catches for half a sentence before she covers it up.
 
 **Visual description**
-Athletic woman, late 20s–30s. Warm skin (#e8b88a). Deep rust-red flight suit or jumpsuit (#b8483a). White half-dome flight helmet covering the top of her head (#fff). Aviator-style dark sunglasses — a single horizontal line across the eyes (#888). Dark brown-black boots (#3d3327). Lean, upright posture — she looks like she could step off a cliff and enjoy it.
+Athletic woman, late 20s–30s, in the player's chibi build (large round head, pale cream skin #f0d2ab) with dark hair wisps at the temples. Deep rust-red flight jumpsuit (#b8483a) with a centre zip and a dark belt. White half-dome flight helmet (#fff) over the crown and aviator-style dark sunglasses (two dark lenses, #2a2724) in place of visible eyes. Dark brown-black trousers and chunky boots (#3d3327). One arm hangs at her side. Lean, upright posture — she looks like she could step off a cliff and enjoy it.
 
 ---
 
