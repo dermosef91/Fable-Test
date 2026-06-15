@@ -161,34 +161,27 @@ function buildWorld() {
   // 3. the belay shelf (x67..69,y21, built with the ferrata below) is the next step
   fill(65, 19, 2, 1, 3);   // 4. one-way plank at the nook's mouth (x65..66)
   
-  // 4. Stage 2: Lower Cavern & Mud Crossing (requires Stirnlampe)
+  // 4. Stage 2: Lower Cavern & Mud Crossing (requires Stirnlampe). The mud is a
+  // wadeable floor — you slog straight across it; one plank keeps the west lip
+  // (at the chimney foot) dry.
   fill(45, 18, 8, 1, 8);   // Mud pit on the floor (x: 45..52, y: 18)
-  fill(56, 17, 2, 1, 3);   // Plank 1 over mud (x: 56..57, y: 17)
-  fill(51, 16, 2, 1, 3);   // Plank 2 over mud (x: 51..52, y: 16)
-  fill(46, 17, 2, 1, 3);   // Plank 3 over mud (x: 46..47, y: 17)
-  
+  fill(46, 17, 2, 1, 3);   // Plank over the mud at the chimney foot (x: 46..47, y: 17)
+
   // 5. Stage 3: Mud-Chimney handholds — the dripping climb out of the cavern,
-  // off the last mud plank, up to the suspension bridge in the gallery.
+  // off the mud, up to the bare Upper Gallery floor.
   fill(48, 14, 2, 1, 1);   // lower handhold (x: 48..49, y: 14)
-  fill(46, 11, 2, 1, 1);   // upper handhold (x: 46..47, y: 11) — one hop onto the bridge
-  // West Mine Shaft pocket (an old dead-end working, reachable from the gallery):
-  fill(29, 17, 2, 1, 1);   // Rock step left (x: 29..30, y: 17)
+  fill(46, 11, 2, 1, 1);   // upper handhold (x: 46..47, y: 11) — one hop onto the gallery floor
+  // West Mine Shaft pocket (an old dead-end working). Its left side is sealed
+  // floor-to-ceiling, so the pocket is reachable only from the right (the hoist
+  // and the intermediate step), never climbed up the left wall.
+  fill(28, 11, 4, 8, 1);   // sealed left wall of the shaft (x: 28..31, y: 11..18)
   fill(34, 16, 2, 1, 1);   // Intermediate mine step (x: 34..35, y: 16)
-  fill(29, 13, 2, 1, 1);   // Rock step upper left (x: 29..30, y: 13)
   // (Note: Crumble ledges are defined in the CRUMBLE array at x: 38, y: 15 and x: 33, y: 11)
-  
-  // 6. Stage 4: Upper Gallery & Suspension Bridge
-  fill(38, 7, 2, 1, 3);    // Swaying bridge plank 1 (x: 38..39, y: 7)
-  fill(42, 8, 3, 1, 3);    // Swaying bridge plank 2 (x: 42..44, y: 8)
-  fill(47, 8, 3, 1, 3);    // Swaying bridge plank 3 (x: 47..49, y: 8)
-  fill(52, 7, 2, 1, 3);    // Swaying bridge plank 4 (x: 52..53, y: 7)
-  fill(55, 7, 3, 1, 1);    // High storage platform (x: 55..57, y: 7)
-  
-  // 7. Stage 5: Sky Catwalks (exposed scaffolding above the massif)
-  fill(58, 6, 2, 1, 3);    // Exit to sky (x: 58..59, y: 6)
-  fill(55, 4, 2, 1, 3);    // Plank in sky (x: 55..56, y: 4)
-  fill(50, 3, 2, 1, 3);    // Plank in sky (x: 50..51, y: 3)
-  fill(45, 4, 2, 1, 3);    // Plank in sky (x: 45..46, y: 4)
+
+  // 6. Stage 4: Upper Gallery — a bare rock floor (y9). The old suspension
+  // bridge, high storage shelf and sky catwalks above it were stripped out:
+  // top out of the mud-chimney onto the gallery floor, walk west across it and
+  // drop down the shaft (x40..41) into the locked kit chamber.
 
   // --- tunnel furniture ----------------------------------------------------
   fill(34, 26, 3, 2, 1);   // low rubble pile near the west mouth — hop over

@@ -120,7 +120,7 @@ ok(at(20, 19 + Y_OFF) === 3, 'observer post has a one-way plank at the midpoint'
 // Each listed tile is a standable step (solid/plank/crumble) that needs open
 // headroom — a step buried in the headwall is solid but unstandable, the bug
 // that once dead-ended this climb. Headroom is checked by the flood-fill below.
-for (const [x, y] of [[66, 25], [62, 23], [67, 21], [60, 19], [56, 17], [46, 17], [48, 14], [46, 11], [55, 7], [40, 15]]) {
+for (const [x, y] of [[66, 25], [62, 23], [67, 21], [60, 19], [46, 17], [48, 14], [46, 11], [40, 15]]) {
   const t = at(x, y + Y_OFF);
   ok((solid(t) || t === 3) && !solid(at(x, y - 1 + Y_OFF)), `depot step at ${x},${y + Y_OFF} stands clear`);
 }
