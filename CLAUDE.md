@@ -91,7 +91,10 @@ engine's `pend*` event queue exists for exactly that.
 ## Level-design rules (hard-won)
 
 - **Tile types:** 0 air · 1 rock · 2 scree · 3 one-way plank · 4 water ·
-  5 ferrata cable · 6 nettles · 7 hard ice (Blankeis: solid, glassy, slippery).
+  5 ferrata cable · 6 nettles · 7 hard ice (Blankeis: solid, glassy, slippery) ·
+  8 mud (a **non-solid** wade skin — it draws as mud but isn't collidable, so
+  you stand on the rock *beneath* it; planks laid over mud are cosmetic, never
+  load-bearing — lay mud only on a solid floor row, or the player drops through).
   Crumbling rock ledges are overlays defined in the `CRUMBLE` array, not tile types.
   Gusts are force-field rects (`GUSTS`), not tiles.
 - **Jump budget:** v0 8.4, gravity 0.42 up / 0.5 down, apex hang. Between
