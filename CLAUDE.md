@@ -91,7 +91,10 @@ engine's `pend*` event queue exists for exactly that.
 ## Level-design rules (hard-won)
 
 - **Tile types:** 0 air · 1 rock · 2 scree · 3 one-way plank · 4 water ·
-  5 ferrata cable · 6 nettles · 7 hard ice (Blankeis: solid, glassy, slippery).
+  5 ferrata cable · 6 nettles · 7 hard ice (Blankeis: solid, glassy, slippery) ·
+  8 mud (a **non-solid** wade skin — it draws as mud but isn't collidable, so
+  you stand on the rock *beneath* it; planks laid over mud are cosmetic, never
+  load-bearing — lay mud only on a solid floor row, or the player drops through).
   Crumbling rock ledges are overlays defined in the `CRUMBLE` array, not tile types.
   Gusts are force-field rects (`GUSTS`), not tiles.
 - **Jump budget:** v0 8.4, gravity 0.42 up / 0.5 down, apex hang. Between
@@ -148,6 +151,19 @@ engine's `pend*` event queue exists for exactly that.
 - The **Hidden Valley** is mid-game (between sub-summit and final ascent),
   not post-finale. The glider is granted by Vera on first meeting, not
   hidden behind `G.flags.finale`.
+- **The Final Ascent is reached ON FOOT from the Hidden Valley** — the glider
+  is for the rings, never a gate to the Gamskofel. The lower massif's WEST face
+  is a walkable approach staircase down to the valley floor; do not let a wide
+  catch-floor fill swallow it into a glider-only cliff (it once did, x264..315).
+- **The Gamskofel route is flood-fill tested** in `check-world.js` (valley floor
+  → summit book), like the depot climb. `reachable()` is blind to a ledge buried
+  in a catch floor or capped by the floor above — both shipped here (Stage-1
+  ledges buried; the Stage-3 "recovery ledge" capped solid, its commit plank
+  overwritten then carved to air, dead-ending the climb over the bonfire). Any
+  change to the ascent must keep that walk green; verify the whole climb in
+  headless Chrome with the crumble live (it cracks ~90 frames after landing, so
+  a stance you must pause on is a trap). Blankeis stances stay a *skill* gate —
+  a slip must land on a catch floor, never a dead end.
 
 - **Vector Asset Design Guidelines:** For structures (like the Alm hut redesign) and visual elements, favor high-quality hand-coded details over simple blocks:
   - *Dimensionality:* Add steep roofs, eaves/overhangs, and outline strokes (`cx.strokeStyle`) for structural depth.
