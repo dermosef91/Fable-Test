@@ -3866,14 +3866,6 @@ function drawPlayer() {
   cx.lineTo(-1.5, jY + 9.5);
   cx.lineTo(-3, jY + 9.5);
   cx.closePath(); cx.fill();
-  // sternum strap across the chest
-  cx.strokeStyle = '#46582f'; cx.lineWidth = 0.8;
-  cx.beginPath();
-  cx.moveTo(-3.5, jY + 3.5); cx.lineTo(2, jY + 3.5);
-  cx.stroke();
-  // sternum strap buckle
-  cx.fillStyle = '#e89441';
-  cx.fillRect(-1, jY + 3, 1.3, 1.2);
 
   // === ARMS ===
   cx.fillStyle = jacketColor;
@@ -3927,31 +3919,30 @@ function drawPlayer() {
   // === HAIR (light blonde, peeking out from under beanie) ===
   const hY = breathe;
   cx.fillStyle = '#d8b673';
-  // small tufts peeking out at the sides, below the brim near the ears
-  cx.beginPath(); cx.arc(-5.3, 1.2 + hY, 1.3, 0, 7); cx.fill();
-  cx.beginPath(); cx.arc(5.3, 1.2 + hY, 1.3, 0, 7); cx.fill();
+  // flat hair wisps sweeping out from under the brim at the temples
+  cx.beginPath(); cx.ellipse(-4.7, -0.4 + hY, 1.5, 0.85, -0.25, 0, 7); cx.fill();
+  cx.beginPath(); cx.ellipse(4.7, -0.4 + hY, 1.5, 0.85, 0.25, 0, 7); cx.fill();
   // back hair visible behind neck
   cx.fillRect(-4, 1 + hY, 8, 2);
 
-  // === HEAD (pale cream skin, two dark eyes for a soft 3/4 look) ===
+  // === HEAD (pale cream skin, two dark eyes — no ears/mouth/nose) ===
   cx.fillStyle = '#f0d2ab';
   cx.beginPath(); cx.arc(0, 0 + hY, 5, 0, 7); cx.fill();
-  // subtle ear
-  cx.fillStyle = '#e3bf94';
-  cx.beginPath(); cx.arc(-4.6, 0.5 + hY, 1.2, 0, 7); cx.fill();
   // two dark round eyes, spaced for a soft 3/4 look
   cx.fillStyle = '#2a2724';
-  cx.beginPath(); cx.ellipse(0.5, 0.1 + hY, 0.8, 1.05, 0, 0, 7); cx.fill();
-  cx.beginPath(); cx.ellipse(3.3, 0.1 + hY, 0.8, 1.05, 0, 0, 7); cx.fill();
+  cx.beginPath(); cx.ellipse(0.5, 1.0 + hY, 0.8, 1.05, 0, 0, 7); cx.fill();
+  cx.beginPath(); cx.ellipse(3.3, 1.0 + hY, 0.8, 1.05, 0, 0, 7); cx.fill();
   // tiny eye glints
   cx.fillStyle = 'rgba(255,255,255,0.85)';
-  cx.beginPath(); cx.arc(0.8, -0.3 + hY, 0.3, 0, 7); cx.fill();
-  cx.beginPath(); cx.arc(3.6, -0.3 + hY, 0.3, 0, 7); cx.fill();
-  // rosy cheek
-  cx.fillStyle = 'rgba(224,140,120,0.32)';
-  cx.beginPath(); cx.arc(2.1, 2.3 + hY, 1, 0, 7); cx.fill();
+  cx.beginPath(); cx.arc(0.8, 0.6 + hY, 0.3, 0, 7); cx.fill();
+  cx.beginPath(); cx.arc(3.6, 0.6 + hY, 0.3, 0, 7); cx.fill();
 
   // === BEANIE (golden mustard knit, rolled brim, top knob) ===
+  // angle the hat for a jaunty, cocked tilt (rotates with facing)
+  cx.save();
+  cx.translate(0, -1 + hY);
+  cx.rotate(0.16);
+  cx.translate(0, 1 - hY);
   cx.fillStyle = '#e3ad44';
   // beanie dome
   cx.beginPath();
@@ -3999,6 +3990,7 @@ function drawPlayer() {
       cx.beginPath(); cx.arc(5, -2.5 + hY, 5 * (0.7 + 0.3 * lampFlicker), 0, 7); cx.fill();
     }
   }
+  cx.restore(); // end hat tilt
 
   cx.restore();
 }
