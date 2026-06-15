@@ -3941,7 +3941,7 @@ function drawPlayer() {
   // angle the hat for a jaunty, cocked tilt (rotates with facing)
   cx.save();
   cx.translate(0, -1 + hY);
-  cx.rotate(0.16);
+  cx.rotate(-0.16);
   cx.translate(0, 1 - hY);
   cx.fillStyle = '#e3ad44';
   // beanie dome
