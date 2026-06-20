@@ -259,7 +259,7 @@ function buildWorld() {
   // the bonfire crumbles, so don't linger.
   fill(281, 36, 3, 1, 1);     // ledge (x281..283, y36)
   // x285..287, y33: CRUMBLING ledge over the bonfire — see CRUMBLE array (overlay)
-  fill(282, 30, 3, 1, 1);     // recovery ledge (x282..284, y30)
+  fill(282, 30, 3, 1, 1);     // recovery ledge (x282..284, y30) — catch your breath
   fill(285, 27, 3, 1, 1);     // chimney step (x285..287, y27)
   fill(280, 24, 5, 1, 1);     // exit shelf (x280..284, y24) — tops out the chimney
 
@@ -268,9 +268,9 @@ function buildWorld() {
   fill(288, 25, 20, 5, 1);    // upper catch floor x288..307, y25..29
 
   // Stage 4 — The Wind Ridge: exposed, air currents, ice
-  fill(288, 21, 3, 1, 1);     // ledge (x288..290, y21)
-  fill(293, 18, 2, 1, 7);     // ICE ledge (x293..294, y18) — slippery!
-  fill(289, 15, 3, 1, 1);     // ledge (x289..291, y15)
+  fill(288, 21, 3, 1, 1);     // ledge (x288..290, y21) — first stance in the wind
+  fill(293, 18, 2, 1, 7);     // ICE ledge (x293..294, y18) — glassy + gusting!
+  fill(289, 15, 3, 1, 7);     // ICE ledge (x289..291, y15) — slip and the wind has you
   fill(295, 12, 3, 1, 1);     // ledge past the gust (x295..297, y12)
   fill(300, 9, 3, 1, 1);      // pre-summit shelf (x300..302, y9)
   fill(308, 9, 6, 1, 1);      // pre-summit catch shelf to support final crumble falls (x308..313, y9)
@@ -294,10 +294,15 @@ const THERMALS = [
   { x: 222, y: 18, w: 4, h: 50 },
 ];
 
-// Horizontal air gusts on the Gamskofel — push the player sideways.
+// Horizontal air gusts on the Gamskofel wind ridge — pulsing squalls that shove
+// the player sideways toward the exposure. Each swells and dies on a sine of
+// `period` frames; the lull (sin<=0, ~half the cycle) is dead calm — the window
+// to commit a hop. Directions alternate up the ridge so you brace both ways.
+// y is in level coords and gets the +Y_OFF shift below, like every other rect.
 const GUSTS = [
-  { x: 290, y: 10, w: 6, h: 10, dir: 1, force: 1.8 },  // pushes right
-  { x: 296, y: 4, w: 5, h: 8, dir: -1, force: 1.5 },   // pushes left near summit
+  { x: 285, y: 18, w: 9, h: 7, dir:  1, force: 1.7, period: 190, phase: 0.0 }, // lower knife-edge, blows east off the crest
+  { x: 290, y: 12, w: 9, h: 6, dir: -1, force: 1.6, period: 220, phase: 2.3 }, // mid ridge, blows back west
+  { x: 296, y: 5,  w: 9, h: 6, dir:  1, force: 1.5, period: 240, phase: 4.1 }, // summit push, blows east into the void
 ];
 
 // Sink pockets — cold downdrafts between the thermals. A glider caught in one
@@ -344,6 +349,7 @@ const CRUMBLE = [
 // {x, y: spawn row, w, floor: last row, period: frames between stones}.
 const STONEFALL = [
   { x: 65, y: 13, w: 6, floor: 28, period: 420 },  // the exposed depot climb
+  { x: 277, y: 41, w: 6, floor: 50, period: 360 }, // the Gamskofel wall-foot zig-zag
 ];
 
 // =========================================================================
@@ -866,6 +872,7 @@ const TX_DE = {
   toast_stumble: 'Autsch. Das war kein Gämsensprung.',
   toast_steinschlag: 'STEINSCHLAG! Ein Brocken hat dich gestreift. · Caduta sassi!',
   toast_crumble: 'Der Fels bröckelt unter dir — schnell weiter! · La roccia si sgretola!',
+  toast_gust: 'WINDBÖEN AM GRAT! Warte die Flaute ab, dann spring. · Raffiche di vento!',
   toast_saved: 'Gespeichert · Salvato',
   cold_respawn: 'Durchgefroren bis auf die Knochen kehrst du zum letzten Feuer zurück.',
 
@@ -1204,6 +1211,7 @@ const TX_EN = {
   toast_stumble: 'Ouch. That was no chamois landing.',
   toast_steinschlag: 'ROCKFALL! A loose stone clips you. · Steinschlag!',
   toast_crumble: 'The ledge is crumbling — keep moving! · Brüchiger Fels!',
+  toast_gust: 'GUSTS ON THE CREST! Wait out the squall, then jump. · Windböen!',
   toast_saved: 'Saved',
   cold_respawn: 'Chilled to the bone, you turn back to the last fire.',
 
@@ -1268,6 +1276,7 @@ const GEAR_INFO = { // icons are drawn by drawIcon(key) in game.js
 WATERFALL.y += Y_OFF;
 for (const t of THERMALS) t.y += Y_OFF;
 for (const s of SINK) s.y += Y_OFF;
+for (const gu of GUSTS) gu.y += Y_OFF;
 for (const r of RINGS) r[1] += Y_OFF;
 for (const m of MOVERS) { m.y += Y_OFF; m.y2 += Y_OFF; }
 for (const c of CRUMBLE) c.y += Y_OFF;
@@ -1279,5 +1288,5 @@ for (const f of FLOWERS) f[1] += Y_OFF;
 for (const r of BG_ROCK) r.y += Y_OFF;
 
 if (typeof module !== 'undefined') {
-  module.exports = { TILE, WORLD_W, WORLD_H, buildWorld, WATERFALL, THERMALS, SINK, RINGS, MOVERS, CRUMBLE, STONEFALL, ZONES, PHASES, ENTITIES, TREES, FLOWERS, BG_ROCK, TX_DE, TX_EN, GEAR_INFO };
+  module.exports = { TILE, WORLD_W, WORLD_H, buildWorld, WATERFALL, THERMALS, SINK, RINGS, MOVERS, CRUMBLE, STONEFALL, GUSTS, ZONES, PHASES, ENTITIES, TREES, FLOWERS, BG_ROCK, TX_DE, TX_EN, GEAR_INFO };
 }

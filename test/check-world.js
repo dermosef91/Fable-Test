@@ -1,6 +1,6 @@
 /* Headless sanity checks for the world geometry.
    Run: node test/check-world.js */
-const { TILE, WORLD_W, WORLD_H, buildWorld, WATERFALL, THERMALS, SINK, RINGS, MOVERS, CRUMBLE, STONEFALL, ZONES, ENTITIES, TREES } = require('../world.js');
+const { TILE, WORLD_W, WORLD_H, buildWorld, WATERFALL, THERMALS, SINK, RINGS, MOVERS, CRUMBLE, STONEFALL, GUSTS, ZONES, ENTITIES, TREES } = require('../world.js');
 
 const g = buildWorld();
 const Y_OFF = WORLD_H - 80;
@@ -323,13 +323,33 @@ ok(reachable(100, 14 + Y_OFF, 99, 11 + Y_OFF) && reachable(101, 11 + Y_OFF, 102,
 // the band sweeps the exposed hops but spares the plank (x63..64), the
 // nook and the ferrata cable column (x71), and the floor below is solid
 ok(STONEFALL.some(s => s.x <= 66 && s.x + s.w >= 70 && s.y < 21 + Y_OFF), 'stonefall sweeps the exposed depot hops');
+ok(STONEFALL.some(s => s.x >= 270 && s.x < 316), 'stonefall rakes the Gamskofel wall-foot');
 for (const s of STONEFALL) {
   let open = true;
   for (let x = s.x; x < s.x + s.w; x++) if (solid(at(x, s.y))) open = false;
   ok(open, `stonefall@x${s.x}..${s.x + s.w - 1} spawn row y${s.y} is open air`);
-  ok(s.x > 64, `stonefall@x${s.x} spares the one-way plank haven (x63..64)`);
-  ok(s.x + s.w <= 71, `stonefall@x${s.x} stays off the ferrata cable column (x71)`);
   ok(solid(at(s.x, s.floor)) && solid(at(s.x + s.w - 1, s.floor)), `stonefall@x${s.x} floor row y${s.floor} is solid`);
+}
+{ // the depot band spares the plank haven (x63..64) and the ferrata cable column (x71)
+  const depot = STONEFALL.find(s => s.x < 100);
+  ok(depot.x > 64 && depot.x + depot.w <= 71, 'depot stonefall spares the plank haven and the cable column');
+}
+
+// the Gamskofel wind gusts must actually rake the wind-ridge stances. They ship
+// in level coords and only work once shifted by Y_OFF (the bug that left the
+// squalls floating in the sky above the climb), and they pulse so a lull opens.
+ok(GUSTS && GUSTS.length >= 2, 'Gamskofel has wind gusts');
+for (const gu of GUSTS) {
+  ok(gu.y >= Y_OFF && gu.y < 40 + Y_OFF, `gust@x${gu.x} sits on the wind ridge once shifted (y${gu.y})`);
+  ok(gu.period > 0, `gust@x${gu.x} pulses (period ${gu.period})`);
+}
+ok(GUSTS.some(gu => { const ly = 21 + Y_OFF; return ly >= gu.y && ly < gu.y + gu.h && 289 >= gu.x && 289 < gu.x + gu.w; }), 'a gust covers the first wind-ridge stance (x288..290, y21)');
+// the two on-route ice stances on the wind ridge (glassy + gusting)
+for (const [x0, x1, y] of [[293, 294, 18], [289, 291, 15]]) {
+  let iced = true, head = true;
+  for (let x = x0; x <= x1; x++) { if (at(x, y + Y_OFF) !== 7) iced = false; if (solid(at(x, y - 1 + Y_OFF))) head = false; }
+  ok(iced, `Gamskofel ice stance glazes x${x0}..${x1} at y${y}`);
+  ok(head, `Gamskofel ice stance x${x0}..${x1} has headroom`);
 }
 
 // 13b. The Final Ascent (Gamskofel): reachable ON FOOT from the Hidden Valley

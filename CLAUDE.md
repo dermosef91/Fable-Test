@@ -102,7 +102,7 @@ engine's `pend*` event queue exists for exactly that.
   4 up is a deliberate set-piece. Full arcs need **~5.5 tiles of headroom**
   — a ceiling 1–2 tiles above head height silently eats jumps (carve sky,
   as over the gorge slot).
-- **Summit Headroom & Y-Shifting**: The world height is `90` tiles (originally `80`), with all level geometry shifted down by `Y_OFF = 10` tiles. This leaves a 10-tile buffer of open air above the summit. All absolute Y lookups and boundaries in `game.js` and `test/check-world.js` must be dynamically shifted by adding `Y_OFF` to match this layout.
+- **Summit Headroom & Y-Shifting**: The world height is `90` tiles (originally `80`), with all level geometry shifted down by `Y_OFF = 10` tiles. This leaves a 10-tile buffer of open air above the summit. All absolute Y lookups and boundaries in `game.js` and `test/check-world.js` must be dynamically shifted by adding `Y_OFF` to match this layout. **Every world-data array authored in level coords must also be added to the post-definition `Y_OFF` shift loop in `world.js` (and exported) — `WATERFALL`/`THERMALS`/`SINK`/`GUSTS`/`RINGS`/`MOVERS`/`CRUMBLE`/`STONEFALL`/`ZONES`/`ENTITIES`/…** A new force-field rect that skips the loop ships 10 rows out of place: the Gamskofel `GUSTS` did exactly this and floated harmlessly in the sky above the wind ridge until fixed. When you add such an array, assert in check-world that it overlaps the geometry it's meant to act on (don't just trust the coords).
 - **Challenge before reward:** place gear so the player meets its obstacle
   first and backtracks (lamp at the Observer Post after the dark tunnel;
   ferrata set at the Depot after the bare cable). Quest collectibles must
@@ -260,6 +260,15 @@ engine's `pend*` event queue exists for exactly that.
   in check-world). A gentle steady easterly (`valleyWind`) nudges a glider east
   and drives the windsock angles; it's mild so steering overrides. Sinks must
   stay escapable (steer/dive out, soft landing) — never a trap.
+- **Gamskofel gusts (`GUSTS`):** horizontal force-field rects on the wind ridge
+  that shove the player sideways (stronger airborne than grounded). A `period`
+  makes the squall swell and die on a sine — the lull (`sin<=0`, ~half the cycle)
+  is dead calm, the window to commit a hop; steady gusts (no `period`) push the
+  whole time. Place them only over stances whose blow-off lands on a catch floor
+  (the upper-ridge catch band), so a gust is a timing-and-balance skill gate,
+  never a shove into a dead end. Ice stances inside a gust are the signature
+  combo — slippery + windblown — and must still recover. Directions should
+  alternate up the ridge so the climber braces both ways.
 - **Movers:** platforms in `MOVERS` are one-way landings; standing players
   are carried via `p.moverRef` (set on landing, cleared on jump/walk-off).
 - **Crumble & stonefall:** `CRUMBLE` rects (world.js) are one-way shale slabs

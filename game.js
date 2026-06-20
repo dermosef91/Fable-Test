@@ -939,16 +939,22 @@ function physTick() {
       }
     }
 
-    // horizontal air gusts on the Gamskofel
+    // horizontal air gusts on the Gamskofel — pulsing squalls. When a gust has
+    // a `period` it swells and dies on a sine; the lull (sin<=0) is dead calm,
+    // your window to move. Steady gusts (no period) just push the whole time.
     if (typeof GUSTS !== 'undefined') {
       for (const gu of GUSTS) {
         const gx = gu.x * TILE, gy = gu.y * TILE;
         const gw = gu.w * TILE, gh = gu.h * TILE;
         if (p.x + p.w > gx && p.x < gx + gw && p.y + p.h > gy && p.y < gy + gh) {
-          if (!p.grounded) p.vx += gu.dir * gu.force * 0.15;
-          else p.vx += gu.dir * gu.force * 0.05;
+          let f = gu.force;
+          if (gu.period) { const s = Math.sin(frame * 2 * Math.PI / gu.period + (gu.phase || 0)); if (s <= 0.04) continue; f *= s; }
+          p.vx += gu.dir * f * (p.grounded ? 0.06 : 0.15);
+          p.vx = Math.max(-4.6, Math.min(4.6, p.vx));
+          if (!G.flags.gustMet) { G.flags.gustMet = true; toast(TX.toast_gust); }
+          if (f > 0.7 && frame % 16 === 0) noiseBurst(0.22, 0.014 * Math.min(2, f), 460 + f * 220); // the howl
           // gust particles
-          if (Math.random() < 0.3) spawnPart({ x: gx + Math.random() * gw, y: gy + Math.random() * gh, vx: gu.dir * 3, vy: (Math.random() - 0.5) * 0.5, t: 18, c: 'rgba(220,240,255,0.5)', s: 1.5 });
+          if (Math.random() < 0.3 * Math.min(1.4, f)) spawnPart({ x: gx + Math.random() * gw, y: gy + Math.random() * gh, vx: gu.dir * (2.4 + f), vy: (Math.random() - 0.5) * 0.5, t: 18, c: 'rgba(220,240,255,0.5)', s: 1.5 });
         }
       }
     }
@@ -1378,13 +1384,17 @@ function drawGusts() {
     const gx = gu.x * TILE - cam.x, gy = gu.y * TILE - cam.y;
     const gw = gu.w * TILE, gh = gu.h * TILE;
     if (gx > VW || gx + gw < 0) continue;
-    // subtle directional streaks
-    cx.globalAlpha = 0.15;
+    let f = 1;
+    if (gu.period) { f = Math.sin(frame * 2 * Math.PI / gu.period + (gu.phase || 0)); if (f <= 0.06) continue; }
+    // directional spindrift streaks; denser and faster as the squall swells
+    cx.globalAlpha = 0.1 + 0.28 * f;
     cx.strokeStyle = '#d0e8f8'; cx.lineWidth = 1;
-    for (let i = 0; i < 5; i++) {
-      const sy = gy + (i * gh / 5) + Math.sin(frame * 0.1 + i) * 8;
-      const sx = gx + ((frame * gu.dir * 2 + i * 40) % gw);
-      cx.beginPath(); cx.moveTo(sx, sy); cx.lineTo(sx + gu.dir * 20, sy); cx.stroke();
+    const n = 5 + Math.round(f * 5);
+    for (let i = 0; i < n; i++) {
+      const sy = gy + (i * gh / n) + Math.sin(frame * 0.1 + i) * 8;
+      const sx = gx + (((frame * gu.dir * (2 + f * 3) + i * 37) % gw) + gw) % gw;
+      const len = 16 + f * 16;
+      cx.beginPath(); cx.moveTo(sx, sy); cx.lineTo(sx + gu.dir * len, sy + Math.sin(i) * 1.4); cx.stroke();
     }
     cx.globalAlpha = 1;
   }
