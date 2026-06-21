@@ -2185,6 +2185,40 @@ function drawVine(ax, ay, len, col, h, seed) {
   }
 }
 
+// Craggy edge for an air-facing rock face: a varied run of lumps along one side
+// instead of two uniform bumps, so a platform's silhouette reads as natural rock
+// rather than a tile grid. Count and size jitter per tile (deterministic `h`);
+// ~1/5 lumps bulge into a protruding boulder (lit shoulder), and the odd lump
+// pulls in tight and casts a shadow recess so the face reads as a craggy
+// undercut. side: 'L' | 'R' | 'B'.
+function cragEdge(side, x, y, h, seed, rockColor) {
+  const n = 1 + Math.floor(h(seed) * 3);              // 1..3 lumps per tile edge
+  for (let i = 0; i < n; i++) {
+    const t = (i + 0.5) / n, jit = (h(seed + 1 + i) - 0.5) * 3;
+    const big = h(seed + 7 + i) > 0.8;                 // ~20% protruding crag
+    const cut = !big && h(seed + 11 + i) > 0.86;       // ~12% recessed undercut
+    const br = 2 + h(seed + 4 + i) * 2 + (big ? 2.5 + h(seed + 9 + i) * 2.5 : 0);
+    let bx, by, a0, a1, under = false;
+    if (side === 'L') { bx = x; by = y + t * TILE + jit; a0 = Math.PI * 0.5; a1 = Math.PI * 1.5; }
+    else if (side === 'R') { bx = x + TILE; by = y + t * TILE + jit; a0 = -Math.PI * 0.5; a1 = Math.PI * 0.5; }
+    else { bx = x + t * TILE + jit; by = y + TILE; a0 = 0; a1 = Math.PI; under = true; }
+    if (cut) {                                         // tuck the lump in and shadow it — an undercut
+      const ix = bx + (side === 'L' ? 2 : side === 'R' ? -2 : 0), iy = by + (under ? -2 : 0);
+      cx.fillStyle = rockColor; cx.beginPath(); cx.arc(ix, iy, br * 0.8, a0, a1); cx.fill();
+      cx.fillStyle = 'rgba(0,0,0,0.16)'; cx.beginPath(); cx.arc(ix, iy, br, a0, a1); cx.fill();
+      continue;
+    }
+    cx.fillStyle = rockColor; cx.beginPath(); cx.arc(bx, by, br, a0, a1); cx.fill();
+    if (big && !under) {                               // rounded boulder: lit shoulder
+      cx.fillStyle = 'rgba(255,255,255,0.12)';
+      cx.beginPath(); cx.arc(bx + (side === 'L' ? -br * 0.2 : br * 0.2), by - br * 0.3, br * 0.45, a0, a1); cx.fill();
+    }
+    if (under) {                                       // overhang underside in shadow
+      cx.fillStyle = 'rgba(0,0,0,0.15)'; cx.beginPath(); cx.arc(bx, by, br, a0, a1); cx.fill();
+    }
+  }
+}
+
 function drawTiles() {
   const tex = ensureTex();
   cx.imageSmoothingEnabled = true; // smooth the supersampled grain blits (restored at end)
@@ -2220,46 +2254,18 @@ function drawTiles() {
         if (rightAir) { cx.fillStyle = 'rgba(0,0,0,0.06)'; cx.fillRect(x + TILE - 2, y, 2, TILE); }
 
         cx.fillStyle = rockColor;
-        // Left Edge Bumps
-        if (leftAir) {
-          const numBumps = 2;
-          for (let i = 0; i < numBumps; i++) {
-            const by = y + (i + 0.5) * (TILE / numBumps) + (h(i + 1) - 0.5) * 2;
-            const bx = x;
-            const br = 2.5 + h(i + 5) * 1.5;
-            cx.beginPath(); cx.arc(bx, by, br, Math.PI * 0.5, Math.PI * 1.5); cx.fill();
-          }
-        }
-        // Right Edge Bumps
-        if (rightAir) {
-          const numBumps = 2;
-          for (let i = 0; i < numBumps; i++) {
-            const by = y + (i + 0.5) * (TILE / numBumps) + (h(i + 10) - 0.5) * 2;
-            const bx = x + TILE;
-            const br = 2.5 + h(i + 15) * 1.5;
-            cx.beginPath(); cx.arc(bx, by, br, Math.PI * 1.5, Math.PI * 0.5); cx.fill();
-          }
-        }
-        // Bottom Edge Bumps
-        if (downAir) {
-          const numBumps = 2;
-          for (let i = 0; i < numBumps; i++) {
-            const bx = x + (i + 0.5) * (TILE / numBumps) + (h(i + 20) - 0.5) * 2;
-            const by = y + TILE;
-            const br = 2.5 + h(i + 25) * 1.5;
-            cx.beginPath(); cx.arc(bx, by, br, 0, Math.PI); cx.fill();
-            cx.fillStyle = 'rgba(0,0,0,0.15)';
-            cx.beginPath(); cx.arc(bx, by, br, 0, Math.PI); cx.fill();
-            cx.fillStyle = rockColor;
-          }
-        }
+        // Craggy edges — varied lumps, occasional boulder or undercut
+        if (leftAir) cragEdge('L', x, y, h, 1, rockColor);
+        if (rightAir) cragEdge('R', x, y, h, 14, rockColor);
+        if (downAir) cragEdge('B', x, y, h, 60, rockColor);
+        cx.fillStyle = rockColor;
 
-        // Corners
+        // Corners — occasionally a chunkier corner boulder
         if (upAir && leftAir) {
-          cx.beginPath(); cx.arc(x, y, 3 + h(30) * 1.5, 0, Math.PI * 2); cx.fill();
+          cx.beginPath(); cx.arc(x, y, 3 + h(30) * 1.5 + (h(34) > 0.8 ? 2.5 : 0), 0, Math.PI * 2); cx.fill();
         }
         if (upAir && rightAir) {
-          cx.beginPath(); cx.arc(x + TILE, y, 3 + h(31) * 1.5, 0, Math.PI * 2); cx.fill();
+          cx.beginPath(); cx.arc(x + TILE, y, 3 + h(31) * 1.5 + (h(35) > 0.8 ? 2.5 : 0), 0, Math.PI * 2); cx.fill();
         }
         if (downAir && leftAir) {
           cx.beginPath(); cx.arc(x, y + TILE, 3 + h(32) * 1.5, 0, Math.PI * 2); cx.fill();
