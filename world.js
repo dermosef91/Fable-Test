@@ -129,8 +129,7 @@ function buildWorld() {
   fill(0, 0, 2, WORLD_H, 1);            // west wall
 
   // --- Hinteres Tal (post-finale glider country, x192..) --------------------
-  fill(190, 0, 2, WORLD_H, 1);   // the massif's east face
-  carve(190, 5, 2, 7);           // the slip behind the Flugschule sign (y5..11)
+  fill(190, 12, 2, WORLD_H - 12, 1);   // the massif's east face, below the launch slip (open sky above)
   fill(192, 12, 6, 1, 1);        // launch ledge / Startplatz
   fill(193, 13, 1, 57, 5);       // fixed cable back up the face (for the way home)
   fill(218, 68, 5, 2, 1);        // grassy knoll

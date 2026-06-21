@@ -220,8 +220,8 @@ ok(solid(at(166, 70)) && solid(at(174, 70)), 'pond banks solid');
 }
 
 // 16. Hinteres Tal
-ok(!solid(at(190, 8)) && !solid(at(191, 8)), 'slip behind the Flugschule sign is open (y5..11)');
-ok(solid(at(190, 12)) && solid(at(190, 4)), 'massif face solid above and below the slip');
+ok(!solid(at(190, 8)) && !solid(at(191, 8)), 'slip behind the Flugschule sign is open');
+ok(solid(at(190, 12)) && !solid(at(190, 4)), 'massif face solid below the slip, open sky above');
 ok(solid(at(192, 12)) && solid(at(197, 12)), 'launch ledge present');
 ok(at(193, 13) === 5 && at(193, 69) === 5, 'return cable spans the east face');
 ok(at(234, 70) === 4 && solid(at(230, 70)) && solid(at(239, 70)), 'lake carved with solid banks');
