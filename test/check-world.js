@@ -451,8 +451,8 @@ ok(reachable(142, 6, 143, 4) && reachable(146, 7, 145, 4) && reachable(155, 10, 
 }
 
 // 16. Hinteres Tal
-ok(!solid(at(166, 8 + Y_OFF)) && !solid(at(167, 8 + Y_OFF)), 'slip behind the Flugschule sign is open (y5..11)');
-ok(solid(at(166, 12 + Y_OFF)) && solid(at(166, 4 + Y_OFF)), 'massif face solid above and below the slip');
+ok(!solid(at(166, 8 + Y_OFF)) && !solid(at(167, 8 + Y_OFF)), 'slip behind the Flugschule sign is open');
+ok(solid(at(166, 12 + Y_OFF)) && !solid(at(166, 4 + Y_OFF)), 'massif face solid below the slip, open sky above');
 ok(solid(at(168, 12 + Y_OFF)) && solid(at(173, 12 + Y_OFF)), 'launch ledge present');
 ok(at(169, 13 + Y_OFF) === 5 && at(169, 69 + Y_OFF) === 5, 'return cable spans the east face');
 ok(at(210, 70 + Y_OFF) === 4 && solid(at(206, 70 + Y_OFF)) && solid(at(215, 70 + Y_OFF)), 'lake carved with solid banks');
