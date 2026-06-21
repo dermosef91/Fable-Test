@@ -399,7 +399,21 @@ function noiseBurst(dur, vol, hp) {
   s.connect(f).connect(g).connect(AC.destination); s.start();
 }
 const sfx = {
-  jump: () => blip(300, 0.12, 'square', 0.03, 240),
+  // a soft push-off, not a chiptune boing: a mellow triangle with a gentle
+  // upward lilt and a breath of scree as the boot leaves the ground.
+  jump: () => {
+    if (!AC || muted) return;
+    const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(220, t);
+    o.frequency.exponentialRampToValueAtTime(360, t + 0.09);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.045, t + 0.012); // soft attack, no click
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+    o.connect(g).connect(AC.destination);
+    o.start(t); o.stop(t + 0.22);
+    noiseBurst(0.05, 0.015, 2000); // the foot pushing off
+  },
   land: () => noiseBurst(0.08, 0.04),
   pick: () => { blip(660, 0.09, 'triangle', 0.05); setTimeout(() => blip(880, 0.12, 'triangle', 0.05), 70); },
   page: () => { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => blip(f, 0.18, 'sine', 0.05), i * 90)); },
@@ -888,7 +902,10 @@ function physTick() {
         if (p.moverRef) { p.vx += p.moverRef.dx || 0; p.vy += Math.min(0, p.moverRef.dy || 0); }
         p.grounded = false; p.coyote = 0; p.jbuf = 0; p.moverRef = null;
         p.screeCoyote = 0;
-        sfx.jump();
+        sfx.jump(); vib(10);
+        // a little dust kicks up where the boots leave the ground
+        if (!p.swim) for (let i = 0; i < 4; i++)
+          spawnPart({ x: p.x + Math.random() * p.w, y: p.y + p.h, vx: (Math.random() - 0.5) * 1.3, vy: 0.2, g: 0.05, t: 12, c: '#c9bb9d', s: 1.5 });
       }
     }
     if (p.jbuf > 0) p.jbuf--;
@@ -3842,21 +3859,27 @@ function drawPlayer() {
   if (p.grounded && !p.climbing && !p.gliding)
     groundShadow(p.x + p.w / 2 - cam.x, p.y + p.h - cam.y, p.w * 0.6, 0.22);
 
+  // airborne pose: tuck up off the launch, reach down to meet the ground
+  const air = !p.grounded && !p.swim && !p.climbing && !p.gliding;
+  const vt = air ? Math.max(-1, Math.min(1, p.vy / 8)) : 0; // -1 rising … +1 falling
+  const lift = vt < 0 ? -vt * 3.5 : 0;   // feet pull up as we climb
+  const spread = vt > 0 ? vt * 2.2 : 0;  // legs part to land
+
   cx.save();
   cx.translate(x, y + 10);
-  // squash on landing, stretch in fast air
+  // squash on landing, stretch with vertical speed in the air
   let sy = 1;
-  if (p.landT > 0) sy = 1 - (p.landT / 9) * 0.16;
-  else if (!p.grounded && !p.climbing && Math.abs(p.vy) > 5 && !p.gliding) sy = 1.08;
+  if (p.landT > 0) sy = 1 - (p.landT / 9) * 0.19;
+  else if (air) sy = 1 + Math.min(0.13, Math.abs(p.vy) * 0.016); // stretch with vertical speed
   if (p.sliding === 2) sy = Math.min(sy, 0.84); // crouch low into the scree-run
   cx.scale((p.face === -1 ? -1 : 1) * (2 - sy), sy);
   cx.translate(0, -10);
 
   // === LEGS (dark slate-blue trousers, slightly baggy, cuffed) ===
-  const legL = p.climbing ? 0 : (p.grounded ? leg * 0.5 : 0);
-  const legR = p.climbing ? 0 : (p.grounded ? -leg * 0.5 : 0);
-  const legLy = p.climbing ? 13 : (!p.grounded && !p.swim ? 13 : 14);
-  const legRy = p.climbing ? 11 : (!p.grounded && !p.swim ? 14 : 14);
+  const legL = p.climbing ? 0 : air ? -spread : (p.grounded ? leg * 0.5 : 0);
+  const legR = p.climbing ? 0 : air ? spread : (p.grounded ? -leg * 0.5 : 0);
+  const legLy = (p.climbing ? 13 : (!p.grounded && !p.swim ? 13 : 14)) - lift; // tuck up rising, reach down falling
+  const legRy = (p.climbing ? 11 : (!p.grounded && !p.swim ? 14 : 14)) - lift;
   const legH = p.climbing ? 7 : (!p.grounded && !p.swim ? 7 : 7);
   // left leg
   cx.fillStyle = '#3d5f8a';
@@ -3889,9 +3912,9 @@ function drawPlayer() {
   cx.stroke();
 
   // === BOOTS / SHOES ===
-  const bLx = -5 + (p.grounded ? leg * 0.5 : 0);
-  const bRx = 0.5 - (p.grounded ? leg * 0.5 : 0);
-  const bY = p.climbing ? 19 : (!p.grounded && !p.swim ? 19 : 19.5);
+  const bLx = -5 + (air ? -spread : (p.grounded ? leg * 0.5 : 0));
+  const bRx = 0.5 + (air ? spread : -(p.grounded ? leg * 0.5 : 0));
+  const bY = (p.climbing ? 19 : (!p.grounded && !p.swim ? 19 : 19.5)) - lift;
   // shoe body
   cx.fillStyle = bootColor;
   cx.beginPath();
@@ -4014,6 +4037,20 @@ function drawPlayer() {
     cx.fillStyle = '#f0d2ab';
     cx.beginPath(); cx.arc(4.5, 2.5 + arm, 1.5, 0, 7); cx.fill();
     cx.beginPath(); cx.arc(-4.5, 4.5 - arm, 1.5, 0, 7); cx.fill();
+  } else if (air) {
+    // the front arm throws up off the launch and reaches down to land
+    const armSwing = vt * 3;
+    cx.fillStyle = jacketColor;
+    cx.beginPath();
+    cx.moveTo(-6.5, jY + 1.5 + armSwing);
+    cx.lineTo(-3.5, jY + 1.5 + armSwing);
+    cx.lineTo(-3.5, jY + 8.5 + armSwing);
+    cx.lineTo(-6.5, jY + 8.5 + armSwing);
+    cx.closePath(); cx.fill();
+    cx.fillStyle = jacketDark;
+    cx.fillRect(-6.5, jY + 7 + armSwing, 3, 1.5);
+    cx.fillStyle = '#f0d2ab';
+    cx.beginPath(); cx.arc(-5, jY + 9.5 + armSwing, 1.5, 0, 7); cx.fill();
   } else {
     const armSwing = run ? -leg * 0.5 : 0;
     // front arm (visible) — hangs at the backpack/torso seam on the left
