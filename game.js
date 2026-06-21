@@ -357,7 +357,21 @@ function noiseBurst(dur, vol, hp) {
   s.connect(f).connect(g).connect(AC.destination); s.start();
 }
 const sfx = {
-  jump: () => blip(300, 0.12, 'square', 0.03, 240),
+  // a soft push-off, not a chiptune boing: a mellow triangle with a gentle
+  // upward lilt and a breath of scree as the boot leaves the ground.
+  jump: () => {
+    if (!AC || muted) return;
+    const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(220, t);
+    o.frequency.exponentialRampToValueAtTime(360, t + 0.09);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.045, t + 0.012); // soft attack, no click
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+    o.connect(g).connect(AC.destination);
+    o.start(t); o.stop(t + 0.22);
+    noiseBurst(0.05, 0.015, 2000); // the foot pushing off
+  },
   land: () => noiseBurst(0.08, 0.04),
   pick: () => { blip(660, 0.09, 'triangle', 0.05); setTimeout(() => blip(880, 0.12, 'triangle', 0.05), 70); },
   page: () => { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => blip(f, 0.18, 'sine', 0.05), i * 90)); },
@@ -627,7 +641,10 @@ function physTick() {
     if (p.jbuf > 0 && (p.grounded || p.coyote > 0 || p.swim) && !(p.sliding && !G.gear.boots)) {
       p.vy = p.swim ? -5.6 : -8.4;
       p.grounded = false; p.coyote = 0; p.jbuf = 0; p.moverRef = null;
-      sfx.jump();
+      sfx.jump(); vib(10);
+      // a little dust kicks up where the boots leave the ground
+      if (!p.swim) for (let i = 0; i < 4; i++)
+        spawnPart({ x: p.x + Math.random() * p.w, y: p.y + p.h, vx: (Math.random() - 0.5) * 1.3, vy: 0.2, g: 0.05, t: 12, c: '#c9bb9d', s: 1.5 });
     }
     if (p.jbuf > 0) p.jbuf--;
     if (!inp.jump && p.vy < -2.5 && !p.swim) p.vy = -2.5; // variable height
@@ -1886,12 +1903,18 @@ function drawPlayer() {
   const leg = Math.sin(p.anim * 2.2) * (run ? 4 : 0);
   const breathe = Math.sin(p.idle) * 0.6;
 
+  // airborne pose: tuck up off the launch, reach down to meet the ground
+  const air = !p.grounded && !p.swim && !p.climbing && !p.gliding;
+  const vt = air ? Math.max(-1, Math.min(1, p.vy / 8)) : 0; // -1 rising … +1 falling
+  const lift = vt < 0 ? -vt * 3.5 : 0;   // feet pull up as we climb
+  const spread = vt > 0 ? vt * 2.2 : 0;  // legs part to land
+
   cx.save();
   cx.translate(x, y + 10);
-  // squash on landing, stretch in fast air
+  // squash on landing, stretch with vertical speed in the air
   let sy = 1;
-  if (p.landT > 0) sy = 1 - (p.landT / 9) * 0.16;
-  else if (!p.grounded && !p.climbing && Math.abs(p.vy) > 5 && !p.gliding) sy = 1.08;
+  if (p.landT > 0) sy = 1 - (p.landT / 9) * 0.19;
+  else if (air) sy = 1 + Math.min(0.13, Math.abs(p.vy) * 0.016);
   cx.scale((p.face === -1 ? -1 : 1) * (2 - sy), sy);
   cx.translate(0, -10);
 
@@ -1900,14 +1923,15 @@ function drawPlayer() {
   if (p.climbing) {
     cx.fillRect(-4, 13, 3, 7); cx.fillRect(2, 11, 3, 7);
   } else if (!p.grounded && !p.swim) {
-    cx.fillRect(-4, 13, 3, 7); cx.fillRect(1, 14, 3, 6);
+    cx.fillRect(-4 - spread, 13 - lift, 3, 7); cx.fillRect(1 + spread, 13 - lift, 3, 7);
   } else {
     cx.fillRect(-4 + leg * 0.5, 14, 3, 7); cx.fillRect(1 - leg * 0.5, 14, 3, 7);
   }
-  // boots
+  // boots — follow the legs through the air pose
   cx.fillStyle = G.gear.boots ? '#7a4a26' : '#888';
-  cx.fillRect(-4 + (p.grounded ? leg * 0.5 : 0), 19, 4, 2.5);
-  cx.fillRect(1 - (p.grounded ? leg * 0.5 : 0), 19, 4, 2.5);
+  const bootDx = p.grounded ? leg * 0.5 : 0;
+  cx.fillRect(-4 + (air ? -spread : bootDx), 19 - lift, 4, 2.5);
+  cx.fillRect(1 + (air ? spread : -bootDx), 19 - lift, 4, 2.5);
   // body / jacket
   cx.fillStyle = G.gear.jacket ? '#c0392b' : '#2e7d6b';
   cx.fillRect(-5, 4 + breathe, 10, 11);
@@ -1920,6 +1944,9 @@ function drawPlayer() {
   if (p.climbing) {
     const arm = Math.sin(p.anim * 3) * 3;
     cx.fillRect(2, 2 + arm, 3, 8); cx.fillRect(-5, 5 - arm, 3, 8);
+  } else if (air) {
+    // the near arm throws up on the launch and reaches down to land
+    cx.fillRect(3, 6 + breathe + vt * 3, 3, 8 + (vt > 0 ? vt * 2 : 0));
   } else {
     cx.fillRect(3, 6 + breathe + (run ? -leg * 0.4 : 0), 3, 8);
   }
