@@ -229,30 +229,40 @@ function buildWorld() {
   fill(207, 70, 8, 3, 4);        // the lake (carved into valley floor)
   fill(WORLD_W - 2, 0, 2, WORLD_H, 1);  // east wall
 
-  // --- Final Ascent: the Gamskofel (x264..316) --------------------------------
-  // The hardest climb in the game. Thin ledges, crumbling rock, ice, air gusts,
-  // and a one-way commit chimney. Summit at y1 — the highest point in the game.
+  // --- Final Ascent: the Gamskofel (x238..316) --------------------------------
+  // The hardest climb in the game: a glacier brook at the valley mouth, a varied
+  // buttress to a mid-terrace, an exposed switchback of ice and crumbling rock
+  // onto the massif, a thin-ledge face, then a crumbling ice chimney, the wind
+  // ridge and a one-way summit push. Summit at y1 — the highest point in the game.
 
-  // The lower massif catches falls in the lower half. Its WEST face steps down
-  // to the valley as a walkable approach staircase, so the Gamskofel is reached
-  // ON FOOT straight from the Hidden Valley — no paraglider required.
+  // The lower massif catches falls in the upper half. Its WEST side is reached
+  // ON FOOT straight from the Hidden Valley via the buttress below — no glider.
   fill(270, 50, 46, 20, 1);   // main catch massif x270..315, y50..69
 
-  // Stage 1 — The Approach: a stepped buttress from the valley floor (y70) up
-  // to the massif top (y50). Each step is a 4-wide landing 3 tiles up, set back
-  // east so every hop has open sky — a steady walk-up, never a glider drop.
-  fill(266, 53, 4, 17, 1);    // step (x266..269, top y53) — bonds into the massif
-  fill(262, 56, 4, 14, 1);    // step (x262..265, top y56)
-  fill(258, 59, 4, 11, 1);    // step (x258..261, top y59)
-  fill(254, 62, 4, 8, 1);     // step (x254..257, top y62)
-  fill(250, 65, 4, 5, 1);     // step (x250..253, top y65)
-  fill(246, 68, 4, 2, 1);     // first step off the valley floor (x246..249, top y68)
+  // Stage 1 — Gletschertor & Buttress. A meltwater brook braids across the valley
+  // mouth (the threshold out of the green valley onto bare rock — hop the stones
+  // to stay dry, or wade; never a trap). Then jump up a stepped pillar, 3 tiles a
+  // hop, onto a broad mid-terrace with a bench and a long look back over the Tal.
+  fill(238, 70, 4, 1, 4);     // brook: a shallow glacier stream skinning the floor (x238..241)
+  fill(238, 69, 1, 1, 1);     // stepping stone
+  fill(240, 69, 1, 1, 1);     // stepping stone
+  fill(245, 67, 4, 3, 1);     // B1 — broad first step off the floor (x245..248, top y67)
+  fill(250, 64, 2, 6, 1);     // B2 — narrow precision step (x250..251, top y64)
+  fill(254, 61, 2, 9, 1);     // B3 — narrow step (x254..255, top y61)
+  fill(256, 60, 14, 10, 1);   // THE TERRACE — broad rest shelf (x256..269, top y60), bonds to the massif
 
-  // Stage 2 — The Lower Face
-  fill(278, 48, 3, 1, 1);     // ledge (x278..280, y48)
-  fill(274, 45, 3, 1, 1);     // zig back (x274..276, y45)
-  fill(280, 42, 3, 2, 1);     // pre-biwak ledge (x280..282, y42..43)
-  fill(284, 39, 5, 2, 1);     // BIWAK shelf (x284..288, y39..40) — checkpoint
+  // Stage 2 — The Switchback & Lower Face: the crux of the lower climb. An iced
+  // boulder, a crumbling slab over the terrace void, a precision ledge onto the
+  // massif top, then thin ledges up the open face (the massif catches falls) and
+  // a last crumbling slab onto the bivouac. Every slip lands on recoverable ground.
+  fill(258, 57, 3, 3, 1);     // iced boulder body standing on the terrace (x258..260)
+  fill(258, 57, 3, 1, 7);     // …Blankeis glaze on top — slick! (a slip drops to the terrace)
+  // x263..265, y54: CRUMBLING slab over the terrace void — see CRUMBLE array (overlay)
+  fill(266, 51, 3, 1, 1);     // precision ledge (x266..268, y51) — one hop east onto the massif top
+  fill(273, 47, 3, 1, 1);     // F1 — first face ledge (x273..275, y47)
+  fill(277, 44, 2, 1, 1);     // F2 — narrow ledge (x277..278, y44)
+  // x280..282, y41: CRUMBLING slab below the bivouac — see CRUMBLE array (overlay)
+  fill(284, 39, 5, 2, 1);     // BIWAK shelf (x284..288, y39..40) — checkpoint (bonfire)
 
   // Stage 3 — The Ice Chimney: a zig-zag of crumbling rock up to the wind
   // ridge. Every step is 3 tiles up with clear sky for the arc; the slab over
@@ -337,6 +347,8 @@ const MOVERS = [
 const CRUMBLE = [
   { x: 86,  y: 8, w: 3 },   // Knife Edge ledge (x86..88)
   { x: 107, y: 5, w: 3 },   // Summit Block ledge (x107..109)
+  { x: 263, y: 54, w: 3 },  // Gamskofel switchback, over the terrace void (x263..265)
+  { x: 280, y: 41, w: 3 },  // Gamskofel lower face, last move onto the bivouac (x280..282)
   { x: 285, y: 33, w: 3 },  // Gamskofel Ice Chimney, over the bonfire (x285..287)
   { x: 310, y: 3, w: 2 },   // Gamskofel near-summit (x310..311) — last test!
   { x: 38,  y: 15, w: 2 },  // Mine Shaft lower crumble (x:38..39, y:15)
@@ -358,7 +370,7 @@ const STONEFALL = [
 // =========================================================================
 const ZONES = [
   { id: 'gamskofel', x: 304, y: 0, w: 26, h: 14, en: 'The True Summit', de: 'Der Gamskofel', it: 'Il Gamskofel', outdoor: true },
-  { id: 'aufstieg', x: 262, y: 0, w: 66, h: 72, en: 'The Final Ascent', de: 'Der Schlussanstieg', it: "L'ultima salita", outdoor: true },
+  { id: 'aufstieg', x: 240, y: 0, w: 88, h: 72, en: 'The Final Ascent', de: 'Der Schlussanstieg', it: "L'ultima salita", outdoor: true },
   { id: 'wache',    x: 2,   y: 2,  w: 26, h: 15, en: 'Observer Post',         de: 'Beobachterstand',       it: 'Posto di vedetta',      outdoor: true },
   { id: 'depot',    x: 40,  y: 13, w: 4,  h: 6,  en: 'The Depot',             de: 'Das Materialdepot',     it: 'Il deposito',           outdoor: true },
   { id: 'mine',     x: 28,  y: 5,  w: 32, h: 14, en: 'Mine Gallery',          de: 'Stollen-Galerie',       it: 'Galleria delle miniere', dark: true, covered: true },
@@ -538,6 +550,8 @@ const ENTITIES = [
   { t: 'sign',     x: 232, r: 70, key: 'sign_talende' },
 
   // -- Gamskofel (Final Ascent) -------------------------------------------------
+  { t: 'sign', x: 243, r: 70, key: 'sign_kofelfoot' },  // trailhead at the glacier brook
+  { t: 'bench', x: 257, r: 60 },                         // the terrace bench — a long look back over the Tal
   { t: 'fire', x: 286, r: 39, id: 'kofelbiwak', name: 'Biwak am Kofel' },
   { t: 'bench', x: 308, r: 1 },
   { t: 'sign', x: 302, r: 9, key: 'sign_kofel' },
@@ -560,6 +574,7 @@ const FLOWERS = [ // alpenrose & friends on the Alm, edelweiss up top
   [92, 6, 'gent'], [112, 4, 'gent'], [123, 5, 'gent'],
   [309, 1, 'edel'], [313, 1, 'edel'],
   [191, 70, 'gent'], [197, 68, 'rose'], [204, 70, 'gent'], [223, 66, 'gent'], [229, 70, 'rose'],
+  [248, 67, 'gent'], [262, 60, 'edel'], [267, 60, 'gent'], [274, 47, 'edel'], // the Gamskofel buttress & terrace
 ];
 
 // Background rock faces (drawn faded, behind the action — they sell the mountain)
@@ -670,6 +685,7 @@ const TX_DE = {
   sign_flug:    ['„Flugschule Gamstal — demnächst / prossimamente.“', 'Der Berg ist hier noch nicht fertig.'],
   sign_vorgipfel: ['„Vorgipfel — Rosa & Ida, 1974.“', 'Ein Steinmann markiert den alten Gipfel. Von hier ging es damals zurück. Du gehst weiter.'],
   sign_kofel:     ['„Gamskofel ↑ — Nur für Ausdauernde. / Solo per i tenaci.“', 'Das Holz ist neu, die Schrauben glänzen. Den Weg gibt es noch nicht lange.'],
+  sign_kofelfoot: ['„Einstieg Gamskofel — über die Gletscherquelle und den Pfeiler.“', 'Mit Kreide: „Auf dem Geröll trittsicher bleiben. Der Berg zählt jeden Schritt.“'],
 
   flug_unlock: [
     'Hinter dem Schild lehnt ein Paket in Wachstuch. Ein Zettel:',
@@ -1015,6 +1031,7 @@ const TX_EN = {
   sign_grat:    ['"Summit / Cima 20 min →"', 'Below, carved and nearly weathered away: "R + I 1974"'],
   sign_notch:   ['"CAUTION — GAP! / ATTENZIONE!"', 'Smaller, in pencil: "The Zinnensprung. The pond is down there. Allegedly."'],
   sign_flug:    ['"Flight school Gamstal — coming soon / prossimamente."', 'The mountain is not finished here yet.'],
+  sign_kofelfoot: ['"Gamskofel start — over the glacier brook and up the buttress."', 'Chalked: "Stay sure-footed on the rock. The mountain counts every step."'],
 
   flug_unlock: [
     'Behind the sign leans a parcel wrapped in waxed cloth. A note:',

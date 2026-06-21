@@ -152,9 +152,13 @@ engine's `pend*` event queue exists for exactly that.
   not post-finale. The glider is granted by Vera on first meeting, not
   hidden behind `G.flags.finale`.
 - **The Final Ascent is reached ON FOOT from the Hidden Valley** — the glider
-  is for the rings, never a gate to the Gamskofel. The lower massif's WEST face
-  is a walkable approach staircase down to the valley floor; do not let a wide
-  catch-floor fill swallow it into a glider-only cliff (it once did, x264..315).
+  is for the rings, never a gate to the Gamskofel. The lower climb (Stages 1–2)
+  runs valley floor → glacier brook (a wadeable water skin + stepping stones at
+  the valley mouth, never a barrier) → a stepped **buttress** → a broad **terrace**
+  (bench rest, the lower catch shelf at y60) → an exposed **switchback** (iced
+  boulder + crumble + precision ledge) onto the massif top → a thin-ledge face →
+  the BIWAK. Keep it walkable on foot the whole way; do not let a wide catch-floor
+  fill swallow the west side into a glider-only cliff (it once did, x264..315).
 - **The Gamskofel route is flood-fill tested** in `check-world.js` (valley floor
   → summit book), like the depot climb. `reachable()` is blind to a ledge buried
   in a catch floor or capped by the floor above — both shipped here (Stage-1

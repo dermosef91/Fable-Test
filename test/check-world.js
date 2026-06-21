@@ -362,8 +362,8 @@ for (const [x0, x1, y] of [[293, 294, 18], [289, 291, 15]]) {
 // the depot climb above.
 // First, the explicit step ladder (each stands clear, with headroom):
 for (const [x, y] of [
-  [247, 68], [251, 65], [255, 62], [259, 59], [263, 56], [267, 53], // approach staircase
-  [279, 48], [275, 45], [281, 42], [286, 39],                       // Stage 2 + BIWAK
+  [247, 67], [250, 64], [254, 61], [262, 60], [259, 57], [267, 51], [273, 50], // buttress + terrace + switchback
+  [274, 47], [277, 44], [286, 39],                                 // lower face + BIWAK
   [282, 36], [283, 30], [286, 27], [282, 24],                       // Stage 3 chimney
   [289, 21], [290, 15], [296, 12], [301, 9], [305, 6],              // Stage 4-5
 ]) {
