@@ -308,7 +308,7 @@ engine's `pend*` event queue exists for exactly that.
   code only adds identity (Greta's bun/shawl, Norbert's beard/Tyrolean hat,
   Vera's helmet/sunglasses). Keep new humans on these helpers, not bespoke
   geometry. (Portraits in `drawPortrait` are a *separate* art pass.)
-- **Organic Tile Rendering:** Solid tiles (rock, scree) use coordinate-seeded pseudo-random hashes `h(seed)` in `drawTiles()` to procedurally draw stable organic edge bumps, grassy humps/blades, and rounded corners, avoiding straight rectangular bounds.
+- **Organic Tile Rendering:** Solid tiles (rock, scree) use coordinate-seeded pseudo-random hashes `h(seed)` in `drawTiles()` to procedurally draw stable organic edge bumps, grassy humps/blades, and rounded corners, avoiding straight rectangular bounds. Rock faces (`t===1`) draw their L/R/B silhouette through `cragEdge()`: the lump *count and size* jitter per tile (so a long wall isn't a uniform scallop), ~1/5 bulge into a lit boulder and ~1/8 tuck in as a shadowed undercut. Keep the variance moderate — too aggressive fights the baked grain and reads as noise.
 - **Saves:** bump `SAVE_KEY` only if the save shape breaks compatibility;
   `loadSave` must tolerate missing fields from older saves (`|| {}`,
   inferred `objKey`).
