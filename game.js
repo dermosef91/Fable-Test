@@ -4038,19 +4038,24 @@ function drawPlayer() {
     cx.beginPath(); cx.arc(4.5, 2.5 + arm, 1.5, 0, 7); cx.fill();
     cx.beginPath(); cx.arc(-4.5, 4.5 - arm, 1.5, 0, 7); cx.fill();
   } else if (air) {
-    // the front arm throws up off the launch and reaches down to land
-    const armSwing = vt * 3;
-    cx.fillStyle = jacketColor;
+    // the arm swings on the shoulder: reaches overhead off the launch,
+    // drops out to brace for the landing — the hand pivots through an arc.
+    const sh = { x: -4.5, y: jY + 2.5 };            // shoulder anchor
+    const a = 0.25 - (vt < 0 ? vt * 2.5 : vt * 0.95); // angle from straight down
+    const L = 7.2;
+    const hx = sh.x + Math.sin(a) * L, hy = sh.y + Math.cos(a) * L; // hand
+    cx.lineCap = 'round';
+    cx.strokeStyle = jacketColor; cx.lineWidth = 3;
+    cx.beginPath(); cx.moveTo(sh.x, sh.y); cx.lineTo(hx, hy); cx.stroke();
+    // sleeve cuff near the wrist
+    cx.strokeStyle = jacketDark; cx.lineWidth = 3;
     cx.beginPath();
-    cx.moveTo(-6.5, jY + 1.5 + armSwing);
-    cx.lineTo(-3.5, jY + 1.5 + armSwing);
-    cx.lineTo(-3.5, jY + 8.5 + armSwing);
-    cx.lineTo(-6.5, jY + 8.5 + armSwing);
-    cx.closePath(); cx.fill();
-    cx.fillStyle = jacketDark;
-    cx.fillRect(-6.5, jY + 7 + armSwing, 3, 1.5);
+    cx.moveTo(hx - (hx - sh.x) * 0.22, hy - (hy - sh.y) * 0.22);
+    cx.lineTo(hx, hy); cx.stroke();
+    cx.lineCap = 'butt';
+    // hand
     cx.fillStyle = '#f0d2ab';
-    cx.beginPath(); cx.arc(-5, jY + 9.5 + armSwing, 1.5, 0, 7); cx.fill();
+    cx.beginPath(); cx.arc(hx, hy, 1.5, 0, 7); cx.fill();
   } else {
     const armSwing = run ? -leg * 0.5 : 0;
     // front arm (visible) — hangs at the backpack/torso seam on the left
