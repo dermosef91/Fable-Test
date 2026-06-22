@@ -1,7 +1,8 @@
 # CLAUDE.md
 
-GIPFELBUCH — a story-driven 2D metroidvania set on one mountain in Südtirol
-(plus a hidden glider valley). Plain HTML5 canvas + vanilla JS. **No build
+GIPFELBUCH — a story-driven 2D metroidvania set on one mountain in Südtirol,
+a hidden glider valley, and a final ascent to the Gamskofel — the true summit.
+Plain HTML5 canvas + vanilla JS. **No build
 step, no runtime dependencies, no image or audio assets** — everything is
 drawn and synthesized procedurally. Keep it that way. Test/dev-only tooling
 (puppeteer, http-server) is fine but must never be needed to play.
@@ -22,12 +23,12 @@ worse than missing ones. Routine work doesn't belong here.
 
 - Play locally: open `index.html` in a browser, or `npm run dev`
   (http-server on port 8080).
-- Tests: `npm test` / `node test/check-world.js` — ~280 headless
+- Tests: `npm test` (or `node test/check-world.js`) — ~280 headless
   world-geometry
   assertions (floor/headroom under every entity, gear gates sealed except
   the intended route, jump arcs reachable under the real physics).
   Run after **any** change to `world.js` and before every push.
-- `node test/smoke-render.js` — stubbed-DOM crash test that drives
+- `npm run smoke` (or `node test/smoke-render.js`) — stubbed-DOM crash test that drives
   title → play → dialog → map frames; run it after renderer changes.
 - `npm run gen -- --area X,Y,W,H [--difficulty easy|medium|hard]
   [--types rock,plank,scree,nettle,water,mover] [--seed N] [--name slug]`
@@ -62,6 +63,8 @@ any scene via `page.evaluate(() => { G.gear = {...}; player.x = …; })`.
 Real keyboard presses can fall between frames in headless runs; the
 engine's `pend*` event queue exists for exactly that.
 
+- **Add screenshots/media** to the verification/walkthrough documentation (e.g. `walkthrough.md` or PR details) for all visual, layout, or level-design changes. Use the headless browser script or manual captures to show the before/after states where feasible.
+
 ## Deploy & collaboration
 
 - Merging to `main` runs `.github/workflows/pages.yml`: tests, then a
@@ -75,12 +78,13 @@ engine's `pend*` event queue exists for exactly that.
 ## Files
 
 - `world.js` — the whole mountain as data: tile fills in `buildWorld()`,
-  force-field rects (`WATERFALL`, `THERMALS`), `MOVERS` (platforms),
+  force-field rects (`WATERFALL`, `THERMALS`, `GUSTS`), `MOVERS` (platforms),
   `RINGS`, `ZONES`, `ENTITIES`, and every line of text in `TX_DE` / `TX_EN`.
 - `game.js` — the engine, one file: canvas/resize, fullscreen, input,
   WebAudio (SFX + generative music + ambience), save (localStorage
-  `gipfelbuch_v1`), physics, NPCs/critters/Gams, rendering, lighting,
-  `drawIcon`, HUD, map/album/photo/title/end screens, main loop.
+  `gipfelbuch_v1`), physics (including crumbling/ice tile mechanics),
+  NPCs/critters/Gams, rendering, lighting, `drawIcon`, HUD,
+  map/album/photo/title/end screens, main loop.
 - `test/check-world.js` — must stay green; CI blocks deploy on failure.
 
 ## Localization
@@ -94,15 +98,42 @@ engine's `pend*` event queue exists for exactly that.
 
 ## Level-design rules (hard-won)
 
+- **Tile types:** 0 air · 1 rock · 2 scree · 3 one-way plank · 4 water ·
+  5 ferrata cable · 6 nettles · 7 hard ice (Blankeis: solid, glassy, slippery) ·
+  8 mud (a **non-solid** wade skin — it draws as mud but isn't collidable, so
+  you stand on the rock *beneath* it; planks laid over mud are cosmetic, never
+  load-bearing — lay mud only on a solid floor row, or the player drops through).
+  Crumbling rock ledges are overlays defined in the `CRUMBLE` array, not tile types.
+  Gusts are force-field rects (`GUSTS`), not tiles.
 - **Jump budget:** v0 8.4, gravity 0.42 up / 0.5 down, apex hang. Between
   ledge *edges*: at most **3 tiles up and ~4 across** is comfortable;
   4 up is a deliberate set-piece. Full arcs need **~5.5 tiles of headroom**
   — a ceiling 1–2 tiles above head height silently eats jumps (carve sky,
   as over the gorge slot).
+- **Summit Headroom & Y-Shifting**: The world height is `90` tiles (originally `80`), with all level geometry shifted down by `Y_OFF = 10` tiles. This leaves a 10-tile buffer of open air above the summit. All absolute Y lookups and boundaries in `game.js` and `test/check-world.js` must be dynamically shifted by adding `Y_OFF` to match this layout. **Every world-data array authored in level coords must also be added to the post-definition `Y_OFF` shift loop in `world.js` (and exported) — `WATERFALL`/`THERMALS`/`SINK`/`GUSTS`/`RINGS`/`MOVERS`/`CRUMBLE`/`STONEFALL`/`ZONES`/`ENTITIES`/…** A new force-field rect that skips the loop ships 10 rows out of place: the Gamskofel `GUSTS` did exactly this and floated harmlessly in the sky above the wind ridge until fixed. When you add such an array, assert in check-world that it overlaps the geometry it's meant to act on (don't just trust the coords).
 - **Challenge before reward:** place gear so the player meets its obstacle
   first and backtracks (lamp at the Observer Post after the dark tunnel;
   ferrata set at the Depot after the bare cable). Quest collectibles must
   require a detour, not line the critical path (Norbert's gorge chestnut).
+- **A ledge needs headroom, or it isn't a ledge.** A fill tile placed inside a
+  solid wall (the headwall) or tucked directly under another ledge is *solid
+  but unstandable* — the body can't occupy it, so the player can't land. The
+  Mine-Gallery depot climb once routed its buttress step into the headwall and
+  walled its cavern off from the rest, stranding the ferrata set entirely.
+  `reachable()` is **blind to the world** — it only does edge-to-edge arc math,
+  so a buried ledge or sealed cavern sails through it. Gear/climb routes must be
+  **flood-fill-connected from the player's entry to the actual pickup cell**;
+  `check-world.js` now flood-fills the real tiles from the Hochband to the kit,
+  and every gear route should get the same end-to-end walk, not just per-hop
+  reachable() + solidity spot-checks.
+- **Act-range vs slide gates:** `findInteract` grabs the nearest pickup within
+  ~3.5 tiles (56 px), *even mid-jump*, and a jump rides a shallow scree slope
+  straight up to a pickup. So scree alone won't gate a collectible: pile it
+  **steep and solid with no flat launch pad in its lee** (a one-way plank base
+  keeps the path open beneath), so every bootless hop lands on scree and slides
+  back before reaching grab range. The pond-chestnut teaser is built this way;
+  verify such gates in headless Chrome from *every* approach (the hop-up was
+  reachable bootless until the pile went steep).
 - **Late-game unlocks** invite return trips: photo spots appear after the
   finale, Ida's tin after the Zinnensprung. Gate via flags in
   `findInteract`/`drawEntity`, not by deleting entities.
@@ -111,9 +142,108 @@ engine's `pend*` event queue exists for exactly that.
   Darkness is a *soft* gate (drains warmth, passable for the determined).
 - One-way drops and shortcut loops (chimney, Schartl, scree-run) are part
   of the metroidvania feel — add them when a new area would force a slog.
+- **No trapping drops/gaps:** Avoid creating deep gaps where the player can fall and get stuck. Any platforming section must have a maximum drop depth of ~4 tiles to the nearest exit/climbable platform, or have clear re-entry/escape routes (e.g. wooden planks/one-way steps, or walkable horizontal exit tunnels).
+- **Movers must be load-bearing:** if a static ledge can substitute for a
+  moving platform's ride (or sit under its track at jump height), the mover
+  is decoration — remove the ledge, not the mover.
+- **No floating rock:** every ledge/crag bonds to a face or shoulder below
+  (extend the fill down). Only deliberate openings stay pure air, and a drop
+  gap (the Scharte) must line up with its landing (the pond).
+- **The Gamskofel (y1) is the highest point on the map** — above the old
+  ridge pinnacle (y2). The old summit is now the "Vorgipfel" (sub-summit);
+  the finale, cross, and Gipfelbuch sit on the Gamskofel east of the valley.
+- **Game flow:** camp → gorge → tunnel → ridge (sub-summit / Vorgipfel) →
+  climb down the cable into the Hidden Valley → meet Vera, get the glider
+  (mid-game unlock), fly the thermals/rings → walk east to the Gamskofel
+  base → long hard ascent (crumbling, ice, gusts) → TRUE peak (finale).
+- The **Hidden Valley** is mid-game (between sub-summit and final ascent),
+  not post-finale. The glider is granted by Vera on first meeting, not
+  hidden behind `G.flags.finale`.
+- **The Final Ascent is reached ON FOOT from the Hidden Valley** — the glider
+  is for the rings, never a gate to the Gamskofel. The lower climb (Stages 1–2)
+  runs valley floor → glacier brook (a wadeable water skin + stepping stones at
+  the valley mouth, never a barrier) → a stepped **buttress** → a broad **terrace**
+  (bench rest, the lower catch shelf at y60) → an exposed **switchback** (iced
+  boulder + crumble + precision ledge) onto the massif top → a thin-ledge face →
+  the BIWAK. Keep it walkable on foot the whole way; do not let a wide catch-floor
+  fill swallow the west side into a glider-only cliff (it once did, x264..315).
+- **The Gamskofel route is flood-fill tested** in `check-world.js` (valley floor
+  → summit book), like the depot climb. `reachable()` is blind to a ledge buried
+  in a catch floor or capped by the floor above — both shipped here (Stage-1
+  ledges buried; the Stage-3 "recovery ledge" capped solid, its commit plank
+  overwritten then carved to air, dead-ending the climb over the bonfire). Any
+  change to the ascent must keep that walk green; verify the whole climb in
+  headless Chrome with the crumble live (it cracks ~90 frames after landing, so
+  a stance you must pause on is a trap). Blankeis stances stay a *skill* gate —
+  a slip must land on a catch floor, never a dead end.
+
+- **Vector Asset Design Guidelines:** For structures (like the Alm hut redesign) and visual elements, favor high-quality hand-coded details over simple blocks:
+  - *Dimensionality:* Add steep roofs, eaves/overhangs, and outline strokes (`cx.strokeStyle`) for structural depth.
+  - *Texturing:* Use pattern line-work (e.g. horizontal plank lines, brick overlays, wood grains) rather than flat fills.
+  - *Vibrant Contrast:* Accent earthy or neutral bases with high-contrast color pops (e.g., green shutters, colorful flower boxes) to guide interest.
+  - *Micro-Particles:* Attach ambient details like chimney smoke particle generators or interactive elements (e.g. sitting benches).
+
 
 ## Engine conventions (game.js)
 
+- **Rendering layers (in `render`):** sky → bg-rock → decor → tiles → entities
+  → actors → weather/particles → `drawLighting` (warm light) → `drawColorGrade`
+  → `drawVignette` → HUD. The grade and vignette are device-space post passes
+  drawn *after* `cx.restore()`, so they wash the world but never the HUD.
+- **Art-direct phases from `GRADE`, not ternaries.** Each phase has one
+  `{top,bot,a}` multiply wash (lerped like `phaseColors`). Tune time-of-day mood
+  there instead of adding `G.phase === n ? …` branches across draw functions.
+- **Phase transitions are edge-detected in `phaseColors`** via `phaseCur` —
+  the lerp reset must fire *once* when `G.phase` changes, never every frame.
+  (Resetting each frame deadlocks: `phaseLerpT` can't reach 1, so `phasePrev`
+  never advances and sky/weather/night freeze on the old phase. Anything that
+  lerps through `phaseLerpT` — `rain`, `ambient`, `night`, `dawn`, sky colours —
+  silently stops switching.) Drive a phase change by setting `G.phase`; don't
+  poke `phasePrev`/`phaseLerpT` by hand.
+- **Lighting is two passes in `drawLighting`:** a low-res darkness overlay with
+  cut-outs, then a `'lighter'` warm glow keyed to `amb` (so fires/lamp tint what
+  they light at night/dusk but stay neutral in daylight). One `lights[]` list
+  feeds both — add a source there, don't duplicate coords.
+- **Lamp flicker & tunnel draft (`lampTick`):** `lampFlicker` (0.4–1) scales the
+  player lamp's radius + warm alpha so it breathes. In the Stollen a periodic
+  draft (`draftT`) guts it — the pool shrinks for a beat (whoosh + sideways
+  sparks, one-time hint) so you wait before a hop. Clamped ≥0.4 (never a
+  blackout — darkness stays a *soft* gate). Gusts only fire while `lampOn() &&
+  curZone.dark`; the base breath applies wherever the lamp is lit.
+- **Baked surface textures, never asset files.** `ensureTex()` paints a 512×512
+  detail sheet once into an offscreen canvas — **4× supersampled** (64-px
+  sub-tiles for 16-px world tiles); `texTile`/`texRect` blit a sub-tile keyed to
+  **world tile index** (`tx%8,ty%8`) so grain is world-locked and never swims
+  with the camera. Blit it with **`imageSmoothingEnabled = true`** (scoped to
+  `drawTiles`/`texRect`, restored to `false` after) so the world's ZOOM upscale
+  resamples the high-res grain cleanly — without that, nearest-neighbour
+  magnifies the sheet into blocks. A subtle per-tile colour jitter (`hexLerp`
+  ~0.15) keeps the flat fill from reading as one slab; `drawRockDecor` adds
+  *rare* off-grid accents (lichen, moss, veins, quartz, the odd embedded
+  boulder).
+- **Decorative rocks & plants (`drawWallVeg`):** hand-drawn objects — boulders
+  resting on ledges, shrubs, grass tufts on faces, hanging vines, crevice
+  flowers — sprinkled *very* sparsely (gates ~1/10 of a normal pass) over the
+  baked grain so they're occasional accents, never a carpet. Keyed to the
+  `upAir/downAir/leftAir/rightAir` flags, drawn after the edge bumps; density
+  scales by biome (`vegK`: lush valley/alm, sparse ridge). `drawBoulder`/
+  `drawBush` are the shared shaded-object helpers. (A *dense* version of this
+  pass was tried and dialed back — keep it rare.)
+- **Edge AO:** thin dark strips on air-facing tile sides + a band under the
+  grass cap carve depth; keep them subtle so they don't fight the organic edge
+  bumps.
+- **Contact shadows:** `groundShadow(x, floorY, hw, a)` grounds actors/objects;
+  draw it before the body, at the floor line, only when grounded. Add new
+  shadow-worthy entity types to `SHADOW_ENTS`.
+- **Wall-mounted entities (`plaque`, `sign`) draw *above* their base**, but
+  the entity floor/headroom test forbids solid tiles in those rows — so put a
+  `BG_ROCK` face behind them or they read as floating against sky. Place such
+  entities where a background-rock rect covers their graphic.
+- **Ambient motes (`drawMotes`):** decorative per-zone air life (dust in shafts,
+  pollen on the Alm, wind-grit on the ridge, mist in the gorge), keyed off
+  `curZone.id` in `moteKind`. A separate pool from gameplay `parts`, drawn
+  *before* `drawLighting` so night/lamp dim them (dust only glows in the lamp
+  pool underground).
 - **Coordinate spaces:** world pixels are drawn under `setTransform(ZOOM,...)`;
   HUD/UI is drawn under `setTransform(DPR,...)` where `W = cv.width / DPR`,
   `H = cv.height / DPR` are CSS pixels. Touch hit-testing happens in
@@ -136,8 +266,57 @@ engine's `pend*` event queue exists for exactly that.
   `refreshTouch()` or they stay visually "pressed". Jump/act/up edges are
   also event-queued (`pendJump`/`pendAct`/`pendUp`) so a fast tap never
   falls between frames.
+- **Glider air (Hinteres Tal):** `THERMALS` lift a glider (`inThermal`),
+  `SINK` pockets drag it down (`inSink`) — keep sink rects clear of the thermal
+  columns and ring centres (a sink over a ring soft-locks the course; asserted
+  in check-world). A gentle steady easterly (`valleyWind`) nudges a glider east
+  and drives the windsock angles; it's mild so steering overrides. Sinks must
+  stay escapable (steer/dive out, soft landing) — never a trap.
+- **Gamskofel gusts (`GUSTS`):** horizontal force-field rects on the wind ridge
+  that shove the player sideways (stronger airborne than grounded). A `period`
+  makes the squall swell and die on a sine — the lull (`sin<=0`, ~half the cycle)
+  is dead calm, the window to commit a hop; steady gusts (no `period`) push the
+  whole time. Place them only over stances whose blow-off lands on a catch floor
+  (the upper-ridge catch band), so a gust is a timing-and-balance skill gate,
+  never a shove into a dead end. Ice stances inside a gust are the signature
+  combo — slippery + windblown — and must still recover. Directions should
+  alternate up the ridge so the climber braces both ways.
 - **Movers:** platforms in `MOVERS` are one-way landings; standing players
   are carried via `p.moverRef` (set on landing, cleared on jump/walk-off).
+- **Crumble & stonefall:** `CRUMBLE` rects (world.js) are one-way shale slabs
+  that crack ~1.5 s after first landing and regrow ~4 s later; collision rides
+  the same one-way landing loop as `MOVERS`. Place them only where a fall
+  lands on recoverable ground with a tested way back. `STONEFALL` bands drop
+  telegraphed stones (dust + rattle before the drop); hits stagger
+  (`p.stunT`) and cost warmth — never a respawn. Keep bands off cable columns
+  and plank havens; ledges inside a band intercept stones, so the exposed
+  stances are the ledges themselves. Mirror both in check-world.js (open-air
+  track, sky above, recoverable fall, band placement).
+- **Scree gate & scree-run:** scree (tile 2) without boots slides you
+  helplessly downhill (east) and blocks jumps — that's the boots gate, don't
+  weaken it. *With* boots, holding DOWN on scree engages the scree-run
+  (glissade): a fast, steerable controlled descent (`p.sliding === 2`,
+  capped at `GLISS_MAX`), LEFT digs in to a self-arrest. The `p.glissT`
+  window carries momentum across the hops between staircase steps. It's pure
+  physics (downhill is hardcoded east), so it needs no geometry/test changes
+  — but any new scree must keep downhill = east or the run/gate breaks.
+- **Blankeis (hard ice, tile 7):** a glaze on a rock body — counts as `SOLID`,
+  drawn glassy in `drawTiles`, detected via `onIce`. Almost no friction
+  (`vx *= 0.9977` idle) and sluggish accel (0.037), but you can dig the edges in
+  to brake (acc 0.10 when pressing opposite to motion); no gear gate — a skill
+  test, not a lock. Place only as small stances where a slip lands on
+  recoverable ground (the ridge saddles drop to the catch band). Mirror in
+  check-world (`solid()` must include 7; assert ice-on-rock + recoverable slip).
+- **NPC & Animal Rendering**: Characters and animals are drawn procedurally, supporting a horizontal facing direction (`face = 1` or `-1`) via context scaling: `cx.scale(face, 1)`. When in motion (i.e. horizontal velocity `vx` is non-zero), apply a sinusoidal leg/hoof walking swing offset (`swing = Math.sin(...) * scale`) to convey movement naturally.
+- **Human NPCs share the player's chibi build.** The `npc` case in `drawEntity`
+  defines local `chibiLegs/chibiBody/chibiArm/chibiHead/chibiEyes` helpers
+  (anchored at the feet, `BY` = body top mirroring the player's `jY`, head
+  centre `HCY`, radius `HR`) so Greta/Norbert/Vera keep the same proportions,
+  pale skin (`#f0d2ab`), and two-eye-with-glints face as the player. Per-NPC
+  code only adds identity (Greta's bun/shawl, Norbert's beard/Tyrolean hat,
+  Vera's helmet/sunglasses). Keep new humans on these helpers, not bespoke
+  geometry. (Portraits in `drawPortrait` are a *separate* art pass.)
+- **Organic Tile Rendering:** Solid tiles (rock, scree) use coordinate-seeded pseudo-random hashes `h(seed)` in `drawTiles()` to procedurally draw stable organic edge bumps, grassy humps/blades, and rounded corners, avoiding straight rectangular bounds. Rock faces (`t===1`) draw their L/R/B silhouette through `cragEdge()`: the lump *count and size* jitter per tile (so a long wall isn't a uniform scallop), ~1/5 bulge into a lit boulder and ~1/8 tuck in as a shadowed undercut. Keep the variance moderate — too aggressive fights the baked grain and reads as noise.
 - **Saves:** bump `SAVE_KEY` only if the save shape breaks compatibility;
   `loadSave` must tolerate missing fields from older saves (`|| {}`,
   inferred `objKey`).
