@@ -29,6 +29,14 @@ worse than missing ones. Routine work doesn't belong here.
   Run after **any** change to `world.js` and before every push.
 - `node test/smoke-render.js` — stubbed-DOM crash test that drives
   title → play → dialog → map frames; run it after renderer changes.
+- `npm run gen -- --area X,Y,W,H [--difficulty easy|medium|hard]
+  [--types rock,plank,scree,nettle,water,mover] [--seed N] [--name slug]`
+  — dev-only scaffold (`tools/gen-platforming.js`). Lays out a chain of
+  **reachable** ledges in a rect and prints paste-ready `fill()` for
+  `buildWorld()` **plus** the matching hop/ledge assertions for
+  `check-world.js`. It mirrors the test's `reachable()`, so review, paste
+  **both** blocks in one commit, then `npm test`. It scaffolds; you still
+  hand-tune — the mountain stays handcrafted.
 - **Geometry changes and their assertions land in the same commit.** If you
   move a ledge, update the ladder/hop lists in `check-world.js` too.
 - For new gates or routes, verify in headless Chrome (puppeteer) like a
