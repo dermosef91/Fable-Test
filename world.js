@@ -138,6 +138,20 @@ function buildWorld() {
   fill(231, 70, 8, 3, 4);        // the lake (carved into valley floor)
   fill(WORLD_W - 2, 0, 2, WORLD_H, 1);  // east wall
 
+  // ===== TEMPORARY TEST — generated platforming section (REMOVE ME) =========
+  // tools/gen-platforming.js --area 2,43,22,12 --difficulty hard
+  //   --types rock,plank,scree,nettle --seed 5 --name testfeld --carve-sky
+  // A hard sky-traverse hung in the gorge void, left of the waterfall.
+  // seed 5 · types rock,plank,scree,nettle · 6 ledges
+  carve(2, 43, 22, 12);   // sky for the section — full arcs need the headroom
+  fill(2, 53, 2, 1, 1);   // ledge rock (x2..3, y53)
+  fill(6, 49, 2, 1, 3);   // ledge one-way plank (x6..7, y49)
+  fill(10, 45, 2, 1, 1);  // ledge rock (x10..11, y45)
+  fill(14, 45, 2, 1, 3);  // ledge one-way plank (x14..15, y45)
+  fill(19, 47, 2, 1, 3);  // ledge one-way plank (x19..20, y47)
+  fill(23, 44, 1, 1, 1);  // ledge rock (x23..23, y44)
+  // ===== END TEMPORARY TEST =================================================
+
   return g;
 }
 

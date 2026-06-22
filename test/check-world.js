@@ -233,5 +233,23 @@ for (const t of THERMALS) {
   ok(clear, `thermal at x${t.x} has a clear core`);
 }
 
+// ===== TEMPORARY TEST — generated platforming section (REMOVE WITH world.js) =
+// --- testfeld: generated platforming run (keep in sync with world.js) ---
+ok(solid(at(3, 53)), 'testfeld ledge at 3,53');
+ok(at(7, 49) === 3, 'testfeld plank at 7,49');
+ok(solid(at(11, 45)), 'testfeld ledge at 11,45');
+ok(at(15, 45) === 3, 'testfeld plank at 15,45');
+ok(at(20, 47) === 3, 'testfeld plank at 20,47');
+ok(solid(at(23, 44)), 'testfeld ledge at 23,44');
+const testfeldHops = [
+  [[3, 53], [6, 49]],
+  [[7, 49], [10, 45]],
+  [[11, 45], [14, 45]],
+  [[15, 45], [19, 47]],
+  [[20, 47], [23, 44]]
+];
+testfeldHops.forEach(([a, b], i) => ok(reachable(...a, ...b), 'testfeld hop ' + i + ' reachable'));
+// ===== END TEMPORARY TEST ====================================================
+
 console.log(fails === 0 ? '\nALL CHECKS PASSED' : `\n${fails} CHECKS FAILED`);
 process.exit(fails ? 1 : 0);
